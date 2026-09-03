@@ -1,0 +1,123 @@
+<section class="detail-shell">
+  <s3s-aviso *ngIf="cargando" tipo="info">
+    Cargando información del producto...
+  </s3s-aviso>
+
+  <s3s-aviso *ngIf="error" tipo="error">
+    {{ error }}
+
+    <button type="button" (click)="volverCatalogo()">
+      Volver al catálogo
+    </button>
+  </s3s-aviso>
+
+  <ng-container *ngIf="producto && !cargando">
+    <nav class="breadcrumb">
+      <a routerLink="/">Inicio</a>
+      <span>/</span>
+      <a routerLink="/productos">Productos</a>
+      <span>/</span>
+      <strong>{{ producto.nombre }}</strong>
+    </nav>
+
+    <section class="product-detail">
+      <div class="gallery-card">
+        <div class="main-image">
+          <app-imagen-catalogo ajuste="cover" [ruta]="imagenSeleccionada" [descripcion]="producto.nombre" *ngIf="imagenSeleccionada" />
+
+          <div class="image-placeholder" *ngIf="!imagenSeleccionada">
+            <strong>3S</strong>
+            <small>Imagen no disponible</small>
+          </div>
+        </div>
+
+        <div class="thumbs" *ngIf="imagenes.length > 1">
+          <button
+            type="button"
+            *ngFor="let imagen of imagenes; trackBy: trackByImagen"
+            [class.active]="imagenSeleccionada === imagen.urlImagen"
+            [attr.aria-pressed]="imagenSeleccionada === imagen.urlImagen" [attr.aria-label]="'Ver imagen: ' + (imagen.textoAlternativo || producto.nombre)"
+            (click)="seleccionarImagen(imagen)"
+          >
+            <app-imagen-catalogo ajuste="cover" [ruta]="imagen.urlImagen" [descripcion]="imagen.textoAlternativo" />
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-info">
+        <span class="category-badge">
+          {{ producto.categoria }}
+        </span>
+
+        <h1>{{ producto.nombre }}</h1>
+
+        <div class="product-codes">
+          <span>Código: {{ producto.codigo }}</span>
+          <span>Marca: {{ producto.marca || '3S' }}</span>
+        </div>
+
+        <p class="description">
+          {{ producto.descripcion }}
+        </p>
+
+        
+
+        <button
+          type="button"
+          class="technical-file"
+          *ngIf="producto.tieneFichaTecnica && producto.fichaTecnicaPdf"
+          (click)="abrirFichaTecnica()"
+        >
+          Ver ficha técnica
+        </button>
+
+        
+
+        <s3s-aviso *ngIf="mensajeOperacion" tipo="success">
+          {{ mensajeOperacion }}
+        </s3s-aviso>
+
+        <s3s-aviso *ngIf="!clienteLogueado" tipo="info" [mostrarTitulo]="false">
+          <strong>¿Deseas cotizar varios productos?</strong>
+          <p>
+            Crea una cuenta de cliente para agregar productos al carrito y enviar una solicitud conjunta al equipo comercial.
+          </p>
+
+          
+        </s3s-aviso>
+      </div>
+    </section>
+
+    <section class="related-section" *ngIf="relacionados.length > 0">
+      <div class="section-head">
+        <span>Productos relacionados</span>
+        <h2>También podrían interesarte</h2>
+      </div>
+
+      <div class="related-grid">
+        <article
+          class="related-card"
+          *ngFor="let item of relacionados; trackBy: trackByProducto"
+        >
+          <button type="button" class="related-image" (click)="verProductoRelacionado(item)">
+            <app-imagen-catalogo ajuste="cover" [ruta]="item.imagenUrl" [descripcion]="item.nombre" *ngIf="item.imagenUrl" />
+
+            <div class="image-placeholder small" *ngIf="!item.imagenUrl">
+              <strong>3S</strong>
+            </div>
+          </button>
+
+          <div class="related-body">
+            <small>{{ item.codigo }} · {{ item.marca || '3S' }}</small>
+            <h3>{{ item.nombre }}</h3>
+            <p>{{ item.categoria }}</p>
+
+            <button type="button" (click)="verProductoRelacionado(item)">
+              Ver producto
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+</section>
