@@ -1,0 +1,107 @@
+<section class="detail-shell">
+  <s3s-aviso *ngIf="cargando" tipo="info">
+    Cargando información del servicio...
+  </s3s-aviso>
+
+  <s3s-aviso *ngIf="error" tipo="error">
+    {{ error }}
+
+    <button type="button" (click)="volverServicios()">
+      Volver a servicios
+    </button>
+  </s3s-aviso>
+
+  <ng-container *ngIf="servicio && !cargando">
+    <nav class="breadcrumb">
+      <a routerLink="/">Inicio</a>
+      <span>/</span>
+      <a routerLink="/servicios">Servicios</a>
+      <span>/</span>
+      <strong>{{ servicio.nombre }}</strong>
+    </nav>
+
+    <section class="service-detail">
+      <div class="gallery-card">
+        <div class="main-image">
+          <app-imagen-catalogo ajuste="cover" [ruta]="imagenSeleccionada" [descripcion]="servicio.nombre" *ngIf="imagenSeleccionada" />
+
+          <div class="image-placeholder" *ngIf="!imagenSeleccionada">
+            <strong>3S</strong>
+            <small>Imagen no disponible</small>
+          </div>
+        </div>
+
+        <div class="thumbs" *ngIf="imagenes.length > 1">
+          <button
+            type="button"
+            *ngFor="let imagen of imagenes; trackBy: trackByImagen"
+            [class.active]="imagenSeleccionada === imagen.urlImagen"
+            (click)="seleccionarImagen(imagen)"
+          >
+            <app-imagen-catalogo ajuste="cover" [ruta]="imagen.urlImagen" [descripcion]="imagen.textoAlternativo" />
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-info">
+        <span class="sector-badge" *ngIf="servicio.sectorAplicacion">
+          {{ servicio.sectorAplicacion }}
+        </span>
+
+        <h1>{{ servicio.nombre }}</h1>
+
+        <p class="description">
+          {{ servicio.descripcion }}
+        </p>
+
+        
+
+        <small class="visit-badge" *ngIf="servicio.requiereVisitaTecnica">
+          Requiere coordinación técnica
+        </small>
+
+        
+
+        <s3s-aviso tipo="info" [mostrarTitulo]="false">
+          <strong>Servicio atendido uno por uno</strong>
+          <p>
+            Para asegurar una atención adecuada, cada servicio se revisa de forma individual
+            con el área comercial y técnica de 3S.
+          </p>
+        </s3s-aviso>
+      </div>
+    </section>
+
+    <section class="related-section" *ngIf="relacionados.length > 0">
+      <div class="section-head">
+        <span>Servicios relacionados</span>
+        <h2>Otras soluciones técnicas 3S</h2>
+      </div>
+
+      <div class="related-grid">
+        <article
+          class="related-card"
+          *ngFor="let item of relacionados; trackBy: trackByServicio"
+        >
+          <button type="button" class="related-image" (click)="verServicioRelacionado(item)">
+            <app-imagen-catalogo ajuste="cover" [ruta]="item.imagenUrl" [descripcion]="item.nombre" *ngIf="item.imagenUrl" />
+
+            <div class="image-placeholder small" *ngIf="!item.imagenUrl">
+              <strong>3S</strong>
+            </div>
+          </button>
+
+          <div class="related-body">
+            <small *ngIf="item.sectorAplicacion">{{ item.sectorAplicacion }}</small>
+            <h3>{{ item.nombre }}</h3>
+            <p>{{ item.descripcion }}</p>
+
+            <button type="button" (click)="verServicioRelacionado(item)">
+              Ver servicio
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+</section>

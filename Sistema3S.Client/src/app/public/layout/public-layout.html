@@ -5,12 +5,15 @@
       <a class="public-logo" routerLink="/" aria-label="3S, inicio" (click)="cerrarMenu()"><img src="/assets/images/logo-3sO.png" alt="3S" /><span>Soluciones<br /><strong>industriales</strong></span></a>
       <nav id="public-navigation" class="public-nav" [class.open]="menuAbierto" aria-label="Navegación principal">
         <a routerLink="/productos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Productos</a>
-        
+        <a routerLink="/servicios" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Servicios</a>
         <a routerLink="/categorias" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Categorías</a>
-        
+        <a routerLink="/nosotros" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Nosotros</a>
         
       </nav>
-      
+      <form class="header-search" (ngSubmit)="buscarDesdeMenu()" role="search">
+        <label class="sr-only" for="busqueda-global">Buscar productos, servicios, categorías o marcas</label><input id="busqueda-global" type="search" name="busquedaGlobal" [(ngModel)]="busquedaGlobal" placeholder="Busca en 3S…" autocomplete="off" />
+        <button type="submit" aria-label="Buscar en el catálogo"><s3s-icon name="search" /></button>
+      </form>
       <div class="header-actions">
         
         
@@ -42,9 +45,9 @@
       <div>
         <h3>Catálogo</h3>
         <a routerLink="/productos">Productos industriales</a>
-        
+        <a routerLink="/servicios">Servicios técnicos</a>
         <a routerLink="/categorias">Categorías</a>
-        
+        <a routerLink="/nosotros">Nosotros</a>
       </div>
 
       <div>

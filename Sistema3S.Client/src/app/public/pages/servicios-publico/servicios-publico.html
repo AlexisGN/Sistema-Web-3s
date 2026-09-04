@@ -1,0 +1,72 @@
+<header class="catalog-heading service-heading"><div><span class="eyebrow">Experiencia técnica 3S</span><h1>Servicios industriales</h1><p>Soluciones para mantenimiento, automatización y continuidad operativa.</p></div><a class="btn-secondary" routerLink="/productos">Ver productos <s3s-icon name="arrow" /></a></header>
+<div class="catalog-toolbar service-toolbar">
+  <form class="toolbar-search" (ngSubmit)="buscarServicios()"><label class="sr-only" for="service-query">Buscar servicios</label><input id="service-query" name="busqueda" [(ngModel)]="busqueda" placeholder="Nombre, aplicación técnica o sector" /><button type="submit" aria-label="Buscar servicios"><s3s-icon name="search" /><span>Buscar</span></button></form>
+  <div class="toolbar-field"><label for="service-sector">Sector de aplicación</label><select id="service-sector" [ngModel]="sectorSeleccionado" (ngModelChange)="seleccionarSector($event)"><option value="">Todos los sectores</option><option *ngFor="let sector of sectores; trackBy: trackBySector" [value]="sector">{{ sector }}</option></select></div>
+  <button type="button" class="btn-secondary toolbar-clear" (click)="limpiarFiltros()" *ngIf="busqueda || sectorSeleccionado">Limpiar</button>
+</div>
+<section class="services-results">
+  <div class="results-head compact-results"><h2>{{ serviciosFiltrados.length }} servicio{{ serviciosFiltrados.length === 1 ? '' : 's' }}</h2><span>Atención técnica especializada para tu empresa.</span></div>
+  <s3s-aviso *ngIf="cargando" tipo="info">
+    Cargando servicios técnicos...
+  </s3s-aviso>
+
+  <s3s-aviso *ngIf="error" tipo="error">
+    {{ error }} <button type="button" (click)="cargarServicios()">Reintentar</button>
+  </s3s-aviso>
+
+  <s3s-aviso *ngIf="!cargando && serviciosFiltrados.length === 0 && !error" tipo="info" [mostrarTitulo]="false">
+    <strong>No encontramos servicios con los filtros seleccionados.</strong>
+    <p>
+      Ajusta la búsqueda o revisa todos los servicios disponibles para encontrar la atención técnica que necesitas.
+    </p>
+
+    <button type="button" (click)="limpiarFiltros()">
+      Ver todos los servicios
+    </button>
+  </s3s-aviso>
+
+  <div class="services-grid" *ngIf="serviciosFiltrados.length > 0">
+    <article
+      class="service-card"
+      *ngFor="let servicio of serviciosFiltrados; trackBy: trackByServicio"
+    >
+      <button
+        type="button"
+        class="service-image"
+        (click)="verDetalle(servicio)"
+        [attr.aria-label]="'Ver detalle de ' + servicio.nombre"
+      >
+        <app-imagen-catalogo ajuste="cover" [ruta]="servicio.imagenUrl" [descripcion]="servicio.nombre" *ngIf="servicio.imagenUrl" />
+
+        <div class="image-placeholder" *ngIf="!servicio.imagenUrl">
+          <strong>3S</strong>
+          <small>Imagen no disponible</small>
+        </div>
+      </button>
+
+      <div class="service-content">
+        <span class="sector-badge" *ngIf="servicio.sectorAplicacion">
+          {{ servicio.sectorAplicacion }}
+        </span>
+
+        <h3>{{ servicio.nombre }}</h3>
+
+        <p>
+          {{ servicio.descripcion }}
+        </p>
+
+        <small class="technical-badge" *ngIf="servicio.requiereVisitaTecnica">
+          Requiere coordinación técnica
+        </small>
+
+        <div class="service-actions">
+          <button type="button" class="detail-btn" (click)="verDetalle(servicio)">
+            Ver servicio
+          </button>
+
+          
+        </div>
+      </div>
+    </article>
+  </div>
+</section>

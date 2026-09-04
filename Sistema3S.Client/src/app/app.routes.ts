@@ -13,8 +13,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./public/layout/public-layout').then(m => m.PublicLayoutComponent),
     children: [
-      {path:'',redirectTo:'productos',pathMatch:'full'},
-      
+      {
+        path: '',
+        title: 'Inicio | 3S', data: { titulo: 'Inicio' },
+        loadComponent: () =>
+          import('./public/pages/inicio-publico/inicio-publico').then(m => m.InicioPublicoComponent)
+      },
+      {
+        path: 'buscar',
+        title: 'Buscar en el catálogo | 3S', data: { titulo: 'Buscar en el catálogo' },
+        loadComponent: () =>
+          import('./public/pages/busqueda-publica/busqueda-publica').then(m => m.BusquedaPublicaComponent)
+      },
       {
         path: 'productos',
         title: 'Productos industriales | 3S', data: { titulo: 'Productos industriales',
@@ -53,9 +63,24 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./public/pages/productos-publico/productos-publico').then(m => m.ProductosPublicoComponent)
       },
-      
-      
-      
+      {
+        path: 'servicios',
+        title: 'Servicios industriales | 3S', data: { titulo: 'Servicios industriales' },
+        loadComponent: () =>
+          import('./public/pages/servicios-publico/servicios-publico').then(m => m.ServiciosPublicoComponent)
+      },
+      {
+        path: 'nosotros',
+        title: 'Nosotros | 3S', data: { titulo: 'Nosotros' },
+        loadComponent: () =>
+          import('./public/pages/nosotros-publico/nosotros-publico').then(m => m.NosotrosPublicoComponent)
+      },
+      {
+        path: 'servicios/:id',
+        title: 'Detalle de servicio | 3S', data: { titulo: 'Detalle de servicio' },
+        loadComponent: () =>
+          import('./public/pages/servicio-detalle-publico/servicio-detalle-publico').then(m => m.ServicioDetallePublicoComponent)
+      },
       
       
       

@@ -4,6 +4,7 @@ namespace Sistema3S.Web.Services.Interfaces
 {
     public interface IPublicoService
     {
+        Task<InicioPublicoDto> ObtenerInicioAsync();
 
         Task<List<CategoriaPublicaDto>> ObtenerCategoriasPublicasAsync();
 
@@ -18,5 +19,13 @@ namespace Sistema3S.Web.Services.Interfaces
         );
 
         Task<ProductoDetallePublicoDto?> ObtenerProductoDetalleAsync(int idProducto);
+
+        Task<List<ServicioPublicoDto>> ObtenerServiciosPublicosAsync();
+
+        Task<ServicioDetallePublicoDto?> ObtenerServicioDetalleAsync(int idServicio);
+
+        Task<BusquedaPublicaDto> BuscarAsync(string? busqueda, int limitePorTipo = 8);
+
+        Task<NosotrosPublicoDto> ObtenerNosotrosAsync();
     }
 }

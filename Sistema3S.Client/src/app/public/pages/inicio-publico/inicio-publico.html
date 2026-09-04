@@ -1,0 +1,39 @@
+<section class="home-section latest-section" id="inicio">
+  <div class="section-heading"><div><span class="eyebrow">Nuevos ingresos</span><h1>Últimos productos agregados</h1><p>Explora los nuevos ingresos del catálogo 3S y cotiza lo que tu operación necesita.</p></div><a routerLink="/productos">Ver catálogo <s3s-icon name="arrow" /></a></div>
+<s3s-aviso *ngIf="cargandoInicio" tipo="info">Cargando catálogo público…</s3s-aviso>
+<s3s-aviso *ngIf="errorInicio" tipo="error">{{ errorInicio }} <button type="button" (click)="cargarInicio()">Reintentar</button></s3s-aviso>
+<s3s-aviso *ngIf="mensajeOperacion" tipo="success">{{ mensajeOperacion }}</s3s-aviso>
+  <s3s-aviso *ngIf="!cargandoInicio && !errorInicio && !productosNuevos.length" tipo="info">Pronto encontrarás nuevos productos en esta sección. <a routerLink="/productos">Explorar catálogo</a></s3s-aviso>
+  <s3s-public-carousel *ngIf="productosNuevos.length" label="Productos nuevos"><ng-template><s3s-product-card *ngFor="let producto of productosNuevos; trackBy: trackByProducto" [producto]="producto" [logueado]="clienteLogueado" (cotizar)="accionCotizarProducto($event)" /></ng-template></s3s-public-carousel>
+</section>
+<section class="home-section brand-section" *ngIf="marcas.length" id="marcas">
+  <div class="section-heading"><div><span class="eyebrow">Marcas del catálogo</span><h2>Tecnología para cada requerimiento</h2></div></div>
+  <s3s-public-carousel label="Marcas industriales" [duration]="22"><ng-template><a class="brand-card" *ngFor="let marca of marcas; trackBy: trackByMarca" [routerLink]="['/marcas', marca.idMarca || marca.id]" [attr.aria-label]="'Ver productos de ' + marca.nombre"><img *ngIf="marca.logoUrl" [src]="marca.logoUrl" [alt]="marca.nombre" loading="lazy" /><strong *ngIf="!marca.logoUrl">{{ marca.nombre }}</strong></a></ng-template></s3s-public-carousel>
+</section>
+<section class="home-section" id="catalogo" *ngIf="categorias.length">
+  <div class="section-heading"><div><span class="eyebrow">Catálogo industrial</span><h2>Encuentra tu especialidad</h2></div><a routerLink="/categorias">Todas las categorías <s3s-icon name="arrow" /></a></div>
+  <div class="category-grid"><a class="category-card" *ngFor="let categoria of categorias; trackBy: trackByCategoria" [routerLink]="['/categorias', categoria.idCategoria || categoria.id]">
+    <div class="category-icon"><s3s-icon name="layers" /></div><h3>{{ categoria.nombre }}</h3><p>{{ categoria.descripcion }}</p><span>{{ categoria.cantidadProductos }} productos <s3s-icon name="arrow" /></span>
+  </a></div>
+</section>
+<section class="home-section" *ngIf="servicios.length" id="servicios">
+  <div class="section-heading"><div><span class="eyebrow">Soporte especializado</span><h2>Experiencia al servicio de tu operación</h2></div><a routerLink="/servicios">Todos los servicios <s3s-icon name="arrow" /></a></div>
+  <div class="services-grid"><article class="service-card" *ngFor="let servicio of servicios; trackBy: trackByServicio">
+    <a class="service-image" [routerLink]="['/servicios', servicio.idServicio || servicio.id]"><app-imagen-catalogo ajuste="cover" [ruta]="servicio.imagenUrl" [descripcion]="servicio.nombre" /></a>
+    <div class="service-body"><span class="sector-badge" *ngIf="servicio.sectorAplicacion">{{ servicio.sectorAplicacion }}</span><h3>{{ servicio.nombre }}</h3><p>{{ servicio.descripcion }}</p><small class="visit-badge" *ngIf="servicio.requiereVisitaTecnica">Requiere visita técnica</small>
+      <div class="service-actions"><a class="btn-secondary" [routerLink]="['/servicios', servicio.idServicio || servicio.id]">Ver servicio</a></div>
+    </div>
+  </article></div>
+</section>
+<section class="home-section category-products" *ngFor="let categoria of categoriasConProductos; trackBy: trackByCategoria" [id]="'cat-' + (categoria.idCategoria || categoria.id)">
+  <ng-container *ngIf="categoria.productosInicio.length"><div class="section-heading"><h2>{{ categoria.nombre }}</h2><a [routerLink]="['/categorias', categoria.idCategoria || categoria.id]">Explorar categoría <s3s-icon name="arrow" /></a></div>
+    <div class="product-grid"><s3s-product-card *ngFor="let producto of categoria.productosInicio; trackBy: trackByProducto" [producto]="producto" [logueado]="clienteLogueado" [cantidad]="true" (normalizar)="normalizarCantidad($event)" (cotizar)="accionCotizarProducto($event)" /></div>
+  </ng-container>
+</section>
+<section class="quote-steps home-section"><div class="section-heading"><div><span class="eyebrow">De tu requerimiento a la solución</span><h2>Cotiza en tres pasos</h2></div></div><div class="steps-grid">
+  <article><s3s-icon name="box" /><h3>01. Elige tus productos</h3><p>Explora por categoría o marca y selecciona la cantidad que necesitas.</p></article>
+  <article><s3s-icon name="file" /><h3>02. Envía tu solicitud</h3><p>Usa el carrito con tu cuenta o consulta directamente por WhatsApp.</p></article>
+  <article><s3s-icon name="people" /><h3>03. Recibe asesoría</h3><p>Nuestro equipo revisa tu requerimiento y prepara una propuesta.</p></article>
+</div></section>
+<section class="register-cta"><div><span class="eyebrow">Hablemos de tu próximo proyecto</span><h2>Una solicitud. La solución que necesitas.</h2><p>Reúne tus productos y recibe atención personalizada del equipo 3S.</p></div><div class="cta-actions"><a class="btn-primary" [routerLink]="clienteLogueado ? '/cliente/carrito' : '/cliente/registro'">{{ clienteLogueado ? 'Ver mi carrito' : 'Crear mi cuenta' }} <s3s-icon name="arrow" /></a></div></section>
+
