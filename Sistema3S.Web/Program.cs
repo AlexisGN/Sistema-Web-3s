@@ -21,7 +21,8 @@ ClienteWebConfiguracion.AplicarValoresLocales(builder.Configuration, builder.Env
 QuestPDF.Settings.License = LicenseType.Community;
 
 // MVC / Controllers
-builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<OperacionAuditadaFilter>();
+builder.Services.AddControllersWithViews(options => options.Filters.Add<OperacionAuditadaFilter>(-3000));
 
 // DbContext - SQL Server
 builder.Services.AddDbContext<Bd3sContext>(options =>
@@ -51,6 +52,7 @@ builder.Services
     {
         options.RequireHttpsMetadata = false;
         options.SaveToken = false;
+        options.Events = new JwtBearerEvents { OnTokenValidated = ClienteVersionSesion.ValidarAsync };
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -91,17 +93,23 @@ builder.Services.AddRateLimiter(options => {
 });
 
 // Servicios de seguridad / autenticación
+builder.Services.AddScoped<PasswordHashService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 
 // Servicios de negocio
 builder.Services.AddScoped<IPublicoService, PublicoService>();
 
+builder.Services.AddHttpClient<IConsultaDocumentoService, ConsultaDocumentoService>();
 
 
 
 
 
+builder.Services.AddScoped<PasswordHashService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IClienteWebService, ClienteWebService>();
 
 // Servicios para PDF / correo / WhatsApp
 builder.Services.AddHttpClient();

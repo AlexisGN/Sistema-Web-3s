@@ -824,6 +824,36 @@ BEGIN
 END;
 
 GO
+/* =========================================================
+   15. PROCEDIMIENTO: CAMBIAR CONTRASEÑA DE USUARIO
+   La contraseña llega como hash desde backend.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_CambiarContrasenaUsuario
+    @IdUsuario INT,
+    @ContrasenaHash NVARCHAR(510)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @ContrasenaHash = LTRIM(RTRIM(ISNULL(@ContrasenaHash, '')));
+
+    IF @IdUsuario <= 0 OR NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE IdUsuario = @IdUsuario)
+        THROW 72401, 'El usuario seleccionado no existe.', 1;
+
+    IF LEN(@ContrasenaHash) < 20
+        THROW 72402, 'La contraseña no fue procesada correctamente.', 1;
+
+    UPDATE dbo.Usuario
+    SET ContrasenaHash = @ContrasenaHash
+    WHERE IdUsuario = @IdUsuario;
+
+    SELECT
+        'Contraseña actualizada correctamente.' AS Mensaje,
+        @IdUsuario AS IdUsuario;
+END;
+
+GO
 CREATE   PROCEDURE dbo.sp_ExigirAdministradorAuditoria @IdUsuario INT
 AS
 BEGIN
@@ -832,6 +862,96 @@ BEGIN
        OR NOT EXISTS (SELECT 1 FROM dbo.Usuario u JOIN dbo.Rol r ON r.IdRol=u.IdRol
            WHERE u.IdUsuario=@IdUsuario AND u.Estado=1 AND r.Estado=1 AND LOWER(LTRIM(RTRIM(r.Nombre))) IN ('administrador','admin'))
         THROW 72001, 'Sólo el administrador autenticado puede anular operaciones.', 1;
+END;
+
+GO
+/* =========================================================
+   8. PROCEDIMIENTO: LOGIN
+   Nota: este SP NO valida contraseña.
+   El backend validará la contraseña contra ContrasenaHash.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_LoginUsuario
+    @Correo NVARCHAR(300)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @Correo = LOWER(LTRIM(RTRIM(ISNULL(@Correo, ''))));
+
+    IF @Correo = ''
+        THROW 72001, 'Credenciales incorrectas.', 1;
+
+    SELECT TOP 1
+        u.IdUsuario,
+        u.IdRol,
+        r.Nombre AS Rol,
+        u.Correo,
+        u.ContrasenaHash,
+        u.Estado AS EstadoUsuario,
+        r.Estado AS EstadoRol,
+        u.FechaRegistro
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+    WHERE LOWER(u.Correo) = @Correo
+      AND u.Estado = 1
+      AND r.Estado = 1;
+
+    IF @@ROWCOUNT = 0
+        THROW 72002, 'Credenciales incorrectas.', 1;
+END;
+
+GO
+/* =========================================================
+   9. PROCEDIMIENTO: OBTENER PERMISOS DEL USUARIO
+   Administrador devuelve todos los permisos activos.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ObtenerPermisosUsuario
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdRol INT;
+    DECLARE @NombreRol NVARCHAR(100);
+
+    SELECT
+        @IdRol = u.IdRol,
+        @NombreRol = r.Nombre
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+    WHERE u.IdUsuario = @IdUsuario
+      AND u.Estado = 1
+      AND r.Estado = 1;
+
+    IF @IdRol IS NULL
+        THROW 72101, 'Usuario no válido o inactivo.', 1;
+
+    IF UPPER(LTRIM(RTRIM(@NombreRol))) IN ('ADMINISTRADOR', 'ADMIN')
+    BEGIN
+        SELECT
+            p.IdPermiso,
+            p.Nombre,
+            p.Descripcion,
+            CAST(1 AS BIT) AS Asignado
+        FROM dbo.Permiso p
+        WHERE p.Estado = 1
+        ORDER BY p.Nombre;
+
+        RETURN;
+    END;
+
+    SELECT
+        p.IdPermiso,
+        p.Nombre,
+        p.Descripcion,
+        CAST(1 AS BIT) AS Asignado
+    FROM dbo.RolPermiso rp
+    INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+    WHERE rp.IdRol = @IdRol
+      AND p.Estado = 1
+    ORDER BY p.Nombre;
 END;
 
 GO
@@ -873,6 +993,299 @@ BEGIN
         @Numero AS Numero,
         CONCAT(@Serie, '-', @Numero) AS DocumentoCompleto;
 END
+
+GO
+CREATE   PROCEDURE dbo.sp_RegistrarClienteWeb
+    @TipoDocumento NVARCHAR(30),
+    @NumeroDocumento NVARCHAR(20),
+    @Correo NVARCHAR(150),
+    @Telefono NVARCHAR(20) = NULL,
+    @Direccion NVARCHAR(250) = NULL,
+    @ContrasenaHash NVARCHAR(255),
+
+    @Nombres NVARCHAR(100) = NULL,
+    @ApellidoPaterno NVARCHAR(100) = NULL,
+    @ApellidoMaterno NVARCHAR(100) = NULL,
+
+    @RazonSocial NVARCHAR(200) = NULL,
+    @NombreComercial NVARCHAR(200) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdTipoDocumento INT;
+    DECLARE @IdTipoCliente INT;
+    DECLARE @IdRolCliente INT;
+    DECLARE @IdCliente INT;
+    DECLARE @IdUsuario INT;
+    DECLARE @EsEmpresa BIT = 0;
+    DECLARE @NombreCliente NVARCHAR(250);
+    DECLARE @Mensaje NVARCHAR(500);
+
+    SET @TipoDocumento = UPPER(LTRIM(RTRIM(ISNULL(@TipoDocumento, ''))));
+    SET @NumeroDocumento = LTRIM(RTRIM(ISNULL(@NumeroDocumento, '')));
+    SET @Correo = LOWER(LTRIM(RTRIM(ISNULL(@Correo, ''))));
+    SET @Telefono = NULLIF(LTRIM(RTRIM(ISNULL(@Telefono, ''))), '');
+    SET @Direccion = NULLIF(LTRIM(RTRIM(ISNULL(@Direccion, ''))), '');
+    SET @ContrasenaHash = LTRIM(RTRIM(ISNULL(@ContrasenaHash, '')));
+
+    SET @Nombres = NULLIF(LTRIM(RTRIM(ISNULL(@Nombres, ''))), '');
+    SET @ApellidoPaterno = NULLIF(LTRIM(RTRIM(ISNULL(@ApellidoPaterno, ''))), '');
+    SET @ApellidoMaterno = NULLIF(LTRIM(RTRIM(ISNULL(@ApellidoMaterno, ''))), '');
+
+    SET @RazonSocial = NULLIF(LTRIM(RTRIM(ISNULL(@RazonSocial, ''))), '');
+    SET @NombreComercial = NULLIF(LTRIM(RTRIM(ISNULL(@NombreComercial, ''))), '');
+
+    IF @TipoDocumento NOT IN ('DNI', 'RUC')
+        THROW 81001, 'Selecciona un tipo de documento válido.', 1;
+
+    IF @TipoDocumento = 'DNI' AND LEN(@NumeroDocumento) <> 8
+        THROW 81002, 'El DNI debe tener 8 dígitos.', 1;
+
+    IF @TipoDocumento = 'RUC' AND LEN(@NumeroDocumento) <> 11
+        THROW 81003, 'El RUC debe tener 11 dígitos.', 1;
+
+    IF @NumeroDocumento LIKE '%[^0-9]%'
+        THROW 81004, 'El número de documento solo debe contener dígitos.', 1;
+
+    IF @Correo = '' OR @Correo NOT LIKE '%_@_%._%'
+        THROW 81005, 'Ingresa un correo válido.', 1;
+
+    IF LEN(@ContrasenaHash) < 20
+        THROW 81006, 'La contraseña no fue procesada correctamente.', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.Usuario WHERE LOWER(Correo) = @Correo)
+        THROW 81007, 'Ya existe una cuenta registrada con este correo.', 1;
+
+    SELECT @IdTipoDocumento = IdTipoDocumento
+    FROM dbo.TipoDocumento
+    WHERE UPPER(Nombre) = @TipoDocumento
+      AND Estado = 1;
+
+    IF @IdTipoDocumento IS NULL
+        THROW 81008, 'El tipo de documento no está configurado en el sistema.', 1;
+
+    IF @TipoDocumento = 'RUC'
+    BEGIN
+        SET @EsEmpresa = 1;
+
+        SELECT @IdTipoCliente = IdTipoCliente
+        FROM dbo.TipoCliente
+        WHERE UPPER(Nombre) = 'EMPRESA'
+          AND Estado = 1;
+
+        IF @RazonSocial IS NULL
+            THROW 81009, 'Ingresa la razón social de la empresa.', 1;
+    END
+    ELSE
+    BEGIN
+        SET @EsEmpresa = 0;
+
+        SELECT @IdTipoCliente = IdTipoCliente
+        FROM dbo.TipoCliente
+        WHERE UPPER(Nombre) = 'PERSONA NATURAL'
+          AND Estado = 1;
+
+        IF @Nombres IS NULL OR @ApellidoPaterno IS NULL
+            THROW 81010, 'Ingresa nombres y apellido paterno.', 1;
+    END
+
+    IF @IdTipoCliente IS NULL
+        THROW 81011, 'El tipo de cliente no está configurado en el sistema.', 1;
+
+    SELECT @IdRolCliente = IdRol
+    FROM dbo.Rol
+    WHERE UPPER(Nombre) = 'CLIENTE'
+      AND Estado = 1;
+
+    IF @IdRolCliente IS NULL
+        THROW 81012, 'El rol Cliente no está configurado en el sistema.', 1;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        SELECT @IdCliente = IdCliente
+        FROM dbo.Cliente
+        WHERE IdTipoDocumento = @IdTipoDocumento
+          AND NumeroDocumento = @NumeroDocumento;
+
+        IF @IdCliente IS NOT NULL
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM dbo.Cliente
+                WHERE IdCliente = @IdCliente
+                  AND IdUsuario IS NOT NULL
+            )
+            BEGIN
+                THROW 81013, 'Este cliente ya tiene una cuenta web registrada.', 1;
+            END
+
+            UPDATE dbo.Cliente
+            SET
+                Correo = @Correo,
+                Telefono = COALESCE(@Telefono, Telefono),
+                Direccion = COALESCE(@Direccion, Direccion),
+                Estado = 1
+            WHERE IdCliente = @IdCliente;
+
+            IF @EsEmpresa = 1
+            BEGIN
+                IF EXISTS (SELECT 1 FROM dbo.ClienteEmpresa WHERE IdCliente = @IdCliente)
+                BEGIN
+                    UPDATE dbo.ClienteEmpresa
+                    SET
+                        RazonSocial = @RazonSocial,
+                        NombreComercial = @NombreComercial
+                    WHERE IdCliente = @IdCliente;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO dbo.ClienteEmpresa (IdCliente, RazonSocial, NombreComercial)
+                    VALUES (@IdCliente, @RazonSocial, @NombreComercial);
+                END
+            END
+            ELSE
+            BEGIN
+                IF EXISTS (SELECT 1 FROM dbo.ClientePersonaNatural WHERE IdCliente = @IdCliente)
+                BEGIN
+                    UPDATE dbo.ClientePersonaNatural
+                    SET
+                        Nombres = @Nombres,
+                        ApellidoPaterno = @ApellidoPaterno,
+                        ApellidoMaterno = @ApellidoMaterno
+                    WHERE IdCliente = @IdCliente;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO dbo.ClientePersonaNatural (
+                        IdCliente,
+                        Nombres,
+                        ApellidoPaterno,
+                        ApellidoMaterno
+                    )
+                    VALUES (
+                        @IdCliente,
+                        @Nombres,
+                        @ApellidoPaterno,
+                        @ApellidoMaterno
+                    );
+                END
+            END
+        END
+        ELSE
+        BEGIN
+            INSERT INTO dbo.Cliente (
+                IdUsuario,
+                IdTipoCliente,
+                IdTipoDocumento,
+                IdUbigeo,
+                NumeroDocumento,
+                Correo,
+                Telefono,
+                Direccion,
+                Estado,
+                FechaRegistro
+            )
+            VALUES (
+                NULL,
+                @IdTipoCliente,
+                @IdTipoDocumento,
+                NULL,
+                @NumeroDocumento,
+                @Correo,
+                @Telefono,
+                @Direccion,
+                1,
+                GETDATE()
+            );
+
+            SET @IdCliente = SCOPE_IDENTITY();
+
+            IF @EsEmpresa = 1
+            BEGIN
+                INSERT INTO dbo.ClienteEmpresa (
+                    IdCliente,
+                    RazonSocial,
+                    NombreComercial
+                )
+                VALUES (
+                    @IdCliente,
+                    @RazonSocial,
+                    @NombreComercial
+                );
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.ClientePersonaNatural (
+                    IdCliente,
+                    Nombres,
+                    ApellidoPaterno,
+                    ApellidoMaterno
+                )
+                VALUES (
+                    @IdCliente,
+                    @Nombres,
+                    @ApellidoPaterno,
+                    @ApellidoMaterno
+                );
+            END
+        END
+
+        INSERT INTO dbo.Usuario (
+            IdRol,
+            Correo,
+            ContrasenaHash,
+            Estado,
+            FechaRegistro
+        )
+        VALUES (
+            @IdRolCliente,
+            @Correo,
+            @ContrasenaHash,
+            1,
+            GETDATE()
+        );
+
+        SET @IdUsuario = SCOPE_IDENTITY();
+
+        UPDATE dbo.Cliente
+        SET IdUsuario = @IdUsuario
+        WHERE IdCliente = @IdCliente;
+
+        IF @EsEmpresa = 1
+        BEGIN
+            SET @NombreCliente = @RazonSocial;
+            SET @Mensaje = 'Cuenta empresarial creada correctamente. Ya puedes iniciar sesión y solicitar cotizaciones web para tu empresa.';
+        END
+        ELSE
+        BEGIN
+            SET @NombreCliente = CONCAT(@Nombres, ' ', @ApellidoPaterno, ISNULL(' ' + @ApellidoMaterno, ''));
+            SET @Mensaje = 'Cuenta creada correctamente. Ya puedes iniciar sesión y solicitar cotizaciones web.';
+        END
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdCliente AS IdCliente,
+            @IdUsuario AS IdUsuario,
+            @IdRolCliente AS IdRol,
+            @Correo AS Correo,
+            'Cliente' AS Rol,
+            @TipoDocumento AS TipoDocumento,
+            @NumeroDocumento AS NumeroDocumento,
+            CASE WHEN @EsEmpresa = 1 THEN 'Empresa' ELSE 'Persona Natural' END AS TipoCliente,
+            @NombreCliente AS NombreCliente,
+            @EsEmpresa AS EsEmpresa,
+            @Mensaje AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
 
 GO
 CREATE   TRIGGER dbo.trg_Categoria_Auditoria ON dbo.[Categoria] AFTER INSERT, UPDATE, DELETE AS

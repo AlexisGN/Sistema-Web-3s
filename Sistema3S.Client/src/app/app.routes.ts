@@ -84,8 +84,18 @@ export const routes: Routes = [
       
       
       
-      
-      
+      {
+        path: 'cliente/login',
+        title: 'Iniciar sesión | 3S', data: { titulo: 'Iniciar sesión' },
+        loadComponent: () =>
+          import('./public/pages/cliente-login-publico/cliente-login-publico').then(m => m.ClienteLoginPublicoComponent)
+      },
+      {
+        path: 'cliente/registro',
+        title: 'Crear cuenta | 3S', data: { titulo: 'Crear cuenta' },
+        loadComponent: () =>
+          import('./public/pages/cliente-registro-publico/cliente-registro-publico').then(m => m.ClienteRegistroPublicoComponent)
+      },
       
       
       

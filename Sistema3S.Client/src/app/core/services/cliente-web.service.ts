@@ -19,6 +19,35 @@ export class ClienteWebService {
 
   constructor(private http: HttpClient) {}
 
+  consultarDocumento(
+    tipoDocumento: 'DNI' | 'RUC',
+    numeroDocumento: string
+  ): Observable<ClienteWebConsultaDocumentoResponse> {
+    const params = new HttpParams()
+      .set('tipoDocumento', tipoDocumento)
+      .set('numeroDocumento', numeroDocumento);
+
+    return this.http
+      .get<ClienteWebConsultaDocumentoResponse>(`${this.apiUrl}/consultar-documento`, { params })
+      .pipe(
+        map(response => this.mapearConsultaDocumento(response))
+      );
+  }
+
+  registrar(data: ClienteWebRegistroRequest): Observable<ClienteWebSesion> {
+    return this.http.post<ClienteWebSesion>(`${this.apiUrl}/registro`, data).pipe(
+      map(response => this.mapearSesion(response)),
+      tap(sesion => this.guardarSesion(sesion))
+    );
+  }
+
+  login(data: ClienteWebLoginRequest): Observable<ClienteWebSesion> {
+    return this.http.post<ClienteWebSesion>(`${this.apiUrl}/login`, data).pipe(
+      map(response => this.mapearSesion(response)),
+      tap(sesion => this.guardarSesion(sesion))
+    );
+  }
+
   guardarSesion(sesion: ClienteWebSesion): void {
     const sesionNormalizada = this.mapearSesion(sesion);
 
@@ -84,6 +113,42 @@ export class ClienteWebService {
 
       token: response.token ?? response.Token ?? '',
       expira: String(response.expira ?? response.Expira ?? ''),
+
+      mensaje: response.mensaje ?? response.Mensaje ?? ''
+    };
+  }
+
+  private mapearConsultaDocumento(
+    response: ClienteWebConsultaDocumentoResponse
+  ): ClienteWebConsultaDocumentoResponse {
+    return {
+      tipoDocumento: response.tipoDocumento ?? response.TipoDocumento ?? '',
+      numeroDocumento: response.numeroDocumento ?? response.NumeroDocumento ?? '',
+
+      exitoso: response.exitoso ?? response.Exitoso ?? false,
+      clienteYaExiste: response.clienteYaExiste ?? response.ClienteYaExiste ?? false,
+      cuentaWebVinculada: response.cuentaWebVinculada ?? response.CuentaWebVinculada ?? false,
+
+      idClienteExistente: response.idClienteExistente ?? response.IdClienteExistente ?? null,
+
+      correoExistente: response.correoExistente ?? response.CorreoExistente ?? null,
+      telefonoExistente: response.telefonoExistente ?? response.TelefonoExistente ?? null,
+      direccionExistente: response.direccionExistente ?? response.DireccionExistente ?? null,
+
+      nombres: response.nombres ?? response.Nombres ?? null,
+      apellidoPaterno: response.apellidoPaterno ?? response.ApellidoPaterno ?? null,
+      apellidoMaterno: response.apellidoMaterno ?? response.ApellidoMaterno ?? null,
+      nombreCompleto: response.nombreCompleto ?? response.NombreCompleto ?? null,
+
+      razonSocial: response.razonSocial ?? response.RazonSocial ?? null,
+      nombreComercial: response.nombreComercial ?? response.NombreComercial ?? null,
+
+      estadoSunat: response.estadoSunat ?? response.EstadoSunat ?? null,
+      condicionSunat: response.condicionSunat ?? response.CondicionSunat ?? null,
+
+      codigoUbigeo: response.codigoUbigeo ?? response.CodigoUbigeo ?? null,
+      idUbigeo: response.idUbigeo ?? response.IdUbigeo ?? null,
+      ubicacion: response.ubicacion ?? response.Ubicacion ?? null,
 
       mensaje: response.mensaje ?? response.Mensaje ?? ''
     };

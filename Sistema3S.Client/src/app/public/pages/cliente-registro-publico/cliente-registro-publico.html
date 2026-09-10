@@ -1,0 +1,208 @@
+<section class="register-page">
+  <div class="register-header">
+    <span>Registro cliente</span>
+    <h1>Crea tu cuenta 3S</h1>
+    <p>
+      Regístrate como persona natural o empresa para cotizar productos industriales desde la web.
+    </p>
+  </div>
+
+  <form class="register-card" (ngSubmit)="registroForm.valid && registrar()" #registroForm="ngForm" novalidate>
+    <div class="document-tabs">
+      <button
+        type="button"
+        [class.active]="data.tipoDocumento === 'DNI'" [attr.aria-pressed]="data.tipoDocumento === 'DNI'"
+        (click)="cambiarTipoDocumento('DNI')"
+      >
+        Persona natural / DNI
+      </button>
+
+      <button
+        type="button"
+        [class.active]="data.tipoDocumento === 'RUC'" [attr.aria-pressed]="data.tipoDocumento === 'RUC'"
+        (click)="cambiarTipoDocumento('RUC')"
+      >
+        Empresa / RUC
+      </button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="numeroDocumento">{{ esEmpresa ? 'RUC' : 'DNI' }}</label>
+        <input id="numeroDocumento"
+          type="text"
+          name="numeroDocumento"
+          [(ngModel)]="data.numeroDocumento"
+          (input)="alCambiarDocumento()"
+          [maxlength]="longitudDocumento"
+          [placeholder]="esEmpresa ? 'Ingresa 11 dígitos' : 'Ingresa 8 dígitos'"
+        required inputmode="numeric" [pattern]="esEmpresa ? '[0-9]{11}' : '[0-9]{8}'" #numeroDocumentoControl="ngModel" [attr.aria-invalid]="numeroDocumentoControl.invalid && (numeroDocumentoControl.touched || registroForm.submitted)" aria-describedby="numeroDocumento-error" />
+        <s3s-aviso id="numeroDocumento-error" *ngIf="numeroDocumentoControl.invalid && (numeroDocumentoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa {{ longitudDocumento }} dígitos.</s3s-aviso>
+      </div>
+
+      <s3s-aviso *ngIf="consultandoDocumento" tipo="info">
+        Consultando documento...
+      </s3s-aviso>
+
+      <s3s-aviso
+       
+       
+       
+        *ngIf="avisoDocumento && !consultandoDocumento"
+       [tipo]="cuentaWebVinculada ? 'error' : (documentoConsultado ? 'success' : 'info')">
+        <span>{{ avisoDocumento }}</span>
+
+        <button type="button" *ngIf="cuentaWebVinculada" (click)="irLogin()">
+          Iniciar sesión
+        </button>
+      </s3s-aviso>
+    </div>
+
+    <ng-container *ngIf="!esEmpresa">
+      <div class="section-label">Datos personales</div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="nombres">Nombres</label>
+          <input id="nombres"
+            type="text"
+            name="nombres"
+            [(ngModel)]="data.nombres"
+            placeholder="Nombres"
+          required pattern=".*\S.*" autocomplete="given-name" #nombresControl="ngModel" [attr.aria-invalid]="nombresControl.invalid && (nombresControl.touched || registroForm.submitted)" aria-describedby="nombres-error" />
+        <s3s-aviso id="nombres-error" *ngIf="nombresControl.invalid && (nombresControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa tus nombres.</s3s-aviso>
+        </div>
+
+        <div class="form-group">
+          <label for="apellidoPaterno">Apellido paterno</label>
+          <input id="apellidoPaterno"
+            type="text"
+            name="apellidoPaterno"
+            [(ngModel)]="data.apellidoPaterno"
+            placeholder="Apellido paterno"
+          required pattern=".*\S.*" autocomplete="family-name" #apellidoPaternoControl="ngModel" [attr.aria-invalid]="apellidoPaternoControl.invalid && (apellidoPaternoControl.touched || registroForm.submitted)" aria-describedby="apellidoPaterno-error" />
+        <s3s-aviso id="apellidoPaterno-error" *ngIf="apellidoPaternoControl.invalid && (apellidoPaternoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa tu apellido paterno.</s3s-aviso>
+        </div>
+
+        <div class="form-group">
+          <label for="apellidoMaterno">Apellido materno</label>
+          <input id="apellidoMaterno"
+            type="text"
+            name="apellidoMaterno"
+            [(ngModel)]="data.apellidoMaterno"
+            placeholder="Apellido materno"
+          />
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="esEmpresa">
+      <div class="section-label">Datos empresariales</div>
+
+      <div class="form-grid">
+        <div class="form-group wide">
+          <label for="razonSocial">Razón social</label>
+          <input id="razonSocial"
+            type="text"
+            name="razonSocial"
+            [(ngModel)]="data.razonSocial"
+            placeholder="Razón social"
+          required pattern=".*\S.*" autocomplete="organization" #razonSocialControl="ngModel" [attr.aria-invalid]="razonSocialControl.invalid && (razonSocialControl.touched || registroForm.submitted)" aria-describedby="razonSocial-error" />
+        <s3s-aviso id="razonSocial-error" *ngIf="razonSocialControl.invalid && (razonSocialControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa la razón social.</s3s-aviso>
+        </div>
+
+        <div class="form-group wide">
+          <label for="nombreComercial">Nombre comercial</label>
+          <input id="nombreComercial"
+            type="text"
+            name="nombreComercial"
+            [(ngModel)]="data.nombreComercial"
+            placeholder="Nombre comercial"
+          />
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="section-label">Contacto</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="correo">Correo electrónico</label>
+        <input id="correo"
+          type="email"
+          name="correo"
+          [(ngModel)]="data.correo"
+          placeholder="cliente@empresa.com"
+        required email autocomplete="email" #correoControl="ngModel" [attr.aria-invalid]="correoControl.invalid && (correoControl.touched || registroForm.submitted)" aria-describedby="correo-error" />
+        <s3s-aviso id="correo-error" *ngIf="correoControl.invalid && (correoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa un correo electrónico válido.</s3s-aviso>
+      </div>
+
+      <div class="form-group">
+        <label for="telefono">Teléfono / WhatsApp</label>
+        <div class="telefono-pe"><span aria-hidden="true">+51</span><input id="telefono" s3sTelefonoPe
+          type="tel"
+          name="telefono"
+          [(ngModel)]="data.telefono"
+          placeholder="999999999" required pattern="[+]51[0-9]{9}" #telefonoControl="ngModel" [attr.aria-invalid]="telefonoControl.invalid && (telefonoControl.touched || registroForm.submitted)" aria-describedby="telefono-error"
+        /></div><s3s-aviso id="telefono-error" *ngIf="telefonoControl.invalid && (telefonoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa los nueve dígitos. +51 ya está incluido.</s3s-aviso>
+      </div>
+
+      <div class="form-group wide">
+        <label for="direccion">Dirección</label>
+        <input id="direccion"
+          type="text"
+          name="direccion"
+          [(ngModel)]="data.direccion"
+          placeholder="Dirección de contacto"
+        />
+      </div>
+    </div>
+
+    <div class="section-label">Seguridad</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="contrasena">Contraseña</label>
+        <input id="contrasena"
+          type="password"
+          name="contrasena"
+          [(ngModel)]="data.contrasena"
+          placeholder="Mínimo 8 caracteres"
+          autocomplete="new-password"
+        required minlength="8" #contrasenaControl="ngModel" [attr.aria-invalid]="contrasenaControl.invalid && (contrasenaControl.touched || registroForm.submitted)" aria-describedby="contrasena-error" />
+        <s3s-aviso id="contrasena-error" *ngIf="contrasenaControl.invalid && (contrasenaControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Usa al menos 8 caracteres.</s3s-aviso>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmarContrasena">Confirmar contraseña</label>
+        <input id="confirmarContrasena"
+          type="password"
+          name="confirmarContrasena"
+          [(ngModel)]="data.confirmarContrasena"
+          placeholder="Repite tu contraseña"
+          autocomplete="new-password"
+        required #confirmarContrasenaControl="ngModel" [attr.aria-invalid]="confirmarContrasenaControl.invalid && (confirmarContrasenaControl.touched || registroForm.submitted)" aria-describedby="confirmarContrasena-error" />
+        <s3s-aviso id="confirmarContrasena-error" *ngIf="confirmarContrasenaControl.invalid && (confirmarContrasenaControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Confirma tu contraseña.</s3s-aviso>
+      </div>
+    </div>
+
+    <s3s-aviso *ngIf="data.confirmarContrasena && data.contrasena !== data.confirmarContrasena" tipo="error" [compacto]="true">Las contraseñas no coinciden.</s3s-aviso>
+    <s3s-aviso *ngIf="error" tipo="error">
+      {{ error }}
+    </s3s-aviso>
+
+    <s3s-aviso *ngIf="mensaje" tipo="success">
+      {{ mensaje }}
+    </s3s-aviso>
+
+    <div class="register-actions">
+      <button type="submit" [disabled]="cargando || consultandoDocumento || cuentaWebVinculada">
+        {{ cargando ? 'Creando cuenta...' : 'Crear cuenta cliente' }}
+      </button>
+
+      <a routerLink="/cliente/login">
+        Ya tengo cuenta
+      </a>
+    </div>
+  </form>
+</section>

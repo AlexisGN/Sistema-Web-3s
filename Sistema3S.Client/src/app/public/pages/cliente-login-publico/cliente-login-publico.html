@@ -1,0 +1,75 @@
+<section class="auth-page">
+  <div class="auth-visual">
+    <span>Cliente 3S</span>
+    <h1>Tu próxima solución empieza aquí.</h1>
+    <p>
+      Ingresa para agregar productos al carrito, organizar tu solicitud y enviar
+      cotizaciones web directamente al equipo comercial.
+    </p>
+
+    <div class="auth-benefits">
+      <article>
+        <strong>01</strong>
+        <p>Agrega varios productos a una sola solicitud.</p>
+      </article>
+
+      <article>
+        <strong>02</strong>
+        <p>Conserva tus datos de contacto para futuras cotizaciones.</p>
+      </article>
+
+      <article>
+        <strong>03</strong>
+        <p>Recibe atención comercial según tu tipo de cliente.</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="auth-card">
+    <img class="auth-logo" src="/assets/images/logo-3s.png" alt="3S" /><div class="auth-card-head">
+      <span>Iniciar sesión</span>
+      <h2>Bienvenido nuevamente</h2>
+      <p>
+        Usa el correo registrado en tu cuenta cliente.
+      </p>
+    </div>
+
+    <form class="auth-form" (ngSubmit)="iniciarSesion()">
+      <div class="form-group">
+        <label for="correo">Correo electrónico</label>
+        <input id="correo"
+          type="email"
+          name="correo"
+          [(ngModel)]="correo"
+          placeholder="cliente@empresa.com"
+          autocomplete="email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="contrasena">Contraseña</label>
+<div class="password-field">        <input id="contrasena"
+          [type]="mostrarClave ? 'text' : 'password'"
+          name="contrasena"
+          [(ngModel)]="contrasena"
+          placeholder="Ingresa tu contraseña"
+          autocomplete="current-password"
+        /><button type="button" (click)="mostrarClave = !mostrarClave" [attr.aria-label]="mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarClave"><s3s-icon name="eye" /></button></div>
+      </div>
+
+      
+      <s3s-aviso *ngIf="error" tipo="error">
+        {{ error }}
+      </s3s-aviso>
+
+      <button type="submit" class="main-auth-btn" [disabled]="cargando">
+        {{ cargando ? 'Ingresando...' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <div class="auth-switch">
+      <span>¿Aún no tienes una cuenta?</span>
+      <a routerLink="/cliente/registro">Crear cuenta cliente</a>
+    </div>
+  </div>
+</section>

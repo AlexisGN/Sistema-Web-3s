@@ -8,7 +8,7 @@
         <a routerLink="/servicios" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Servicios</a>
         <a routerLink="/categorias" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Categorías</a>
         <a routerLink="/nosotros" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">Nosotros</a>
-        
+        <div class="mobile-account-links"><a [routerLink]="clienteLogueado ? '/cliente/perfil' : '/cliente/login'" (click)="cerrarMenu()"><s3s-icon name="people" /> Mi cuenta</a></div>
       </nav>
       <form class="header-search" (ngSubmit)="buscarDesdeMenu()" role="search">
         <label class="sr-only" for="busqueda-global">Buscar productos, servicios, categorías o marcas</label><input id="busqueda-global" type="search" name="busquedaGlobal" [(ngModel)]="busquedaGlobal" placeholder="Busca en 3S…" autocomplete="off" />
@@ -16,7 +16,13 @@
       </form>
       <div class="header-actions">
         
-        
+        <div class="account-menu">
+          <button type="button" class="account-btn" (click)="toggleCuenta()" [attr.aria-expanded]="cuentaAbierta" aria-controls="account-dropdown"><s3s-icon name="people" /><span>{{ clienteLogueado ? nombreClienteCorto : 'Mi cuenta' }}</span></button>
+          <div id="account-dropdown" class="account-dropdown" *ngIf="cuentaAbierta && clienteSesion">
+            <div class="account-summary"><strong>{{ clienteSesion.nombreCliente }}</strong><small>{{ clienteSesion.correo }}</small></div>
+            <button type="button" class="logout-option" (click)="cerrarSesionCliente()"><s3s-icon name="logout" /> Cerrar sesión</button>
+          </div>
+        </div>
         
       </div>
       <button type="button" class="menu-toggle" (click)="toggleMenu()" [attr.aria-expanded]="menuAbierto" aria-controls="public-navigation" [attr.aria-label]="menuAbierto ? 'Cerrar menú' : 'Abrir menú'"><s3s-icon [name]="menuAbierto ? 'close' : 'menu'" /></button>
