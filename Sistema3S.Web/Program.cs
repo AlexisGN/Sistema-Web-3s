@@ -99,6 +99,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 // Servicios de negocio
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IServicioService, ServicioService>();
 builder.Services.AddScoped<IPublicoService, PublicoService>();
 
 builder.Services.AddHttpClient<IConsultaDocumentoService, ConsultaDocumentoService>();
@@ -110,6 +112,7 @@ builder.Services.AddHttpClient<IConsultaDocumentoService, ConsultaDocumentoServi
 builder.Services.AddScoped<PasswordHashService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClienteWebService, ClienteWebService>();
+builder.Services.AddScoped<ICatalogoArchivoService, CatalogoArchivoService>();
 
 // Servicios para PDF / correo / WhatsApp
 builder.Services.AddHttpClient();

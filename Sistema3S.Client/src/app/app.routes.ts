@@ -101,8 +101,47 @@ export const routes: Routes = [
       
       ]
   },
-  
-  
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/login/login').then(m => m.LoginComponent)
+  },
+  {
+    path: 'admin',
+    loadComponent: () => import('./shared/admin-layout/admin-layout').then(m => m.AdminLayoutComponent),
+    canActivate: [authGuard],
+    children: [
+      
+      
+      
+      
+      {path:'',redirectTo:'productos',pathMatch:'full'},
+      
+      {
+        path: 'productos',
+        loadComponent: () => import('./pages/productos/productos').then(m => m.ProductosComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['PRODUCTOS_VER']
+        }
+      },
+      {
+        path: 'servicios',
+        loadComponent: () => import('./pages/servicios/servicios').then(m => m.ServiciosComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['SERVICIOS_VER']
+        }
+      },
+      
+      
+      
+      
+      
+      
+      
+      ]
+  },
   {
     path: '**',
     loadComponent: () => import('./public/layout/public-layout').then(m => m.PublicLayoutComponent),
