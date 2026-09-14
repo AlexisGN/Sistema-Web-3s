@@ -1304,6 +1304,54 @@ BEGIN
 END;
 
 GO
+CREATE   TRIGGER dbo.trg_Cliente_Auditoria ON dbo.[Cliente] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdCliente] IS NULL THEN N'CREAR' WHEN i.[IdCliente] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Cliente',
+ COALESCE(i.[IdCliente],d.[IdCliente]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdCliente] IS NOT NULL THEN (SELECT d.[IdCliente],d.[IdUsuario],d.[IdTipoCliente],d.[IdTipoDocumento],d.[IdUbigeo],d.[NumeroDocumento],d.[Correo],d.[Telefono],d.[Direccion],d.[Estado],d.[FechaRegistro] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdCliente] IS NOT NULL THEN (SELECT i.[IdCliente],i.[IdUsuario],i.[IdTipoCliente],i.[IdTipoDocumento],i.[IdUbigeo],i.[NumeroDocumento],i.[Correo],i.[Telefono],i.[Direccion],i.[Estado],i.[FechaRegistro] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdCliente]=d.[IdCliente];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_ClienteEmpresa_Auditoria ON dbo.[ClienteEmpresa] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdCliente] IS NULL THEN N'CREAR' WHEN i.[IdCliente] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'ClienteEmpresa',
+ COALESCE(i.[IdCliente],d.[IdCliente]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdCliente] IS NOT NULL THEN (SELECT d.[IdCliente],d.[RazonSocial],d.[NombreComercial] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdCliente] IS NOT NULL THEN (SELECT i.[IdCliente],i.[RazonSocial],i.[NombreComercial] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdCliente]=d.[IdCliente];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_ClientePersonaNatural_Auditoria ON dbo.[ClientePersonaNatural] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdCliente] IS NULL THEN N'CREAR' WHEN i.[IdCliente] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'ClientePersonaNatural',
+ COALESCE(i.[IdCliente],d.[IdCliente]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdCliente] IS NOT NULL THEN (SELECT d.[IdCliente],d.[Nombres],d.[ApellidoPaterno],d.[ApellidoMaterno] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdCliente] IS NOT NULL THEN (SELECT i.[IdCliente],i.[Nombres],i.[ApellidoPaterno],i.[ApellidoMaterno] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdCliente]=d.[IdCliente];
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_Comprobante_Auditoria ON dbo.[Comprobante] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -1317,6 +1365,22 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdComprobante]=d.[IdComprobante];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_ContactoCliente_Auditoria ON dbo.[ContactoCliente] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdContactoCliente] IS NULL THEN N'CREAR' WHEN i.[IdContactoCliente] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'ContactoCliente',
+ COALESCE(i.[IdContactoCliente],d.[IdContactoCliente]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdContactoCliente] IS NOT NULL THEN (SELECT d.[IdContactoCliente],d.[IdCliente],d.[Nombres],d.[ApellidoPaterno],d.[ApellidoMaterno],d.[Cargo],d.[Correo],d.[Telefono],d.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdContactoCliente] IS NOT NULL THEN (SELECT i.[IdContactoCliente],i.[IdCliente],i.[Nombres],i.[ApellidoPaterno],i.[ApellidoMaterno],i.[Cargo],i.[Correo],i.[Telefono],i.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdContactoCliente]=d.[IdContactoCliente];
 END;
 
 GO

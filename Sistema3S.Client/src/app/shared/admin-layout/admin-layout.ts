@@ -66,7 +66,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           permisos: ['SERVICIOS_VER']
         },
         
-        
+        {
+          label: 'Clientes',
+          icon: 'CL',
+          route: '/admin/clientes',
+          permisos: ['CLIENTES_VER']
+        }
       ]
     },
     {

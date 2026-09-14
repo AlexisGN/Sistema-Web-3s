@@ -134,7 +134,14 @@ export const routes: Routes = [
         }
       },
       
-      
+      {
+        path: 'clientes',
+        loadComponent: () => import('./pages/clientes/clientes').then(m => m.ClientesComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['CLIENTES_VER']
+        }
+      },
       
       
       
