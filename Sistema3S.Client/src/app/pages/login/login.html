@@ -1,0 +1,97 @@
+<div class="login-page">
+  <section class="login-brand">
+    <div class="brand-card">
+      <div class="brand-top">
+        <div class="brand-logo-free">
+          <img src="/assets/images/logo-3s.png" alt="Sistema 3S" />
+        </div>
+
+        <div class="brand-name">
+          <strong>3S</strong>
+          <span>Servicio y Soluciones Superiores S.A.C.</span>
+        </div>
+      </div>
+
+      <div class="brand-line"></div>
+
+      <span class="brand-chip">Acceso administrativo</span>
+
+      <h1>Sistema 3S</h1>
+
+      <p>
+        Plataforma interna para la gestión comercial, operaciones, inventario,
+        compras, ventas, caja y administración del negocio.
+      </p>
+
+      <div class="brand-info">
+        <div>
+          <strong>Gestión integral</strong>
+          <span>Control de procesos internos desde un solo panel.</span>
+        </div>
+
+        <div>
+          <strong>Personal autorizado</strong>
+          <span>Acceso controlado según usuario y rol asignado.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="login-panel">
+    <div class="login-box">
+      <div class="login-logo-mobile">
+        <img src="/assets/images/logo-3s.png" alt="Sistema 3S" />
+      </div>
+
+      <div class="login-title">
+        <span>Bienvenido</span>
+        <h2>Ingresar al panel</h2>
+        <p>Accede con tu cuenta asignada por el administrador.</p>
+      </div>
+
+      <form (ngSubmit)="ingresar()" autocomplete="off">
+        <div class="field">
+          <label>Correo electrónico</label>
+          <input
+            type="email"
+            name="correo"
+            [(ngModel)]="correo"
+            placeholder="admin@3s.com"
+            autocomplete="username"
+          />
+        </div>
+
+        <div class="field">
+          <label>Contraseña</label>
+
+          <div class="password-field">
+            <input
+              [type]="mostrarContrasena ? 'text' : 'password'"
+              name="contrasena"
+              [(ngModel)]="contrasena"
+              placeholder="Ingresa tu contraseña"
+              autocomplete="current-password"
+            />
+
+            <button type="button" (click)="alternarContrasena()">
+              {{ mostrarContrasena ? 'Ocultar' : 'Ver' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="login-error" *ngIf="error">
+          {{ error }}
+        </div>
+
+        <button type="submit" class="login-button" [disabled]="cargando">
+          {{ cargando ? 'Verificando acceso...' : 'Iniciar sesión' }}
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <strong>Empresa 3S</strong>
+        <span>Panel administrativo interno.</span>
+      </div>
+    </div>
+  </section>
+</div>

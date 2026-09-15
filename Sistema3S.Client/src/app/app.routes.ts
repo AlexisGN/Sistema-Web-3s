@@ -1,7 +1,12 @@
 import { Routes } from '@angular/router';
 
+import { AdminLayoutComponent } from './shared/admin-layout/admin-layout';
 
+import { ProductosComponent } from './pages/productos/productos';
+import { ServiciosComponent } from './pages/servicios/servicios';
 
+import { authGuard } from './core/guards/auth.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
 {
@@ -85,6 +90,39 @@ export const routes: Routes = [
         path: 'cliente/perfil',
         loadComponent: () =>
           import('./public/pages/cliente-perfil-publico/cliente-perfil-publico').then(m => m.ClientePerfilPublicoComponent)
+      }
+]
+  },
+{
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/login/login').then(m => m.LoginComponent)
+  },
+{
+    path: 'admin',
+    component: AdminLayoutComponent,
+    canActivate: [authGuard],
+    children: [
+{
+        path: '',
+        redirectTo: 'productos',
+        pathMatch: 'full'
+      },
+{
+        path: 'productos',
+        component: ProductosComponent,
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['PRODUCTOS_VER']
+        }
+      },
+{
+        path: 'servicios',
+        component: ServiciosComponent,
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['SERVICIOS_VER']
+        }
       }
 ]
   },

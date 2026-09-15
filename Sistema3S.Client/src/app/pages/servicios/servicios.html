@@ -1,0 +1,345 @@
+<div class="servicios-page">
+  <section class="page-hero">
+    <div class="page-hero__content">
+      <span class="hero-chip">Servicios industriales</span>
+
+      <h1>Gestión de servicios</h1>
+
+      <p>
+        Administra los servicios especializados de 3S para cotizaciones,
+        atención técnica, WhatsApp comercial y catálogo público.
+      </p>
+    </div>
+
+    <div class="page-hero__stats">
+      <div class="hero-stat">
+        <span class="hero-stat__number">{{ totalRegistros }}</span>
+        <span class="hero-stat__label">{{ verInactivos ? 'Servicios inactivos encontrados' : 'Servicios encontrados' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="servicios-grid">
+    <article class="panel panel-form">
+      <div class="panel-header">
+        <div>
+          <h2>{{ editando ? 'Editar servicio' : 'Nuevo servicio' }}</h2>
+
+          <p>
+            {{
+              editando
+                ? 'Actualiza la información comercial y técnica del servicio.'
+                : 'Registra la información comercial y técnica del servicio.'
+            }}
+          </p>
+        </div>
+      </div>
+
+      <form class="servicio-form" (ngSubmit)="guardarServicio()" #servicioForm="ngForm">
+        <div class="field field-full">
+          <label>Nombre del servicio</label>
+
+          <input
+            type="text"
+            [(ngModel)]="servicio.nombre"
+            name="nombre"
+            placeholder="Ej. Mantenimiento industrial"
+            required
+            (input)="limpiarErrorCampo('nombre')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['nombre']">
+            {{ erroresCampo['nombre'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label>Sector de aplicación</label>
+
+          <input
+            type="text"
+            [(ngModel)]="servicio.sectorAplicacion"
+            name="sectorAplicacion"
+            placeholder="Ej. Industria, minería, agroindustria..."
+            required
+            (input)="limpiarErrorCampo('sectorAplicacion')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['sectorAplicacion']">
+            {{ erroresCampo['sectorAplicacion'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label>Precio referencial</label>
+
+          <input
+            type="number"
+            [(ngModel)]="servicio.precioReferencial"
+            name="precioReferencial"
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+            required
+            (input)="limpiarErrorCampo('precioReferencial')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['precioReferencial']">
+            {{ erroresCampo['precioReferencial'] }}
+          </small>
+        </div>
+
+        <div class="field field-full">
+          <label>Imagen del servicio</label>
+
+          <div class="file-picker">
+            <input
+              #imagenServicio
+              type="file"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              (change)="seleccionarImagen($event)"
+            />
+
+            <small>JPG, PNG o WebP. Tamaño máximo: 5 MB.</small>
+
+            <div class="media-preview" *ngIf="obtenerImagenFormulario()">
+              <img [src]="obtenerImagenFormulario()" alt="Vista previa del servicio" />
+
+              <div>
+                <strong>{{ imagenArchivo?.name || 'Imagen actual' }}</strong>
+                <span>{{ imagenArchivo ? 'Se guardará al registrar el servicio.' : 'Selecciona otra imagen para reemplazarla.' }}</span>
+              </div>
+
+              <button
+                *ngIf="imagenArchivo"
+                type="button"
+                class="btn-file-clear"
+                (click)="quitarImagenSeleccionada(imagenServicio)"
+              >
+                Quitar selección
+              </button>
+            </div>
+          </div>
+
+          <small class="field-error" *ngIf="erroresCampo['imagenUrl']">
+            {{ erroresCampo['imagenUrl'] }}
+          </small>
+        </div>
+
+        <div class="field field-full">
+          <label>Descripción</label>
+
+          <textarea
+            [(ngModel)]="servicio.descripcion"
+            name="descripcion"
+            rows="2"
+            placeholder="Describe el alcance técnico del servicio"
+            required
+            (input)="limpiarErrorCampo('descripcion')"
+          ></textarea>
+
+          <small class="field-error" *ngIf="erroresCampo['descripcion']">
+            {{ erroresCampo['descripcion'] }}
+          </small>
+        </div>
+
+        <div class="field field-full">
+          <label>Mensaje WhatsApp</label>
+
+          <textarea
+            [(ngModel)]="servicio.mensajeWhatsApp"
+            name="mensajeWhatsApp"
+            rows="2"
+            placeholder="Mensaje que se usará para solicitar información por WhatsApp"
+          ></textarea>
+        </div>
+
+        <div class="field field-full check-field">
+          <label class="check-option">
+            <input
+              type="checkbox"
+              [(ngModel)]="servicio.requiereVisitaTecnica"
+              name="requiereVisitaTecnica"
+            />
+
+            <span>
+              Requiere visita técnica para evaluación previa.
+            </span>
+          </label>
+        </div>
+
+        <div class="field field-full stock-note">
+          <span>
+            Los servicios no manejan inventario ni stock. Se usarán para catálogo y cotización comercial.
+          </span>
+        </div>
+
+        <div class="field field-full form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="guardando || !formularioServicioValido()"
+          >
+            {{
+              guardando
+                ? 'Guardando...'
+                : (editando ? 'Actualizar servicio' : 'Registrar servicio')
+            }}
+          </button>
+
+          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
+            {{ editando ? 'Cancelar edición' : 'Limpiar' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="mensaje" class="alert success">
+        {{ mensaje }}
+      </div>
+
+      <div *ngIf="error" class="alert error">
+        {{ error }}
+      </div>
+    </article>
+
+    <article class="panel panel-list">
+      <div class="panel-header">
+        <div>
+          <h2>Servicios registrados</h2>
+
+          <p>
+            Servicios disponibles para catálogo, atención técnica y contacto comercial.
+          </p>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <input
+          type="text"
+          [(ngModel)]="buscar"
+          name="buscar"
+          placeholder="Buscar por nombre, descripción o sector..."
+          (keyup.enter)="buscarServicios()"
+        />
+
+        <button type="button" class="btn btn-dark" (click)="buscarServicios()">
+          Buscar
+        </button>
+      </div>
+
+      <div class="catalogo-toolbar">
+        <button type="button" class="estado-filter" [class.selected]="verInactivos"
+                [attr.aria-pressed]="verInactivos" [disabled]="cargando"
+                (click)="alternarInactivos()">
+          {{ verInactivos ? 'Ver todos' : 'Ver inactivos' }}
+        </button>
+        <span role="status">{{ verInactivos ? 'Mostrando solo inactivos' : 'Activos primero · Inactivos al final' }}</span>
+      </div>
+
+      <div *ngIf="cargando" class="estado-box">
+        Cargando servicios...
+      </div>
+
+      <div *ngIf="!cargando && servicios.length === 0" class="estado-box">
+        {{ verInactivos ? 'No se encontraron servicios inactivos con esta búsqueda.' : 'No se encontraron servicios con esta búsqueda.' }}
+      </div>
+
+      <div class="servicios-list" *ngIf="!cargando && servicios.length > 0">
+        <div class="servicio-card" *ngFor="let item of servicios">
+          <div class="servicio-card__image">
+            <img
+              *ngIf="item.imagenUrl"
+              [src]="resolverImagen(item.imagenUrl)"
+              [alt]="item.nombre"
+              loading="lazy"
+              (error)="marcarImagenFallida(item)"
+            />
+
+            <div *ngIf="!item.imagenUrl" class="servicio-card__placeholder">
+              Sin imagen
+            </div>
+          </div>
+
+          <div class="servicio-card__body">
+            <div class="servicio-card__top">
+              <div>
+                <h3>{{ item.nombre }}</h3>
+
+                <p>
+                  {{ item.descripcion || 'Sin descripción registrada.' }}
+                </p>
+              </div>
+
+              <span class="estado-badge" [class.inactivo]="!item.estado">
+                {{ item.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+
+            <div class="servicio-tags">
+              <span *ngIf="item.sectorAplicacion">{{ item.sectorAplicacion }}</span>
+              <span>{{ item.requiereVisitaTecnica ? 'Visita técnica' : 'Sin visita técnica' }}</span>
+            </div>
+
+            <div class="servicio-meta">
+              <div>
+                <small>Precio ref.</small>
+                <strong>S/ {{ item.precioReferencial || 0 }}</strong>
+              </div>
+
+              <div>
+                <small>WhatsApp</small>
+                <strong>{{ item.mensajeWhatsApp ? 'Configurado' : 'Automático' }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="servicio-card__actions">
+            <button type="button" class="btn btn-edit" (click)="editarServicio(item)">
+              Editar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!cargando && totalRegistros > 0">
+        <div class="pagination-info">
+          Mostrando {{ servicios.length }} de {{ totalRegistros }} servicios
+        </div>
+
+        <div class="pagination-controls">
+          <select
+            [(ngModel)]="tamanioPagina"
+            name="tamanioPagina"
+            (change)="cambiarTamanioPagina()"
+          >
+            <option *ngFor="let opcion of opcionesTamanioPagina" [ngValue]="opcion">
+              {{ opcion }} por página
+            </option>
+          </select>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaAnterior()"
+            [disabled]="pagina <= 1"
+          >
+            Anterior
+          </button>
+
+          <span>
+            Página {{ pagina }} de {{ totalPaginas }}
+          </span>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaSiguiente()"
+            [disabled]="pagina >= totalPaginas"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>
