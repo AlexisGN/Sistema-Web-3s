@@ -1,0 +1,127 @@
+<section class="detail-shell">
+  <div class="public-status" *ngIf="cargando">
+    Cargando información del producto...
+  </div>
+
+  <div class="public-status error" *ngIf="error">
+    {{ error }}
+
+    <button type="button" (click)="volverCatalogo()">
+      Volver al catálogo
+    </button>
+  </div>
+
+  <ng-container *ngIf="producto && !cargando">
+    <nav class="breadcrumb">
+      <a routerLink="/">Inicio</a>
+      <span>/</span>
+      <a routerLink="/productos">Productos</a>
+      <span>/</span>
+      <strong>{{ producto.nombre }}</strong>
+    </nav>
+
+    <section class="product-detail">
+      <div class="gallery-card">
+        <div class="main-image">
+          <img
+            *ngIf="imagenSeleccionada"
+            [src]="imagenSeleccionada"
+            [alt]="producto.nombre"
+            decoding="async"
+            fetchpriority="high"
+          />
+
+          <div class="image-placeholder" *ngIf="!imagenSeleccionada">
+            <strong>3S</strong>
+            <small>Imagen no disponible</small>
+          </div>
+        </div>
+
+        <div class="thumbs" *ngIf="imagenes.length > 1">
+          <button
+            type="button"
+            *ngFor="let imagen of imagenes; trackBy: trackByImagen"
+            [class.active]="imagenSeleccionada === imagen.urlImagen"
+            (click)="seleccionarImagen(imagen)"
+          >
+            <img [src]="imagen.urlImagen" [alt]="imagen.textoAlternativo" loading="lazy" />
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-info">
+        <span class="category-badge">
+          {{ producto.categoria }}
+        </span>
+
+        <h1>{{ producto.nombre }}</h1>
+
+        <div class="product-codes">
+          <span>Código: {{ producto.codigo }}</span>
+          <span>Marca: {{ producto.marca || '3S' }}</span>
+        </div>
+
+        <p class="description">
+          {{ producto.descripcion }}
+        </p>
+
+        
+
+        <button
+          type="button"
+          class="technical-file"
+          *ngIf="producto.tieneFichaTecnica && producto.fichaTecnicaPdf"
+          (click)="abrirFichaTecnica()"
+        >
+          Ver ficha técnica
+        </button>
+
+        
+
+        <div class="operation-message" *ngIf="mensajeOperacion">
+          {{ mensajeOperacion }}
+        </div>
+
+        
+      </div>
+    </section>
+
+    <section class="related-section" *ngIf="relacionados.length > 0">
+      <div class="section-head">
+        <span>Productos relacionados</span>
+        <h2>También podrían interesarte</h2>
+      </div>
+
+      <div class="related-grid">
+        <article
+          class="related-card"
+          *ngFor="let item of relacionados; trackBy: trackByProducto"
+        >
+          <button type="button" class="related-image" (click)="verProductoRelacionado(item)">
+            <img
+              *ngIf="item.imagenUrl"
+              [src]="item.imagenUrl"
+              [alt]="item.nombre"
+              loading="lazy"
+              decoding="async"
+            />
+
+            <div class="image-placeholder small" *ngIf="!item.imagenUrl">
+              <strong>3S</strong>
+            </div>
+          </button>
+
+          <div class="related-body">
+            <small>{{ item.codigo }} · {{ item.marca || '3S' }}</small>
+            <h3>{{ item.nombre }}</h3>
+            <p>{{ item.categoria }}</p>
+
+            <button type="button" (click)="verProductoRelacionado(item)">
+              Ver producto
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+</section>

@@ -1,4 +1,77 @@
+<section class="recent-section seccion-scroll seccion-clara" id="inicio">
+  <div class="section-heading center">
+    <span>Nuevos ingresos</span>
+    <h1>Últimos productos agregados</h1>
+    <p>
+      Explora productos industriales recientemente incorporados al catálogo 3S.
+      Solicita información técnica y recibe una cotización personalizada.
+    </p>
+  </div>
 
+  <div class="public-status" *ngIf="cargandoInicio">
+    Cargando catálogo público...
+  </div>
+
+  <div class="public-status error" *ngIf="errorInicio">
+    {{ errorInicio }}
+  </div>
+
+  <div class="operation-message" *ngIf="mensajeOperacion">
+    {{ mensajeOperacion }}
+  </div>
+
+  <div class="recent-marquee" *ngIf="productosNuevosCarrusel.length > 0">
+    <div class="marquee-track">
+      <article
+        class="recent-card"
+        *ngFor="let producto of productosNuevosCarrusel; let i = index; trackBy: trackByProductoCarrusel"
+      >
+        <a
+          class="product-image product-image-link"
+          [routerLink]="['/productos', producto.idProducto || producto.id]"
+          [attr.aria-label]="'Ver detalle de ' + producto.nombre"
+        >
+          <img
+            *ngIf="producto.imagenUrl"
+            [src]="producto.imagenUrl"
+            [alt]="producto.nombre"
+            decoding="async"
+            [attr.loading]="i < 4 ? 'eager' : 'lazy'"
+            [attr.fetchpriority]="i < 2 ? 'high' : 'low'"
+          />
+
+          <div class="image-placeholder" *ngIf="!producto.imagenUrl">
+            <strong>3S</strong>
+            <small>Imagen no disponible</small>
+          </div>
+        </a>
+
+        <div class="recent-body">
+          <small>
+            {{ producto.codigo }}
+            <ng-container *ngIf="producto.marca"> · {{ producto.marca }}</ng-container>
+          </small>
+
+          <h3>
+            <a [routerLink]="['/productos', producto.idProducto || producto.id]">
+              {{ producto.nombre }}
+            </a>
+          </h3>
+
+          <p>{{ producto.categoria }}</p>
+        </div>
+
+        <div class="recent-actions">
+          <a [routerLink]="['/productos', producto.idProducto || producto.id]">
+            Ver producto
+          </a>
+
+          
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
 
 <section class="catalog-intro seccion-scroll seccion-suave" id="catalogo">
   <div>
@@ -11,9 +84,95 @@
   </div>
 </section>
 
+<section class="category-strip seccion-scroll seccion-categorias" id="categorias">
+  <article
+    class="category-card"
+    *ngFor="let categoria of categorias; trackBy: trackByCategoria"
+  >
+    <div class="category-icon">{{ categoria.icono }}</div>
 
+    <div>
+      <h3>{{ categoria.nombre }}</h3>
+      <p>{{ categoria.descripcion }}</p>
 
+      <div class="category-actions">
+        <a [routerLink]="['/categorias', categoria.idCategoria || categoria.id]">
+          Ver productos
+        </a>
 
+        <a [routerLink]="['/categorias', categoria.idCategoria || categoria.id]">
+          Explorar categoría
+        </a>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section class="category-products">
+  <article
+    class="category-block seccion-scroll seccion-productos"
+    *ngFor="let categoria of categoriasConProductos; trackBy: trackByCategoria"
+    [id]="'cat-' + (categoria.idCategoria || categoria.id)"
+  >
+    <div class="category-block-head">
+      <div>
+        <span>{{ categoria.nombre }}</span>
+        <h2>Productos para {{ categoria.nombre | lowercase }}</h2>
+      </div>
+
+      <a [routerLink]="['/categorias', categoria.idCategoria || categoria.id]">
+        Ver categoría
+      </a>
+    </div>
+
+    <div class="product-grid">
+      <article
+        class="product-card"
+        *ngFor="let producto of categoria.productosInicio; trackBy: trackByProducto"
+      >
+        <a
+          class="product-image product-image-link"
+          [routerLink]="['/productos', producto.idProducto || producto.id]"
+          [attr.aria-label]="'Ver detalle de ' + producto.nombre"
+        >
+          <img
+            *ngIf="producto.imagenUrl"
+            [src]="producto.imagenUrl"
+            [alt]="producto.nombre"
+            loading="lazy"
+            decoding="async"
+          />
+
+          <div class="image-placeholder" *ngIf="!producto.imagenUrl">
+            <strong>3S</strong>
+            <small>Imagen no disponible</small>
+          </div>
+        </a>
+
+        <div class="product-body">
+          <small>
+            {{ producto.codigo }}
+            <ng-container *ngIf="producto.marca"> · {{ producto.marca }}</ng-container>
+          </small>
+
+          <h3>
+            <a [routerLink]="['/productos', producto.idProducto || producto.id]">
+              {{ producto.nombre }}
+            </a>
+          </h3>
+
+          <p>{{ producto.descripcion }}</p>
+
+          <div class="product-actions">
+            
+
+            
+          </div>
+        </div>
+      </article>
+    </div>
+  </article>
+</section>
 
 <section
   class="brands-section seccion-scroll seccion-marcas"
@@ -34,6 +193,8 @@
       <a
         class="brand-card"
         *ngFor="let marca of marcasCarrusel; let i = index; trackBy: trackByMarcaCarrusel"
+        [routerLink]="['/marcas', marca.idMarca || marca.id]"
+        [title]="'Ver productos de ' + marca.nombre"
       >
         <img
           *ngIf="marca.logoUrl"
@@ -51,7 +212,65 @@
   </div>
 </section>
 
+<section class="services-section seccion-scroll seccion-oscura" id="servicios">
+  <div class="section-heading">
+    <span>Servicios</span>
+    <h2>Servicios técnicos industriales</h2>
+    <p>
+      Conoce nuestras principales soluciones técnicas. Ingresa a cada servicio
+      para revisar el detalle completo o solicita atención por WhatsApp.
+    </p>
+  </div>
 
+  <div class="services-grid">
+    <article
+      class="service-card"
+      *ngFor="let servicio of servicios; trackBy: trackByServicio"
+    >
+      <a
+        class="service-image service-image-link"
+        [routerLink]="['/servicios', servicio.idServicio || servicio.id]"
+      >
+        <img
+          *ngIf="servicio.imagenUrl"
+          [src]="servicio.imagenUrl"
+          [alt]="servicio.nombre"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <div class="image-placeholder service-placeholder" *ngIf="!servicio.imagenUrl">
+          <strong>3S</strong>
+          <small>Imagen no disponible</small>
+        </div>
+      </a>
+
+      <div class="service-body">
+        <span *ngIf="servicio.sectorAplicacion">
+          {{ servicio.sectorAplicacion }}
+        </span>
+
+        <h3>{{ servicio.nombre }}</h3>
+
+        <p>
+          {{ servicio.descripcion }}
+        </p>
+
+        <small class="visit-badge" *ngIf="servicio.requiereVisitaTecnica">
+          Requiere visita técnica
+        </small>
+
+        <div class="service-actions">
+          <a [routerLink]="['/servicios', servicio.idServicio || servicio.id]">
+            Ver servicio
+          </a>
+
+          
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
 
 
 

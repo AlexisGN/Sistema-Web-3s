@@ -1,0 +1,113 @@
+<section class="detail-shell">
+  <div class="public-status" *ngIf="cargando">
+    Cargando información del servicio...
+  </div>
+
+  <div class="public-status error" *ngIf="error">
+    {{ error }}
+
+    <button type="button" (click)="volverServicios()">
+      Volver a servicios
+    </button>
+  </div>
+
+  <ng-container *ngIf="servicio && !cargando">
+    <nav class="breadcrumb">
+      <a routerLink="/">Inicio</a>
+      <span>/</span>
+      <a routerLink="/servicios">Servicios</a>
+      <span>/</span>
+      <strong>{{ servicio.nombre }}</strong>
+    </nav>
+
+    <section class="service-detail">
+      <div class="gallery-card">
+        <div class="main-image">
+          <img
+            *ngIf="imagenSeleccionada"
+            [src]="imagenSeleccionada"
+            [alt]="servicio.nombre"
+            decoding="async"
+            fetchpriority="high"
+          />
+
+          <div class="image-placeholder" *ngIf="!imagenSeleccionada">
+            <strong>3S</strong>
+            <small>Imagen no disponible</small>
+          </div>
+        </div>
+
+        <div class="thumbs" *ngIf="imagenes.length > 1">
+          <button
+            type="button"
+            *ngFor="let imagen of imagenes; trackBy: trackByImagen"
+            [class.active]="imagenSeleccionada === imagen.urlImagen"
+            (click)="seleccionarImagen(imagen)"
+          >
+            <img [src]="imagen.urlImagen" [alt]="imagen.textoAlternativo" loading="lazy" />
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-info">
+        <span class="sector-badge" *ngIf="servicio.sectorAplicacion">
+          {{ servicio.sectorAplicacion }}
+        </span>
+
+        <h1>{{ servicio.nombre }}</h1>
+
+        <p class="description">
+          {{ servicio.descripcion }}
+        </p>
+
+        
+
+        <small class="visit-badge" *ngIf="servicio.requiereVisitaTecnica">
+          Requiere coordinación técnica
+        </small>
+
+        
+
+        
+      </div>
+    </section>
+
+    <section class="related-section" *ngIf="relacionados.length > 0">
+      <div class="section-head">
+        <span>Servicios relacionados</span>
+        <h2>Otras soluciones técnicas 3S</h2>
+      </div>
+
+      <div class="related-grid">
+        <article
+          class="related-card"
+          *ngFor="let item of relacionados; trackBy: trackByServicio"
+        >
+          <button type="button" class="related-image" (click)="verServicioRelacionado(item)">
+            <img
+              *ngIf="item.imagenUrl"
+              [src]="item.imagenUrl"
+              [alt]="item.nombre"
+              loading="lazy"
+              decoding="async"
+            />
+
+            <div class="image-placeholder small" *ngIf="!item.imagenUrl">
+              <strong>3S</strong>
+            </div>
+          </button>
+
+          <div class="related-body">
+            <small *ngIf="item.sectorAplicacion">{{ item.sectorAplicacion }}</small>
+            <h3>{{ item.nombre }}</h3>
+            <p>{{ item.descripcion }}</p>
+
+            <button type="button" (click)="verServicioRelacionado(item)">
+              Ver servicio
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </ng-container>
+</section>

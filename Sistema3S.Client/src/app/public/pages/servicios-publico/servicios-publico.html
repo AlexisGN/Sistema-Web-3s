@@ -1,0 +1,154 @@
+<section class="services-hero">
+  <div class="services-hero-content">
+    <span>Servicios técnicos 3S</span>
+
+    <h1>Servicios industriales para operación, mantenimiento y continuidad</h1>
+
+    <p>
+      Consulta nuestras soluciones técnicas para sistemas industriales, mantenimiento,
+      automatización, generación de vapor y soporte especializado. Cada servicio se
+      atiende de forma personalizada por WhatsApp.
+    </p>
+
+    <div class="hero-actions">
+      <a routerLink="/productos">
+        Ver productos industriales
+      </a>
+
+      <button type="button" (click)="limpiarFiltros()" *ngIf="busqueda || sectorSeleccionado">
+        Ver todos los servicios
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="services-toolbar">
+  <form class="search-card" (ngSubmit)="buscarServicios()">
+    <div class="search-input">
+      <label>Buscar servicio</label>
+
+      <input
+        type="text"
+        name="busqueda"
+        [(ngModel)]="busqueda"
+        placeholder="Busca por nombre, aplicación técnica o sector"
+      />
+    </div>
+
+    <button type="submit">
+      Buscar
+    </button>
+  </form>
+
+  <div class="sector-filter" *ngIf="sectores.length > 0">
+    <div class="section-head compact">
+      <span>Sectores</span>
+      <h2>Filtra por aplicación</h2>
+    </div>
+
+    <div class="sector-pills">
+      <button
+        type="button"
+        [class.active]="!sectorSeleccionado"
+        (click)="seleccionarSector('')"
+      >
+        Todos
+      </button>
+
+      <button
+        type="button"
+        *ngFor="let sector of sectores; trackBy: trackBySector"
+        [class.active]="sectorSeleccionado === sector"
+        (click)="seleccionarSector(sector)"
+      >
+        {{ sector }}
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="services-results">
+  <div class="results-head">
+    <div>
+      <span>Servicios</span>
+      <h2>
+        {{ serviciosFiltrados.length }} servicio{{ serviciosFiltrados.length === 1 ? '' : 's' }} disponible{{ serviciosFiltrados.length === 1 ? '' : 's' }} para consulta
+      </h2>
+    </div>
+
+    <p>
+      Cada servicio se coordina individualmente por WhatsApp para revisar el alcance,
+      la necesidad técnica y el tipo de atención requerida.
+    </p>
+  </div>
+
+  <div class="public-status" *ngIf="cargando">
+    Cargando servicios técnicos...
+  </div>
+
+  <div class="public-status error" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="empty-state" *ngIf="!cargando && serviciosFiltrados.length === 0 && !error">
+    <strong>No encontramos servicios con los filtros seleccionados.</strong>
+    <p>
+      Ajusta la búsqueda o revisa todos los servicios disponibles para encontrar la atención técnica que necesitas.
+    </p>
+
+    <button type="button" (click)="limpiarFiltros()">
+      Ver todos los servicios
+    </button>
+  </div>
+
+  <div class="services-grid" *ngIf="serviciosFiltrados.length > 0">
+    <article
+      class="service-card"
+      *ngFor="let servicio of serviciosFiltrados; trackBy: trackByServicio"
+    >
+      <button
+        type="button"
+        class="service-image"
+        (click)="verDetalle(servicio)"
+        [attr.aria-label]="'Ver detalle de ' + servicio.nombre"
+      >
+        <img
+          *ngIf="servicio.imagenUrl"
+          [src]="servicio.imagenUrl"
+          [alt]="servicio.nombre"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <div class="image-placeholder" *ngIf="!servicio.imagenUrl">
+          <strong>3S</strong>
+          <small>Imagen no disponible</small>
+        </div>
+      </button>
+
+      <div class="service-content">
+        <span class="sector-badge" *ngIf="servicio.sectorAplicacion">
+          {{ servicio.sectorAplicacion }}
+        </span>
+
+        <h3>{{ servicio.nombre }}</h3>
+
+        <p>
+          {{ servicio.descripcion }}
+        </p>
+
+        <small class="technical-badge" *ngIf="servicio.requiereVisitaTecnica">
+          Requiere coordinación técnica
+        </small>
+
+        <div class="service-actions">
+          <button type="button" class="detail-btn" (click)="verDetalle(servicio)">
+            Ver servicio
+          </button>
+
+          
+        </div>
+      </div>
+    </article>
+  </div>
+</section>

@@ -1,0 +1,189 @@
+<section class="products-hero">
+  <div class="products-hero-content">
+    <span>Catálogo industrial 3S</span>
+
+    <h1>{{ tituloPagina }}</h1>
+
+    <p>
+      {{ descripcionPagina }}
+    </p>
+
+    <div class="hero-actions">
+      <a routerLink="/cliente/registro" *ngIf="!clienteLogueado">
+        Crear cuenta para cotizar varios productos
+      </a>
+
+      
+
+      <button type="button" (click)="limpiarFiltros()" *ngIf="hayFiltrosActivos">
+        Ver catálogo completo
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="category-shortcuts" *ngIf="categorias.length > 0">
+  <div class="section-head">
+    <span>Categorías</span>
+    <h2>Explora productos por especialidad</h2>
+  </div>
+
+  <div class="category-pills">
+    <button
+      type="button"
+      [class.active]="!idCategoriaSeleccionada"
+      (click)="seleccionarCategoria(null)"
+    >
+      Todas
+    </button>
+
+    <button
+      type="button"
+      *ngFor="let categoria of categorias; trackBy: trackByCategoria"
+      [class.active]="idCategoriaSeleccionada === (categoria.idCategoria || categoria.id)"
+      (click)="seleccionarCategoria(categoria.idCategoria || categoria.id)"
+    >
+      <span>{{ categoria.icono }}</span>
+      {{ categoria.nombre }}
+    </button>
+  </div>
+</section>
+
+<section class="brands-shortcuts" *ngIf="marcas.length > 0">
+  <div class="section-head compact">
+    <span>Marcas</span>
+    <h2>Filtra por marca</h2>
+  </div>
+
+  <div class="brand-pills">
+    <button
+      type="button"
+      [class.active]="!idMarcaSeleccionada"
+      (click)="seleccionarMarca(null)"
+    >
+      Todas
+    </button>
+
+    <button
+      type="button"
+      *ngFor="let marca of marcas; trackBy: trackByMarca"
+      [class.active]="idMarcaSeleccionada === (marca.idMarca || marca.id)"
+      (click)="seleccionarMarca(marca.idMarca || marca.id)"
+    >
+      {{ marca.nombre }}
+    </button>
+  </div>
+</section>
+
+<section class="products-results">
+  <div class="results-head">
+    <div>
+      <span>Productos</span>
+      <h2>
+        {{ totalRegistros }} producto{{ totalRegistros === 1 ? '' : 's' }} para cotización
+      </h2>
+    </div>
+
+    
+
+    <p *ngIf="!clienteLogueado">
+      Cotiza productos individualmente por WhatsApp o crea una cuenta para armar una solicitud con varios productos.
+    </p>
+  </div>
+
+  <div class="operation-message" *ngIf="busqueda.trim()">
+    Resultados relacionados con: “{{ busqueda }}”
+  </div>
+
+  <div class="public-status" *ngIf="cargando">
+    Cargando productos industriales...
+  </div>
+
+  <div class="public-status error" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="operation-message" *ngIf="mensajeOperacion">
+    {{ mensajeOperacion }}
+  </div>
+
+  <div class="empty-state" *ngIf="!cargando && productos.length === 0 && !error">
+    <strong>No encontramos productos con los filtros seleccionados.</strong>
+    <p>
+      Ajusta la búsqueda o revisa el catálogo completo para encontrar la solución industrial que necesitas.
+    </p>
+
+    <button type="button" (click)="limpiarFiltros()">
+      Ver catálogo completo
+    </button>
+  </div>
+
+  <div class="products-grid" *ngIf="productos.length > 0">
+    <article
+      class="product-card"
+      *ngFor="let producto of productos; trackBy: trackByProducto"
+    >
+      <button
+        type="button"
+        class="image-link"
+        (click)="verDetalle(producto)"
+        [attr.aria-label]="'Ver detalle de ' + producto.nombre"
+      >
+        <img
+          *ngIf="producto.imagenUrl"
+          [src]="producto.imagenUrl"
+          [alt]="producto.nombre"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <div class="image-placeholder" *ngIf="!producto.imagenUrl">
+          <strong>3S</strong>
+          <small>Imagen no disponible</small>
+        </div>
+      </button>
+
+      <div class="product-content">
+        <div class="product-meta">
+          <span>{{ producto.codigo }}</span>
+          <span>{{ producto.marca || '3S' }}</span>
+        </div>
+
+        <h3>{{ producto.nombre }}</h3>
+
+        <p class="category-name">
+          {{ producto.categoria }}
+        </p>
+
+        <p class="description">
+          {{ producto.descripcion }}
+        </p>
+
+        <button
+          type="button"
+          class="technical-link"
+          *ngIf="producto.tieneFichaTecnica && producto.fichaTecnicaPdf"
+          (click)="abrirFichaTecnica(producto)"
+        >
+          Ver ficha técnica
+        </button>
+
+        <div class="product-actions">
+          
+
+          <button type="button" class="detail-btn" (click)="verDetalle(producto)">
+            Ver detalle
+          </button>
+
+          
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="load-more" *ngIf="hayMas && productos.length > 0">
+    <button type="button" (click)="cargarMas()" [disabled]="cargandoMas">
+      {{ cargandoMas ? 'Cargando más productos...' : 'Ver más productos' }}
+    </button>
+  </div>
+</section>
