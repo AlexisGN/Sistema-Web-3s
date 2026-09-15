@@ -12,13 +12,20 @@
       </button>
 
       <nav class="public-nav" [class.open]="menuAbierto">
-        
-        
-        
+        <a routerLink="/productos" (click)="cerrarMenu()">Productos</a>
+        <a routerLink="/servicios" (click)="cerrarMenu()">Servicios</a>
+        <a routerLink="/categorias" (click)="cerrarMenu()">Categorías</a>
         <a routerLink="/nosotros" (click)="cerrarMenu()">Nosotros</a>
       </nav>
 
-      
+      <form class="header-search" (ngSubmit)="buscarDesdeMenu()">
+        <input type="text" name="busquedaGlobal" [(ngModel)]="busquedaGlobal"
+          placeholder="Buscar productos, servicios, categorías o marcas..." autocomplete="off" />
+
+        <button type="submit">
+          Buscar
+        </button>
+      </form>
 
       <div class="header-actions">
         
@@ -55,9 +62,9 @@
 
       <div>
         <h3>Catálogo</h3>
-        
-        
-        
+        <a routerLink="/productos">Productos industriales</a>
+        <a routerLink="/servicios">Servicios técnicos</a>
+        <a routerLink="/categorias">Categorías</a>
         <a routerLink="/nosotros">Nosotros</a>
       </div>
 

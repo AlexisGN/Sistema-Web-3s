@@ -1,0 +1,181 @@
+<section class="search-page">
+  <section class="search-hero">
+    <span>Búsqueda global</span>
+
+    <h1>
+      Buscar en el catálogo 3S
+    </h1>
+
+    <p>
+      Encuentra productos específicos, servicios técnicos, categorías industriales
+      y marcas disponibles para cotización.
+    </p>
+
+    <form class="search-box" (ngSubmit)="buscarDesdePagina()">
+      <input
+        type="text"
+        name="busquedaLocal"
+        [(ngModel)]="busquedaLocal"
+        placeholder="Ejemplo: termostato, válvula, Siemens, calderas..."
+        autocomplete="off"
+      />
+
+      <button type="submit">
+        Buscar
+      </button>
+    </form>
+  </section>
+
+  <div class="status-box" *ngIf="cargando">
+    Buscando resultados...
+  </div>
+
+  <div class="status-box error" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <section class="empty-state" *ngIf="!cargando && !error && !q">
+    <h2>Escribe una palabra para buscar</h2>
+    <p>
+      Puedes buscar por producto, código, servicio, categoría o marca.
+    </p>
+  </section>
+
+  <section class="empty-state" *ngIf="!cargando && !error && q && resultado && !hayResultados">
+    <h2>No encontramos resultados para “{{ q }}”</h2>
+    <p>
+      Intenta con otro nombre, código, marca o categoría.
+    </p>
+
+    <a routerLink="/productos">
+      Ver catálogo completo
+    </a>
+  </section>
+
+  <ng-container *ngIf="!cargando && !error && resultado && hayResultados">
+    <div class="result-title">
+      <div>
+        <span>Resultados para</span>
+        <h2>“{{ resultado.query }}”</h2>
+      </div>
+
+      <strong>{{ resultado.totalResultados }} resultado{{ resultado.totalResultados === 1 ? '' : 's' }}</strong>
+    </div>
+
+    <section class="result-section" *ngIf="resultado.productos.length > 0">
+      <div class="section-head">
+        <h3>Productos encontrados</h3>
+        <a [routerLink]="['/productos']" [queryParams]="{ q: q }">
+          Ver todos
+        </a>
+      </div>
+
+      <div class="product-grid">
+        <article
+          class="product-card"
+          *ngFor="let producto of resultado.productos; trackBy: trackByProducto"
+        >
+          <a class="product-image" [routerLink]="['/productos', producto.idProducto || producto.id]">
+            <img
+              *ngIf="producto.imagenUrl"
+              [src]="producto.imagenUrl"
+              [alt]="producto.nombre"
+              loading="lazy"
+              decoding="async"
+            />
+
+            <div class="image-placeholder" *ngIf="!producto.imagenUrl">
+              <strong>3S</strong>
+              <small>Producto industrial</small>
+            </div>
+          </a>
+
+          <div class="product-info">
+            <span>{{ producto.categoria }}</span>
+            <h4>{{ producto.nombre }}</h4>
+            <p>{{ producto.codigo }}</p>
+            <small>{{ producto.marca || '3S' }}</small>
+
+            <a class="primary-link" [routerLink]="['/productos', producto.idProducto || producto.id]">
+              Ver producto
+            </a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="result-section" *ngIf="resultado.servicios.length > 0">
+      <div class="section-head">
+        <h3>Servicios encontrados</h3>
+        <a routerLink="/servicios">
+          Ver servicios
+        </a>
+      </div>
+
+      <div class="simple-grid">
+        <a
+          class="simple-card"
+          *ngFor="let servicio of resultado.servicios; trackBy: trackByServicio"
+          [routerLink]="['/servicios', servicio.idServicio || servicio.id]"
+        >
+          <div class="simple-icon">⚙</div>
+          <div>
+            <h4>{{ servicio.nombre }}</h4>
+            <p>{{ servicio.descripcion }}</p>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="result-section" *ngIf="resultado.categorias.length > 0">
+      <div class="section-head">
+        <h3>Categorías relacionadas</h3>
+        <a routerLink="/categorias">
+          Ver categorías
+        </a>
+      </div>
+
+      <div class="simple-grid compact">
+        <a
+          class="simple-card"
+          *ngFor="let categoria of resultado.categorias; trackBy: trackByCategoria"
+          [routerLink]="['/categorias', categoria.idCategoria || categoria.id]"
+        >
+          <div class="simple-icon">{{ categoria.icono || '🏭' }}</div>
+          <div>
+            <h4>{{ categoria.nombre }}</h4>
+            <p>{{ categoria.cantidadProductos }} productos disponibles</p>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="result-section" *ngIf="resultado.marcas.length > 0">
+      <div class="section-head">
+        <h3>Marcas relacionadas</h3>
+        <a routerLink="/productos">
+          Ver catálogo
+        </a>
+      </div>
+
+      <div class="brand-grid">
+        <a
+          class="brand-card"
+          *ngFor="let marca of resultado.marcas; trackBy: trackByMarca"
+          [routerLink]="['/marcas', marca.idMarca || marca.id]"
+        >
+          <img
+            *ngIf="marca.logoUrl"
+            [src]="marca.logoUrl"
+            [alt]="marca.nombre"
+            loading="lazy"
+            decoding="async"
+          />
+
+          <strong>{{ marca.nombre }}</strong>
+          <span>{{ marca.cantidadProductos }} productos</span>
+        </a>
+      </div>
+    </section>
+  </ng-container>
+</section>
