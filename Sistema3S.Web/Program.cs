@@ -68,6 +68,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Servicios de negocio
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IServicioService, ServicioService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IPublicoService, PublicoService>();
 
 builder.Services.AddHttpClient<IConsultaDocumentoService, ConsultaDocumentoService>();

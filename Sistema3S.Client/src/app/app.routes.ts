@@ -4,6 +4,7 @@ import { AdminLayoutComponent } from './shared/admin-layout/admin-layout';
 
 import { ProductosComponent } from './pages/productos/productos';
 import { ServiciosComponent } from './pages/servicios/servicios';
+import { ClientesComponent } from './pages/clientes/clientes';
 
 import { authGuard } from './core/guards/auth.guard';
 import { permissionGuard } from './core/guards/permission.guard';
@@ -122,6 +123,14 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: {
           permisos: ['SERVICIOS_VER']
+        }
+      },
+{
+        path: 'clientes',
+        component: ClientesComponent,
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['CLIENTES_VER']
         }
       }
 ]

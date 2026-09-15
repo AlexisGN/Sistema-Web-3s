@@ -200,6 +200,7 @@ export class SessionService {
     const rol = this.normalizarTexto(this.obtenerRol());
 
     const rutasPorPermiso: Array<{ permiso: string; ruta: string }> = [
+{ permiso: 'CLIENTES_VER', ruta: '/admin/clientes' },
 { permiso: 'PRODUCTOS_VER', ruta: '/admin/productos' },
 { permiso: 'SERVICIOS_VER', ruta: '/admin/servicios' }
 ];

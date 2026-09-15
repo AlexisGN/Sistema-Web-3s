@@ -1,0 +1,497 @@
+<div class="clientes-page">
+  <section class="page-hero">
+    <div class="page-hero__content">
+      <span class="hero-chip">Gestión comercial</span>
+
+      <h1>Gestión de clientes</h1>
+
+      <p>
+        Administra clientes naturales, empresas, datos de contacto y vinculación futura
+        con cuentas web.
+      </p>
+    </div>
+
+    <div class="page-hero__stats">
+      <div class="hero-stat">
+        <span class="hero-stat__number">{{ totalRegistros }}</span>
+        <span class="hero-stat__label">Clientes registrados</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="clientes-grid">
+    <article class="panel panel-form">
+      <div class="panel-header">
+        <div>
+          <h2>{{ editando ? 'Editar cliente' : 'Nuevo cliente' }}</h2>
+
+          <p>
+            {{
+            editando
+            ? 'Actualiza los datos comerciales del cliente.'
+            : 'Registra una persona natural o empresa para cotizaciones y ventas.'
+            }}
+          </p>
+        </div>
+      </div>
+
+      <form class="cliente-form" (ngSubmit)="guardarCliente()" #clienteForm="ngForm">
+        <div class="field field-quarter">
+          <label>Tipo de cliente</label>
+
+          <select [(ngModel)]="cliente.idTipoCliente" name="idTipoCliente" required (change)="cambiarTipoCliente()">
+            <option [ngValue]="0">Selecciona</option>
+
+            <option *ngFor="let tipo of tiposCliente" [ngValue]="tipo.idTipoCliente">
+              {{ tipo.nombre }}
+            </option>
+          </select>
+
+          <small class="field-error" *ngIf="erroresCampo['idTipoCliente']">
+            {{ erroresCampo['idTipoCliente'] }}
+          </small>
+        </div>
+
+        <div class="field field-quarter">
+          <label>Tipo de documento</label>
+
+          <select [(ngModel)]="cliente.idTipoDocumento" name="idTipoDocumento" required
+            (change)="limpiarErrorCampo('idTipoDocumento')">
+            <option [ngValue]="0">Selecciona</option>
+
+            <option *ngFor="let doc of tiposDocumento" [ngValue]="doc.idTipoDocumento">
+              {{ doc.nombre }}
+            </option>
+          </select>
+
+          <small class="field-error" *ngIf="erroresCampo['idTipoDocumento']">
+            {{ erroresCampo['idTipoDocumento'] }}
+          </small>
+        </div>
+
+        <div class="field field-documento field-full">
+          <label>Número de documento</label>
+
+          <div class="documento-search">
+            <input type="text" [(ngModel)]="cliente.numeroDocumento" name="numeroDocumento"
+              [placeholder]="esEmpresa() ? 'Ingrese RUC de 11 dígitos' : 'Ingrese DNI de 8 dígitos'"
+              [maxlength]="esEmpresa() ? 11 : 8" inputmode="numeric" autocomplete="off"
+              (input)="filtrarDocumentoSoloNumeros()" />
+
+            <button type="button" class="btn-consulta-documento" (click)="consultarDocumento()"
+              [disabled]="consultandoDocumento || cargandoCombos">
+              <span *ngIf="!consultandoDocumento">
+                {{ esEmpresa() ? 'Consultar SUNAT' : 'Consultar RENIEC' }}
+              </span>
+
+              <span *ngIf="consultandoDocumento">
+                Consultando...
+              </span>
+            </button>
+          </div>
+
+          <small class="documento-help" *ngIf="esPersonaNatural()">
+            Ingresa el DNI y consulta RENIEC para completar nombres y apellidos.
+          </small>
+
+          <small class="documento-help" *ngIf="esEmpresa()">
+            Ingresa el RUC y consulta SUNAT para completar razón social, dirección y ubicación.
+          </small>
+
+          <small class="field-error" *ngIf="erroresCampo['numeroDocumento']">
+            {{ erroresCampo['numeroDocumento'] }}
+          </small>
+        </div>
+
+        <div class="field field-ubigeo field-full">
+          <label>Ubicación</label>
+
+          <div class="ubigeo-search">
+            <input type="text" [(ngModel)]="ubigeoBuscar" name="ubigeoBuscar"
+              placeholder="Buscar por código, departamento, provincia o distrito" (input)="buscarUbigeos()" />
+
+            <button type="button" class="btn-clear-ubigeo" *ngIf="cliente.idUbigeo" (click)="limpiarUbigeo()">
+              Limpiar
+            </button>
+          </div>
+
+          <div class="ubigeo-resultados" *ngIf="ubigeos.length > 0">
+            <button type="button" *ngFor="let ubigeo of ubigeos" (click)="seleccionarUbigeo(ubigeo)">
+              {{ ubigeo.ubicacion }}
+            </button>
+          </div>
+
+          <small class="ubigeo-seleccionado" *ngIf="cliente.idUbigeo">
+            Seleccionado: {{ ubicacionSeleccionada || ubigeoBuscar }}
+          </small>
+          <small class="field-error" *ngIf="erroresCampo['idUbigeo']">
+            {{ erroresCampo['idUbigeo'] }}
+          </small>
+        </div>
+
+        <ng-container *ngIf="esPersonaNatural()">
+          <div class="field field-full section-title">
+            <span>Datos de persona natural</span>
+          </div>
+
+          <div class="field">
+            <label>Nombres</label>
+
+            <input type="text" [(ngModel)]="cliente.nombres" name="nombres" placeholder="Ej. Juan Carlos"
+              (input)="limpiarErrorCampo('nombres')" />
+
+            <small class="field-error" *ngIf="erroresCampo['nombres']">
+              {{ erroresCampo['nombres'] }}
+            </small>
+          </div>
+
+          <div class="field">
+            <label>Apellido paterno</label>
+
+            <input type="text" [(ngModel)]="cliente.apellidoPaterno" name="apellidoPaterno" placeholder="Ej. Ramírez"
+              (input)="limpiarErrorCampo('apellidoPaterno')" />
+
+            <small class="field-error" *ngIf="erroresCampo['apellidoPaterno']">
+              {{ erroresCampo['apellidoPaterno'] }}
+            </small>
+          </div>
+
+          <div class="field">
+            <label>Apellido materno</label>
+
+            <input type="text" [(ngModel)]="cliente.apellidoMaterno" name="apellidoMaterno" placeholder="Opcional"
+              (input)="limpiarErrorCampo('apellidoMaterno')" />
+
+            <small class="field-error" *ngIf="erroresCampo['apellidoMaterno']">
+              {{ erroresCampo['apellidoMaterno'] }}
+            </small>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="esEmpresa()">
+          <div class="field field-full section-title">
+            <span>Datos de empresa</span>
+          </div>
+
+          <div class="field field-full">
+            <label>Razón social</label>
+
+            <input type="text" [(ngModel)]="cliente.razonSocial" name="razonSocial"
+              placeholder="Ej. Agroindustrial La Esperanza S.A.C." (input)="limpiarErrorCampo('razonSocial')" />
+
+            <small class="field-error" *ngIf="erroresCampo['razonSocial']">
+              {{ erroresCampo['razonSocial'] }}
+            </small>
+          </div>
+
+          <div class="field field-full">
+            <label>Nombre comercial</label>
+
+            <input type="text" [(ngModel)]="cliente.nombreComercial" name="nombreComercial" placeholder="Opcional" />
+          </div>
+        </ng-container>
+
+        <div class="field field-full section-title">
+          <span>Datos de contacto del cliente</span>
+        </div>
+
+        <div class="field">
+          <label>Correo</label>
+
+          <input type="email" [(ngModel)]="cliente.correo" name="correo" placeholder="correo@empresa.com"
+            (input)="limpiarErrorCampo('correo')" />
+
+          <small class="field-error" *ngIf="erroresCampo['correo']">
+            {{ erroresCampo['correo'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label>Teléfono</label>
+
+          <input type="text" [(ngModel)]="cliente.telefono" name="telefono" placeholder="+51999999999" maxlength="12"
+            autocomplete="off" (input)="limpiarErrorCampo('telefono')" />
+
+          <small class="field-error" *ngIf="erroresCampo['telefono']">
+            {{ erroresCampo['telefono'] }}
+          </small>
+
+          <small class="field-help">
+            Formato Perú: +51 seguido de 9 dígitos.
+          </small>
+        </div>
+
+        <div class="field field-full">
+          <label>Dirección</label>
+
+          <input type="text" [(ngModel)]="cliente.direccion" name="direccion" placeholder="Dirección fiscal o comercial"
+            (input)="limpiarErrorCampo('direccion')" />
+
+          <small class="field-error" *ngIf="erroresCampo['direccion']">
+            {{ erroresCampo['direccion'] }}
+          </small>
+        </div>
+
+        <ng-container *ngIf="esEmpresa()">
+          <div class="field field-full contacto-toggle">
+            <label class="checkbox-row">
+              <input type="checkbox" [(ngModel)]="cliente.registrarContactoPrincipal" name="registrarContactoPrincipal"
+                (change)="cambiarRegistroContacto()" />
+
+              <span>Registrar contacto principal de la empresa</span>
+            </label>
+          </div>
+
+          <div class="field field-full contacto-section"
+            *ngIf="cliente.registrarContactoPrincipal && cliente.contactoPrincipal as contacto">
+            <div class="contacto-section__title">
+              <h3>Contacto principal</h3>
+              <p>Opcional. Sirve para identificar a la persona que atiende por la empresa.</p>
+            </div>
+
+            <div class="contacto-grid">
+              <div class="field">
+                <label>Nombres</label>
+
+                <input type="text" [(ngModel)]="contacto.nombres" name="contactoNombres" placeholder="Ej. Luis Alberto"
+                  (input)="limpiarErrorCampo('contactoNombres')" />
+
+                <small class="field-error" *ngIf="erroresCampo['contactoNombres']">
+                  {{ erroresCampo['contactoNombres'] }}
+                </small>
+              </div>
+
+              <div class="field">
+                <label>Apellido paterno</label>
+
+                <input type="text" [(ngModel)]="contacto.apellidoPaterno" name="contactoApellidoPaterno"
+                  placeholder="Ej. Ramírez" (input)="limpiarErrorCampo('contactoApellidoPaterno')" />
+
+                <small class="field-error" *ngIf="erroresCampo['contactoApellidoPaterno']">
+                  {{ erroresCampo['contactoApellidoPaterno'] }}
+                </small>
+              </div>
+
+              <div class="field">
+                <label>Apellido materno</label>
+
+                <input type="text" [(ngModel)]="contacto.apellidoMaterno" name="contactoApellidoMaterno"
+                  placeholder="Opcional" (input)="limpiarErrorCampo('contactoApellidoMaterno')" />
+
+                <small class="field-error" *ngIf="erroresCampo['contactoApellidoMaterno']">
+                  {{ erroresCampo['contactoApellidoMaterno'] }}
+                </small>
+              </div>
+
+              <div class="field">
+                <label>Cargo</label>
+
+                <input type="text" [(ngModel)]="contacto.cargo" name="contactoCargo"
+                  placeholder="Ej. Jefe de mantenimiento" />
+              </div>
+
+              <div class="field">
+                <label>Correo del contacto</label>
+
+                <input type="email" [(ngModel)]="contacto.correo" name="contactoCorreo"
+                  placeholder="contacto@empresa.com" (input)="limpiarErrorCampo('contactoCorreo')" />
+
+                <small class="field-error" *ngIf="erroresCampo['contactoCorreo']">
+                  {{ erroresCampo['contactoCorreo'] }}
+                </small>
+              </div>
+
+              <div class="field">
+                <label>Teléfono del contacto</label>
+
+                <input type="text" [(ngModel)]="contacto.telefono" name="contactoTelefono" placeholder="+51999999999"
+                  maxlength="12" autocomplete="off" (input)="limpiarErrorCampo('contactoTelefono')" />
+
+                <small class="field-error" *ngIf="erroresCampo['contactoTelefono']">
+                  {{ erroresCampo['contactoTelefono'] }}
+                </small>
+
+                <small class="field-help">
+                  Formato Perú: +51 seguido de 9 dígitos.
+                </small>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- <div class="field field-full account-note">
+          <span>
+            Los clientes creados desde el panel administrador quedan sin cuenta web.
+            Si luego se registran en la página, se vincularán por DNI o RUC sin duplicarse.
+          </span>
+        </div> -->
+
+        <div class="field field-full form-actions">
+          <button type="submit" class="btn btn-primary"
+            [disabled]="guardando || cargandoCombos || consultandoDocumento">
+            {{
+            guardando
+            ? 'Guardando...'
+            : (editando ? 'Actualizar cliente' : 'Registrar cliente')
+            }}
+          </button>
+
+          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
+            {{ editando ? 'Cancelar edición' : 'Limpiar' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="mensaje" class="alert success">
+        {{ mensaje }}
+      </div>
+
+      <div *ngIf="error" class="alert error">
+        {{ error }}
+      </div>
+    </article>
+
+    <article class="panel panel-list">
+      <div class="panel-header">
+        <div>
+          <h2>Clientes registrados</h2>
+
+          <p>
+            Consulta clientes naturales, empresas, contactos, estado y vínculo con cuenta web.
+          </p>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <input type="text" [(ngModel)]="buscar" name="buscar"
+          placeholder="Buscar por DNI, RUC, cliente, correo, teléfono o contacto..." (keyup.enter)="buscarClientes()" />
+
+        <button type="button" class="btn btn-dark" (click)="buscarClientes()">
+          Buscar
+        </button>
+      </div>
+
+      <div *ngIf="cargando" class="estado-box">
+        Cargando clientes...
+      </div>
+
+      <div *ngIf="!cargando && clientes.length === 0" class="estado-box">
+        No hay clientes registrados.
+      </div>
+
+      <div class="clientes-list" *ngIf="!cargando && clientes.length > 0">
+        <div class="cliente-card" *ngFor="let item of clientes">
+          <div class="cliente-card__body">
+            <div class="cliente-card__top">
+              <div>
+                <h3>{{ item.cliente }}</h3>
+
+                <p>
+                  {{ item.tipoDocumento }} {{ item.numeroDocumento }} · {{ item.tipoCliente }}
+                </p>
+
+                <small *ngIf="item.nombreComercial">
+                  Nombre comercial: {{ item.nombreComercial }}
+                </small>
+              </div>
+
+              <div class="badges-column">
+                <span class="estado-badge" [ngClass]="item.estado ? 'estado-activo' : 'estado-inactivo'">
+                  {{ item.estado ? 'Activo' : 'Inactivo' }}
+                </span>
+
+                <span class="cuenta-badge"
+                  [ngClass]="item.cuentaWebVinculada ? 'cuenta-vinculada' : 'cuenta-pendiente'">
+                  {{ item.cuentaWebVinculada ? 'Cuenta web vinculada' : 'Sin cuenta web' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="cliente-meta">
+              <div>
+                <small>Correo</small>
+                <strong>{{ item.correo || 'No registrado' }}</strong>
+              </div>
+
+              <div>
+                <small>Teléfono</small>
+                <strong>{{ item.telefono || 'No registrado' }}</strong>
+              </div>
+
+              <div>
+                <small>Ubicación</small>
+                <strong>{{ item.ubicacion || 'Sin ubicación' }}</strong>
+              </div>
+
+              <div>
+                <small>Registro</small>
+                <strong>{{ item.fechaRegistro | date:'dd/MM/yyyy' }}</strong>
+              </div>
+            </div>
+
+            <p class="cliente-direccion">
+              {{ item.direccion || 'Sin dirección registrada.' }}
+            </p>
+
+            <div class="contacto-card" *ngIf="item.tieneContactoPrincipal && item.contactoPrincipal">
+              <span>Contacto principal</span>
+
+              <strong>
+                {{ item.contactoPrincipal.nombres }}
+                {{ item.contactoPrincipal.apellidoPaterno }}
+                {{ item.contactoPrincipal.apellidoMaterno }}
+              </strong>
+
+              <small>
+                {{ item.contactoPrincipal.cargo || 'Sin cargo' }}
+                <ng-container *ngIf="item.contactoPrincipal.telefono">
+                  · {{ item.contactoPrincipal.telefono }}
+                </ng-container>
+                <ng-container *ngIf="item.contactoPrincipal.correo">
+                  · {{ item.contactoPrincipal.correo }}
+                </ng-container>
+              </small>
+            </div>
+
+            <div class="contacto-card contacto-card-empty"
+              *ngIf="item.tipoCliente === 'Empresa' && !item.tieneContactoPrincipal">
+              Sin contacto principal registrado.
+            </div>
+          </div>
+
+          <div class="cliente-card__actions">
+            <button type="button" class="btn btn-edit" (click)="editarCliente(item)">
+              Editar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!cargando && totalRegistros > 0">
+        <div class="pagination-info">
+          Mostrando {{ clientes.length }} de {{ totalRegistros }} clientes
+        </div>
+
+        <div class="pagination-controls">
+          <select [(ngModel)]="tamanioPagina" name="tamanioPagina" (change)="cambiarTamanioPagina()">
+            <option *ngFor="let opcion of opcionesTamanioPagina" [ngValue]="opcion">
+              {{ opcion }} por página
+            </option>
+          </select>
+
+          <button type="button" class="btn btn-page" (click)="paginaAnterior()" [disabled]="pagina <= 1">
+            Anterior
+          </button>
+
+          <span>
+            Página {{ pagina }} de {{ totalPaginas }}
+          </span>
+
+          <button type="button" class="btn btn-page" (click)="paginaSiguiente()" [disabled]="pagina >= totalPaginas">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>
