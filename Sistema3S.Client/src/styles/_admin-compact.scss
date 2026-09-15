@@ -1,0 +1,268 @@
+// Estilos compartidos exclusivamente por los módulos dentro del panel administrativo.
+// La especificidad del contenedor prevalece sobre los estilos locales de Angular.
+@mixin theme {
+.admin-shell .content .page-content {
+  --admin-border: #e2e8f0;
+  --admin-muted: #64748b;
+  --admin-radius: 12px;
+
+  :is(.productos-page, .servicios-page, .clientes-page, .proveedores-page,
+      .cotizaciones-page, .ventas-page, .compras-page, .inventario-page,
+      .caja-page, .usuarios-page, .dashboard-page, .inicio-panel) {
+    min-height: 0;
+    padding: 16px 20px 24px;
+    gap: 14px;
+  }
+
+  :is(.page-hero, .dashboard-hero) {
+    min-height: 0;
+    padding: 16px 20px;
+    border-radius: var(--admin-radius);
+    gap: 16px;
+    flex-direction: row;
+    align-items: center;
+    box-shadow: none;
+    background: linear-gradient(110deg, #07111b, #691820 65%, #d81920);
+
+    > div { min-width: 0; }
+    h1 { margin: 0; font-size: clamp(22px, 2vw, 28px); line-height: 1.2; letter-spacing: -.035em; }
+    p { margin: 5px 0 0; font-size: 12px; line-height: 1.45; max-width: 760px; }
+  }
+
+  .hero-chip {
+    margin-bottom: 5px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #fecaca;
+  }
+  .page-hero__stats { display: flex; flex-shrink: 0; gap: 8px; width: auto; }
+  :is(.hero-stat, .hero-card, .hero-status) {
+    width: auto;
+    min-width: 120px;
+    min-height: 0;
+    padding: 10px 14px;
+    border-radius: 9px;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  :is(.hero-stat__number, .hero-card strong, .hero-status strong) { font-size: 27px; margin-top: 0; line-height: 1.1; }
+  :is(.hero-stat__label, .hero-card small, .hero-status small) { font-size: 11px; margin-top: 4px; }
+  .hero-card span { font-size: 10px; }
+
+  :is(.productos-grid, .servicios-grid, .clientes-grid, .proveedores-grid,
+      .cotizaciones-grid, .ventas-grid, .compras-grid) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 14px;
+    gap: 14px;
+    align-items: start;
+  }
+  :is(.inventario-grid, .main-grid, .content-grid, .dashboard-layout) { gap: 14px; margin-top: 14px; }
+  :is(.panel, .welcome-card) { min-width: 0; padding: 16px; border-radius: var(--admin-radius); box-shadow: none; }
+  .panel-header { gap: 10px; margin-bottom: 0; }
+  .panel-header h2 { font-size: 17px; line-height: 1.3; font-weight: 700; }
+  .panel-header p { margin-top: 4px; font-size: 12px; line-height: 1.4; }
+
+  :is(.producto-form, .servicio-form, .cliente-form, .proveedor-form,
+      .cotizacion-form, .venta-form, .compra-form, .action-form) { margin-top: 12px; gap: 10px; }
+  :is(.servicio-form, .cliente-form, .proveedor-form, .cotizacion-form) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .proveedor-form > .field-full:not(.section-title):not(.form-actions):not(.check-field) { grid-column: span 1; }
+  .cliente-form {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    > .field { grid-column: span 4; }
+    > .field-full { grid-column: 1 / -1; }
+    > :is(.field-quarter, .field-documento, .field-ubigeo) { grid-column: span 3; }
+    > .field:has([name='direccion']) { grid-column: span 4; }
+  }
+  .servicio-form > .field-full:not(.form-actions):not(.stock-note):not(.check-field) { grid-column: span 1; }
+  .producto-form {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    > .field { grid-column: span 2; }
+    > .field-third { grid-column: span 2; }
+    > .field-full { grid-column: 1 / -1; }
+    > .field-name { grid-column: span 2; }
+    > .field-description { grid-column: span 2; }
+    > .field-media { grid-column: span 2; }
+  }
+  :is(.venta-form, .compra-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  :is(.venta-form, .compra-form) > :is(.totals-card, .form-actions, .form-section-wide) { grid-column: 1 / -1; }
+  .field { min-width: 0; gap: 4px; }
+  :is(input, select, textarea, button) { scroll-margin-top: 100px; scroll-margin-bottom: 16px; }
+  .field label { font-size: 12px; font-weight: 600; margin-bottom: 0; line-height: 1.4; }
+  :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 13px;
+    line-height: 1.4;
+    border: 1px solid #d9e2ec;
+    background-color: #f8fafc;
+  }
+  textarea { min-height: 54px; height: 54px; resize: vertical; }
+  :is(input[type='checkbox'], input[type='radio']) { accent-color: #d81920; flex: 0 0 auto; }
+  :is(input, select, textarea):focus-visible { outline: 2px solid #d81920; outline-offset: 2px; box-shadow: none; }
+  :is(button, a):focus-visible { outline: 2px solid #d81920; outline-offset: 3px; }
+  :is(.btn, .btn-consulta-documento, .tab-btn, .estado-filter) {
+    min-height: 36px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    box-shadow: none;
+    white-space: normal;
+  }
+  .btn-dark { min-width: 76px; }
+  .btn-primary:hover:not(:disabled) { transform: none; }
+  :is(.form-actions, .actions-row, .header-actions, .filter-actions, .modal-actions) { gap: 8px; flex-wrap: wrap; }
+  .form-actions {
+    position: static;
+    padding: 10px 0 0;
+    background: #fff;
+    border-top: 1px solid var(--admin-border);
+    flex-direction: row;
+  }
+  :is(.producto-form, .servicio-form, .cliente-form, .proveedor-form) .form-actions { display: flex; align-items: center; }
+  :is(.form-grid, .contacto-grid) { gap: 10px; }
+  .form-section { padding: 12px; border-radius: 9px; }
+  .section-title { padding: 7px 10px; margin-bottom: 10px; border-radius: 6px; font-size: 12px; }
+  .field.section-title { padding: 0; margin: 2px 0; }
+  .field.section-title span { padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+  :is(.field-error, .field-help, .documento-help, .helper, .stock-note span, .hint-box, .note-box, .admin-warning) {
+    font-size: 11px; line-height: 1.4; padding: 6px 8px; border-radius: 6px; margin-top: 3px;
+  }
+  :is(.stock-note, .stock-note span) { margin-top: 0; }
+  .file-picker { gap: 5px; padding: 7px; border-radius: 7px; }
+  .file-picker input[type='file'] { padding: 4px; font-size: 11px; min-height: 30px; }
+  input[type='file']::file-selector-button { padding: 5px 7px; border: 0; border-radius: 4px; background: #e8eef6; color: #0f172a; cursor: pointer; }
+  :is(.media-preview, .file-selected) { gap: 6px; padding: 6px; border-radius: 6px; flex-wrap: wrap; }
+  .media-preview img { width: 40px; height: 40px; flex-basis: 40px; border-radius: 5px; }
+  :is(.media-preview strong, .file-selected strong) { white-space: normal; overflow-wrap: anywhere; font-size: 11px; }
+  :is(.btn-file-clear, .btn-file-action) { padding: 5px 7px; border-radius: 5px; }
+
+  :is(.search-bar, .filters-card, .tabs-card, .tabs) { margin-top: 12px; gap: 8px; }
+  :is(.search-bar, .search-control, .documento-search, .document-row) { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .filters-card { padding: 12px; border-radius: 9px; }
+  :is(.filters-row, .filter-row-main, .filter-row-dates) { gap: 8px; }
+  .catalogo-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 10px 0; }
+  .catalogo-toolbar > span { color: #64748b; font-size: 11px; }
+  .estado-filter { border: 1px solid #d9e2ec; background: #fff; color: #334155; }
+  .estado-filter:hover { background: #f1f5f9; }
+  .estado-filter.selected { background: #fff1f2; border-color: #d81920; color: #b9151b; }
+  .estado-filter:disabled { opacity: .55; cursor: wait; }
+
+  :is(.productos-list, .servicios-list, .clientes-list, .proveedores-list, .cotizaciones-list,
+      .stock-list, .purchase-list, .sale-list, .user-list, .detail-list, .recent-list) { gap: 8px; margin-top: 12px; }
+  :is(.producto-card, .servicio-card, .proveedor-card, .cliente-card, .cotizacion-card,
+      .purchase-card, .sale-card, .stock-card, .role-card, .user-card, .detail-card, .contacto-card) {
+    min-width: 0;
+    padding: 12px;
+    border-radius: 9px;
+    box-shadow: none;
+    gap: 10px;
+  }
+  :is(.producto-card, .servicio-card, .proveedor-card) { grid-template-columns: 56px minmax(0, 1fr) 78px; }
+  :is(.producto-card__image, .servicio-card__image, .proveedor-card__icon, .stock-card__icon) {
+    width: 56px; height: 56px; min-width: 0; border-radius: 8px; font-size: 13px;
+  }
+  :is(.producto-card__top, .servicio-card__top, .proveedor-card__top, .cliente-card__top, .cotizacion-card__top, .stock-card__top) { gap: 8px; }
+  :is(.producto-card, .servicio-card, .proveedor-card, .cliente-card, .cotizacion-card, .stock-card) h3 { font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+  :is(.producto-card__top, .servicio-card__top, .proveedor-card__top, .cliente-card__top) p { margin-top: 4px; font-size: 12px; }
+  :is(.producto-tags, .servicio-tags, .proveedor-tags, .cotizacion-tags) { margin-top: 6px; gap: 5px; }
+  :is(.producto-tags, .servicio-tags, .proveedor-tags, .cotizacion-tags) span { padding: 4px 7px; font-size: 10px; border-radius: 5px; overflow-wrap: anywhere; }
+  :is(.estado-badge, .status-badge, .stock-badge, .cuenta-badge, .origen-badge, .status-pill) { padding: 4px 8px; font-size: 10px; line-height: 1.5; }
+  :is(.producto-meta, .servicio-meta, .proveedor-meta, .cliente-meta, .cotizacion-meta, .stock-metrics, .purchase-metrics, .sale-metrics) { margin-top: 8px; gap: 8px 14px; }
+  :is(.producto-meta, .servicio-meta, .stock-metrics) strong { font-size: 16px; margin-top: 2px; }
+  :is(.cliente-meta, .proveedor-meta, .cotizacion-meta) > div { min-width: 0; padding: 7px; border-radius: 6px; overflow-wrap: anywhere; }
+  :is(.producto-card__actions, .servicio-card__actions, .proveedor-card__actions, .cliente-card__actions) .btn { padding: 6px 8px; min-width: 0; }
+  :is(.sale-actions, .purchase-actions, .cotizacion-card__actions) { flex-wrap: wrap; gap: 6px; }
+  :is(.result-list, .ubigeo-results, .ubigeo-resultados) { max-height: 160px; }
+  :is(.result-item, .selected-box, .movement-item, .report-card) { padding: 9px; border-radius: 7px; }
+  .result-item strong { font-size: 12px; }
+  :is(.empty-box, .estado-box, .empty-state, .alert) { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 12px; }
+  .pagination-bar { padding-top: 10px; margin-top: 12px; gap: 8px; }
+  :is(.pagination-info, .pagination-controls span) { font-size: 11px; }
+  .pagination-controls { gap: 6px; display: flex; flex-wrap: wrap; }
+  .pagination-controls select { width: auto; padding: 6px; }
+
+  :is(.summary-grid, .metrics-grid, .quick-grid, .quick-actions, .method-summary-grid, .role-grid, .permissions-grid) { gap: 12px; margin-top: 14px; }
+  :is(.summary-card, .metric-card, .method-card, .action-card, .quick-action) { min-width: 0; min-height: 0; padding: 14px; border-radius: 10px; box-shadow: none; }
+  :is(.summary-card, .metric-card) strong { font-size: 26px; line-height: 1.2; }
+  :is(.summary-card, .metric-card) p { margin-top: 6px; font-size: 12px; }
+  .quick-action { gap: 10px; }
+  .action-card strong { margin-top: 6px; font-size: 14px; }
+  :is(.permission-group, .password-card, .totals-card, .payment-summary, .cuotas-card) { padding: 12px; border-radius: 9px; }
+  .permission-item { padding: 8px; }
+  :is(.table-wrap, .cuotas-table) { max-width: 100%; overflow-x: auto; }
+  :is(th, td) { padding: 9px 10px; font-size: 12px; }
+  .modal-backdrop { padding: 16px; overflow-y: auto; }
+  .modal-card { max-width: 100%; max-height: calc(100dvh - 32px); overflow-y: auto; border-radius: 12px; padding: 18px; }
+  :is(.modal-header, .modal-body) { padding: 12px; }
+
+  @media (max-width: 1199px) {
+    :is(.productos-grid, .servicios-grid, .clientes-grid, .proveedores-grid, .cotizaciones-grid, .ventas-grid, .compras-grid) { grid-template-columns: minmax(0, 1fr); }
+    :is(.inventario-grid, .main-grid, .content-grid, .dashboard-layout) { grid-template-columns: minmax(0, 1fr); }
+    .panel-form, .form-panel { width: 100%; }
+    :is(.producto-card, .servicio-card, .proveedor-card) { grid-template-columns: 56px minmax(0, 1fr) 90px; }
+    .quick-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 850px) {
+    :is(.servicio-form, .cliente-form, .proveedor-form, .cotizacion-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .producto-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .producto-form > .field { grid-column: span 1; }
+    .producto-form > :is(.field-full, .field-name, .field-description) { grid-column: 1 / -1; }
+    .cliente-form > .field { grid-column: span 1; }
+    .cliente-form > :is(.field-full, .field-documento, .field-ubigeo) { grid-column: 1 / -1; }
+    .cliente-form > .field:has([name='direccion']) { grid-column: 1 / -1; }
+    :is(.venta-form, .compra-form) { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 700px) {
+    :is(.productos-page, .servicios-page, .clientes-page, .proveedores-page, .cotizaciones-page,
+        .ventas-page, .compras-page, .inventario-page, .caja-page, .usuarios-page, .dashboard-page, .inicio-panel) { padding: 12px; }
+    :is(.page-hero, .dashboard-hero) { padding: 14px; flex-wrap: wrap; gap: 10px; }
+    :is(.page-hero, .dashboard-hero) h1 { font-size: 23px; }
+    :is(.page-hero, .dashboard-hero) p { font-size: 12px; }
+    :is(.hero-stat, .hero-card, .hero-status) { min-width: 0; padding: 8px 12px; }
+    .page-hero__stats { width: 100%; flex-wrap: wrap; }
+    :is(.hero-stat__number, .hero-card strong, .hero-status strong) { font-size: 22px; }
+    .panel { padding: 12px; }
+    :is(.panel-header, .list-header) { flex-wrap: wrap; }
+    :is(.header-actions, .filter-actions) { width: 100%; }
+    :is(input:not([type='checkbox']):not([type='radio']), select, textarea) { min-height: 44px; font-size: 16px; }
+    :is(.btn, .btn-consulta-documento, .tab-btn, .estado-filter, .btn-file-clear, .btn-file-action, .stock-tabs button, .tabs-card button) { min-height: 44px; }
+    :is(.form-grid.two, .filters-row, .filter-row-main, .filter-row-dates, .detail-form, .detail-values-editable) { grid-template-columns: minmax(0, 1fr); }
+    :is(.cliente-meta, .proveedor-meta, .cotizacion-meta, .sale-metrics, .purchase-metrics) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    :is(.summary-grid, .metrics-grid, .quick-grid, .quick-actions, .method-summary-grid, .role-grid, .permissions-grid, .closing-method-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .form-actions { position: static; }
+    :is(.producto-card, .servicio-card, .proveedor-card) { grid-template-columns: 48px minmax(0, 1fr); }
+    :is(.producto-card__image, .servicio-card__image, .proveedor-card__icon) { width: 48px; height: 48px; }
+    :is(.producto-card__actions, .servicio-card__actions, .proveedor-card__actions) { grid-column: 1 / -1; display: flex; flex-direction: row; }
+    :is(.producto-card__actions, .servicio-card__actions, .proveedor-card__actions) .btn { flex: 1; }
+    :is(.producto-card__top, .servicio-card__top, .proveedor-card__top) { grid-template-columns: minmax(0, 1fr); }
+    :is(.cliente-card, .cotizacion-card, .stock-card) { grid-template-columns: minmax(0, 1fr); }
+    .cliente-card__actions { flex-direction: row; }
+    :is(.tabs, .stock-tabs, .tabs-card) { display: flex; flex-wrap: wrap; gap: 6px; }
+    .modal-backdrop { padding: 8px; }
+    .modal-card { padding: 12px; max-height: calc(100dvh - 16px); }
+    .cuotas-row { min-width: 460px; }
+    .pagination-controls { justify-content: flex-start; }
+    .pagination-info { text-align: left; }
+  }
+  @media (max-width: 480px) {
+    :is(.producto-form, .servicio-form, .cliente-form, .proveedor-form, .cotizacion-form, .contacto-grid) { grid-template-columns: minmax(0, 1fr); }
+    .producto-form > .field { grid-column: 1 / -1; }
+    :is(.search-control, .documento-search, .document-row) { grid-template-columns: minmax(0, 1fr); flex-wrap: wrap; }
+    :is(.permissions-grid, .role-grid, .method-summary-grid, .closing-method-grid) { grid-template-columns: minmax(0, 1fr); }
+    .catalogo-toolbar { align-items: flex-start; }
+    .catalogo-toolbar > span { flex-basis: 100%; }
+  }
+}
+}

@@ -1,0 +1,215 @@
+<section class="about-page">
+  <section class="about-loading" *ngIf="cargando">
+    Cargando información de la empresa...
+  </section>
+
+  <section class="about-error" *ngIf="error">
+    {{ error }}
+  </section>
+
+  <ng-container *ngIf="!cargando && !error && nosotros">
+    <section class="about-hero">
+      <div class="hero-shape-red"></div>
+      <div class="hero-shape-bottom"></div>
+
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <span class="hero-pill">
+            Ingeniería y soluciones para la industria
+          </span>
+
+          <h1>
+            <span>Servicios y</span>
+            <strong>Soluciones</strong>
+            <span>Superiores</span>
+          </h1>
+
+          <p>
+            Especialistas en sistemas de vapor, mantenimiento industrial,
+            suministro de equipos para procesos industriales, instrumentación
+            y automatización industrial.
+          </p>
+
+          <div class="hero-buttons">
+            
+
+            
+          </div>
+        </div>
+
+        <div class="hero-image-box">
+          <div class="hero-image-frame">
+            <img src="/assets/images/Acerca.webp" alt="Equipo técnico 3S" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="mission-vision-section"
+      [class.hover-mission]="mvHover === 'mision'"
+      [class.hover-vision]="mvHover === 'vision'"
+      (mouseleave)="cambiarHoverMv(null)"
+    >
+      <div class="mv-background"></div>
+
+      <div class="mv-cards">
+        <article
+          class="mv-card mission-card"
+          (mouseenter)="cambiarHoverMv('mision')"
+        >
+          <span>Nuestra</span>
+
+          <h2>Misión</h2>
+
+          <p>
+            {{ nosotros.mision }}
+          </p>
+
+          <div class="mv-logo">
+            <img src="/assets/images/logo-3s.png" alt="3S" />
+          </div>
+        </article>
+
+        <article
+          class="mv-card vision-card"
+          (mouseenter)="cambiarHoverMv('vision')"
+        >
+          <span>Nuestra</span>
+
+          <h2>Visión</h2>
+
+          <p>
+            {{ nosotros.vision }}
+          </p>
+
+          <div class="mv-logo">
+            <img src="/assets/images/logo-3s.png" alt="3S" />
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="commitment-legacy">
+      <div class="commitment-copy">
+        <h2>
+          Nuestro <strong>compromiso</strong>
+        </h2>
+
+        <div class="title-line"></div>
+
+        <p class="section-description">
+          En 3S trabajamos para garantizar la continuidad operativa de los
+          sistemas industriales, brindando soluciones técnicas enfocadas en
+          eficiencia, seguridad y confiabilidad en cada proceso.
+        </p>
+
+        <div class="commitment-list">
+          <article
+            class="commitment-item"
+            *ngFor="let compromiso of nosotros.compromisos"
+          >
+            <div class="commitment-icon">
+              {{ compromiso.icono }}
+            </div>
+
+            <div>
+              <h3>{{ compromiso.titulo }}</h3>
+              <p>{{ compromiso.descripcion }}</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="commitment-image">
+        <img src="/assets/images/Compromiso.webp" alt="Compromiso 3S" />
+      </div>
+    </section>
+
+    <section class="industries-legacy" *ngIf="nosotros.industrias.length > 0">
+      <div class="industries-copy">
+        <h2>
+          Industrias
+          <span>que atendemos</span>
+        </h2>
+
+        <div class="title-line"></div>
+
+        <p class="section-description">
+          Nuestros servicios están orientados a empresas que requieren sistemas
+          de generación de vapor, mantenimiento industrial especializado y
+          soluciones técnicas para procesos productivos.
+        </p>
+
+        <div class="industry-list">
+          <article
+            class="industry-item"
+            *ngFor="let industria of nosotros.industrias; trackBy: trackByIndustria"
+          >
+            <div class="industry-icon">
+              {{ iconoIndustria(industria.nombre) }}
+            </div>
+
+            <span>{{ industria.nombre }}</span>
+          </article>
+        </div>
+      </div>
+
+      <div class="industries-image">
+        <img src="/assets/images/Industria.webp" alt="Industrias que atendemos" />
+      </div>
+    </section>
+
+    <section class="values-legacy" *ngIf="nosotros.valores.length > 0">
+      <div class="values-image">
+        <img src="/assets/images/Valor.webp" alt="Valores 3S" />
+      </div>
+
+      <div class="values-copy">
+        <h2>
+          Nuestros valores
+        </h2>
+
+        <p>
+          Los principios que guían nuestro trabajo
+        </p>
+
+        <div class="title-line"></div>
+
+        <div class="values-list">
+          <article
+            class="value-item"
+            *ngFor="let valor of nosotros.valores; trackBy: trackByValor"
+          >
+            <div class="value-check">
+              ✓
+            </div>
+
+            <span>{{ valor.nombre }}</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-final-cta">
+      <div>
+        <span>Atención comercial</span>
+
+        <h2>
+          ¿Necesitas una solución industrial para tu empresa?
+        </h2>
+
+        <p>
+          Revisa nuestro catálogo o solicita atención personalizada para
+          productos y servicios técnicos industriales.
+        </p>
+      </div>
+
+      <div class="final-buttons">
+        
+
+        
+      </div>
+    </section>
+  </ng-container>
+</section>

@@ -1,0 +1,59 @@
+
+
+<section class="catalog-intro seccion-scroll seccion-suave" id="catalogo">
+  <div>
+    <span>Catálogo industrial 3S</span>
+    <h2>Soluciones para operación, mantenimiento y automatización industrial</h2>
+    <p>
+      Encuentra productos organizados por categoría y solicita cotizaciones
+      según marca, aplicación técnica o requerimiento de tu empresa.
+    </p>
+  </div>
+</section>
+
+
+
+
+
+<section
+  class="brands-section seccion-scroll seccion-marcas"
+  id="marcas"
+  *ngIf="marcas.length > 0"
+>
+  <div class="section-heading center">
+    <span>Marcas confiables</span>
+    <h2>Tecnología y aliados que respaldan nuestro trabajo</h2>
+    <p>
+      Trabajamos con marcas reconocidas por su desempeño, calidad y confiabilidad
+      para responder a las exigencias de cada operación industrial.
+    </p>
+  </div>
+
+  <div class="brands-marquee">
+    <div class="brands-track">
+      <a
+        class="brand-card"
+        *ngFor="let marca of marcasCarrusel; let i = index; trackBy: trackByMarcaCarrusel"
+      >
+        <img
+          *ngIf="marca.logoUrl"
+          [src]="marca.logoUrl"
+          [alt]="marca.nombre"
+          loading="lazy"
+          decoding="async"
+        />
+
+        <strong *ngIf="!marca.logoUrl">
+          {{ marca.nombre }}
+        </strong>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+

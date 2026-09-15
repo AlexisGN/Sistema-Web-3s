@@ -1,0 +1,92 @@
+<div class="public-shell">
+  <header class="public-header" [class.header-scrolled]="headerScrolled">
+    <div class="header-inner">
+      <a class="public-logo" routerLink="/" (click)="cerrarMenu()">
+        <img src="/assets/images/logo-3sO.png" alt="3S" />
+      </a>
+
+      <button type="button" class="menu-toggle" (click)="toggleMenu()" aria-label="Abrir menú">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav class="public-nav" [class.open]="menuAbierto">
+        
+        
+        
+        <a routerLink="/nosotros" (click)="cerrarMenu()">Nosotros</a>
+      </nav>
+
+      
+
+      <div class="header-actions">
+        
+
+        
+
+        
+      </div>
+    </div>
+  </header>
+
+  <main class="public-main">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="public-footer" id="contacto">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <img src="/assets/images/logo-3sO.png" alt="3S" />
+
+          <div>
+            <strong>3S</strong>
+            <span>Servicio y Soluciones Superiores S.A.C.</span>
+          </div>
+        </div>
+
+        <p>
+          Productos, servicios y soluciones industriales para generación de
+          vapor, instrumentación, automatización, mantenimiento y continuidad
+          operativa.
+        </p>
+      </div>
+
+      <div>
+        <h3>Catálogo</h3>
+        
+        
+        
+        <a routerLink="/nosotros">Nosotros</a>
+      </div>
+
+      <div>
+        <h3>Contacto</h3>
+        <span>WhatsApp: +51 948 327 667</span>
+        <span>Correo: cevallosindustrial@gmail.com</span>
+        <span>Av. Los Pinos 960 Urb. El Ermitaño</span>
+        <span>Independencia - Lima - Lima</span>
+      </div>
+
+      <div>
+        <h3>Atención comercial</h3>
+        <p>
+          Solicita información técnica o una cotización personalizada
+          para productos y servicios industriales.
+        </p>
+
+        
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 3S. Todos los derechos reservados.</span>
+      <span>Servicio y Soluciones Superiores S.A.C.</span>
+    </div>
+  </footer>
+
+  
+
+  
+</div>
