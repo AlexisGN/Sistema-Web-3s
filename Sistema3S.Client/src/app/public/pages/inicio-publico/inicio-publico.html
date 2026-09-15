@@ -66,7 +66,9 @@
             Ver producto
           </a>
 
-          
+          <button type="button" (click)="abrirWhatsAppProducto(producto)">
+            Cotizar
+          </button>
         </div>
       </article>
     </div>
@@ -164,9 +166,20 @@
           <p>{{ producto.descripcion }}</p>
 
           <div class="product-actions">
-            
+            <div class="qty-control">
+              <label>Cantidad</label>
 
-            
+              <input
+                type="number"
+                min="1"
+                [(ngModel)]="producto.cantidad"
+                (change)="normalizarCantidad(producto)"
+              />
+            </div>
+
+            <button type="button" (click)="abrirWhatsAppProducto(producto)">
+              Cotizar
+            </button>
           </div>
         </div>
       </article>
@@ -265,14 +278,62 @@
             Ver servicio
           </a>
 
-          
+          <button type="button" (click)="abrirWhatsAppServicio(servicio)">
+            Consultar
+          </button>
         </div>
       </div>
     </article>
   </div>
 </section>
 
+<section class="register-cta seccion-scroll seccion-cta" *ngIf="!clienteLogueado">
+  <div>
+    <span>Cliente 3S</span>
+    <h2>Crea tu cuenta y cotiza más rápido</h2>
+    
+  </div>
+
+  <div class="cta-actions">
+    <a routerLink="/cliente/login">
+      Iniciar sesión
+    </a>
+
+    <a routerLink="/cliente/registro" class="secondary">
+      Crear cuenta
+    </a>
+  </div>
+</section>
 
 
 
+<section class="quote-steps seccion-scroll seccion-suave">
+  <div class="section-heading center">
+    <span>Cómo cotizar</span>
+    <h2>Solicitud rápida y atención personalizada</h2>
+  </div>
 
+  <div class="steps-grid">
+    <article>
+      <strong>1</strong>
+      <h3>Elige productos</h3>
+      <p>
+        Revisa el catálogo, selecciona cantidad y marca tus productos de interés.
+      </p>
+    </article>
+
+    <article>
+      <strong>2</strong>
+      <h3>Envía tu solicitud</h3>
+      
+    </article>
+
+    <article>
+      <strong>3</strong>
+      <h3>Recibe respuesta</h3>
+      <p>
+        El equipo comercial revisa tu solicitud y te responde por el canal correspondiente.
+      </p>
+    </article>
+  </div>
+</section>

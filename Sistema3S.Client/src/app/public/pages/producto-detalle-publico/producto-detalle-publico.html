@@ -65,7 +65,12 @@
           {{ producto.descripcion }}
         </p>
 
-        
+        <div class="technical-box">
+          <strong>Información para cotización</strong>
+          <p>
+            Selecciona la cantidad requerida y solicita atención comercial. Nuestro equipo revisará tu requerimiento y responderá por el canal correspondiente.
+          </p>
+        </div>
 
         <button
           type="button"
@@ -76,13 +81,35 @@
           Ver ficha técnica
         </button>
 
-        
+        <div class="quote-panel">
+          <div class="qty-control">
+            <label>Cantidad a cotizar</label>
+
+            <input
+              type="number"
+              min="1"
+              [(ngModel)]="producto.cantidad"
+              (change)="normalizarCantidad(producto)"
+            />
+          </div>
+
+          <button type="button" class="main-quote-btn" (click)="abrirWhatsAppProducto(producto)">
+            Cotizar este producto por WhatsApp
+          </button>
+        </div>
 
         <div class="operation-message" *ngIf="mensajeOperacion">
           {{ mensajeOperacion }}
         </div>
 
-        
+        <div class="account-note" *ngIf="!clienteLogueado">
+          
+          
+
+          <a routerLink="/cliente/registro">
+            Crear cuenta de cliente
+          </a>
+        </div>
       </div>
     </section>
 

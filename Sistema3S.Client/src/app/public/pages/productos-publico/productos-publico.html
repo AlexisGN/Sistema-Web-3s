@@ -169,13 +169,24 @@
         </button>
 
         <div class="product-actions">
-          
+          <div class="qty-control">
+            <label>Cantidad</label>
+
+            <input
+              type="number"
+              min="1"
+              [(ngModel)]="producto.cantidad"
+              (change)="normalizarCantidad(producto)"
+            />
+          </div>
 
           <button type="button" class="detail-btn" (click)="verDetalle(producto)">
             Ver detalle
           </button>
 
-          
+          <button type="button" class="quote-btn-card" (click)="abrirWhatsAppProducto(producto)">
+            Cotizar por WhatsApp
+          </button>
         </div>
       </div>
     </article>

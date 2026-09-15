@@ -1,0 +1,68 @@
+<section class="auth-page">
+  <div class="auth-visual">
+    <span>Cliente 3S</span>
+    <h1>Accede a tu cuenta y cotiza más rápido</h1>
+    
+
+    <div class="auth-benefits">
+      
+
+      <article>
+        <strong>02</strong>
+        <p>Conserva tus datos de contacto para futuras cotizaciones.</p>
+      </article>
+
+      <article>
+        <strong>03</strong>
+        <p>Recibe atención comercial según tu tipo de cliente.</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-card-head">
+      <span>Iniciar sesión</span>
+      <h2>Bienvenido nuevamente</h2>
+      <p>
+        Usa el correo registrado en tu cuenta cliente.
+      </p>
+    </div>
+
+    <form class="auth-form" (ngSubmit)="iniciarSesion()">
+      <div class="form-group">
+        <label>Correo electrónico</label>
+        <input
+          type="email"
+          name="correo"
+          [(ngModel)]="correo"
+          placeholder="cliente@empresa.com"
+          autocomplete="email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input
+          type="password"
+          name="contrasena"
+          [(ngModel)]="contrasena"
+          placeholder="Ingresa tu contraseña"
+          autocomplete="current-password"
+        />
+      </div>
+
+      <div class="auth-error" *ngIf="error">
+        {{ error }}
+      </div>
+
+      <button type="submit" class="main-auth-btn" [disabled]="cargando">
+        {{ cargando ? 'Ingresando...' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <div class="auth-switch">
+      <span>¿Aún no tienes una cuenta?</span>
+      <a routerLink="/cliente/registro">Crear cuenta cliente</a>
+    </div>
+  </div>
+</section>

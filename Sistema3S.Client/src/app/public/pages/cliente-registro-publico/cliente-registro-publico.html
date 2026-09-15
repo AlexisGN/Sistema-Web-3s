@@ -1,0 +1,200 @@
+<section class="register-page">
+  <div class="register-header">
+    <span>Registro cliente</span>
+    <h1>Crea tu cuenta 3S</h1>
+    <p>
+      Regístrate como persona natural o empresa para cotizar productos industriales desde la web.
+    </p>
+  </div>
+
+  <form class="register-card" (ngSubmit)="registrar()">
+    <div class="document-tabs">
+      <button
+        type="button"
+        [class.active]="data.tipoDocumento === 'DNI'"
+        (click)="cambiarTipoDocumento('DNI')"
+      >
+        Persona natural / DNI
+      </button>
+
+      <button
+        type="button"
+        [class.active]="data.tipoDocumento === 'RUC'"
+        (click)="cambiarTipoDocumento('RUC')"
+      >
+        Empresa / RUC
+      </button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>{{ esEmpresa ? 'RUC' : 'DNI' }}</label>
+        <input
+          type="text"
+          name="numeroDocumento"
+          [(ngModel)]="data.numeroDocumento"
+          (input)="alCambiarDocumento()"
+          [maxlength]="longitudDocumento"
+          [placeholder]="esEmpresa ? 'Ingresa 11 dígitos' : 'Ingresa 8 dígitos'"
+        />
+      </div>
+
+      <div class="document-status" *ngIf="consultandoDocumento">
+        Consultando documento...
+      </div>
+
+      <div
+        class="document-status"
+        [class.success]="documentoConsultado && !cuentaWebVinculada"
+        [class.danger]="cuentaWebVinculada"
+        *ngIf="avisoDocumento && !consultandoDocumento"
+      >
+        <span>{{ avisoDocumento }}</span>
+
+        <button type="button" *ngIf="cuentaWebVinculada" (click)="irLogin()">
+          Iniciar sesión
+        </button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="!esEmpresa">
+      <div class="section-label">Datos personales</div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombres</label>
+          <input
+            type="text"
+            name="nombres"
+            [(ngModel)]="data.nombres"
+            placeholder="Nombres"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Apellido paterno</label>
+          <input
+            type="text"
+            name="apellidoPaterno"
+            [(ngModel)]="data.apellidoPaterno"
+            placeholder="Apellido paterno"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Apellido materno</label>
+          <input
+            type="text"
+            name="apellidoMaterno"
+            [(ngModel)]="data.apellidoMaterno"
+            placeholder="Apellido materno"
+          />
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="esEmpresa">
+      <div class="section-label">Datos empresariales</div>
+
+      <div class="form-grid">
+        <div class="form-group wide">
+          <label>Razón social</label>
+          <input
+            type="text"
+            name="razonSocial"
+            [(ngModel)]="data.razonSocial"
+            placeholder="Razón social"
+          />
+        </div>
+
+        <div class="form-group wide">
+          <label>Nombre comercial</label>
+          <input
+            type="text"
+            name="nombreComercial"
+            [(ngModel)]="data.nombreComercial"
+            placeholder="Nombre comercial"
+          />
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="section-label">Contacto</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Correo electrónico</label>
+        <input
+          type="email"
+          name="correo"
+          [(ngModel)]="data.correo"
+          placeholder="cliente@empresa.com"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Teléfono / WhatsApp</label>
+        <input
+          type="text"
+          name="telefono"
+          [(ngModel)]="data.telefono"
+          placeholder="Ej. 948327667"
+        />
+      </div>
+
+      <div class="form-group wide">
+        <label>Dirección</label>
+        <input
+          type="text"
+          name="direccion"
+          [(ngModel)]="data.direccion"
+          placeholder="Dirección de contacto"
+        />
+      </div>
+    </div>
+
+    <div class="section-label">Seguridad</div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input
+          type="password"
+          name="contrasena"
+          [(ngModel)]="data.contrasena"
+          placeholder="Mínimo 8 caracteres"
+          autocomplete="new-password"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Confirmar contraseña</label>
+        <input
+          type="password"
+          name="confirmarContrasena"
+          [(ngModel)]="data.confirmarContrasena"
+          placeholder="Repite tu contraseña"
+          autocomplete="new-password"
+        />
+      </div>
+    </div>
+
+    <div class="auth-error" *ngIf="error">
+      {{ error }}
+    </div>
+
+    <div class="auth-success" *ngIf="mensaje">
+      {{ mensaje }}
+    </div>
+
+    <div class="register-actions">
+      <button type="submit" [disabled]="cargando || consultandoDocumento || cuentaWebVinculada">
+        {{ cargando ? 'Creando cuenta...' : 'Crear cuenta cliente' }}
+      </button>
+
+      <a routerLink="/cliente/login">
+        Ya tengo cuenta
+      </a>
+    </div>
+  </form>
+</section>

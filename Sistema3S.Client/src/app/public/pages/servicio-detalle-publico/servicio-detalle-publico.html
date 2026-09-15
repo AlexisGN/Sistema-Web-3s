@@ -60,15 +60,31 @@
           {{ servicio.descripcion }}
         </p>
 
-        
+        <div class="technical-box">
+          <strong>Atención técnica especializada</strong>
+          <p>
+            Este servicio se coordina de forma personalizada por WhatsApp para revisar
+            el alcance, las condiciones del requerimiento y el tipo de atención necesaria.
+          </p>
+        </div>
 
         <small class="visit-badge" *ngIf="servicio.requiereVisitaTecnica">
           Requiere coordinación técnica
         </small>
 
-        
+        <div class="quote-panel">
+          <button type="button" class="main-quote-btn" (click)="abrirWhatsAppServicio(servicio)">
+            Consultar este servicio por WhatsApp
+          </button>
+        </div>
 
-        
+        <div class="account-note">
+          <strong>Servicio atendido uno por uno</strong>
+          <p>
+            Para asegurar una atención adecuada, cada servicio se revisa de forma individual
+            con el área comercial y técnica de 3S.
+          </p>
+        </div>
       </div>
     </section>
 
