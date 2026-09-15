@@ -7,7 +7,7 @@ using Sistema3S.Web.Data;
 using Sistema3S.Web.Services.Implementations;
 using Sistema3S.Web.Services.Interfaces;
 
-
+using Sistema3S.Web.Services.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,15 +62,19 @@ builder.Services
     });
 
 // Servicios de seguridad / autenticación
+builder.Services.AddScoped<PasswordHashService>();
 
 // Servicios de negocio
 builder.Services.AddScoped<IPublicoService, PublicoService>();
 
+builder.Services.AddHttpClient<IConsultaDocumentoService, ConsultaDocumentoService>();
 
 
 
 
 
+builder.Services.AddScoped<PasswordHashService>();
+builder.Services.AddScoped<IClienteWebService, ClienteWebService>();
 
 // Servicios para PDF / correo / WhatsApp
 builder.Services.AddHttpClient();

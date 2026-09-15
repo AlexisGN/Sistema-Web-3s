@@ -70,6 +70,21 @@ export const routes: Routes = [
         path: 'servicios/:id',
         loadComponent: () =>
           import('./public/pages/servicio-detalle-publico/servicio-detalle-publico').then(m => m.ServicioDetallePublicoComponent)
+      },
+{
+        path: 'cliente/login',
+        loadComponent: () =>
+          import('./public/pages/cliente-login-publico/cliente-login-publico').then(m => m.ClienteLoginPublicoComponent)
+      },
+{
+        path: 'cliente/registro',
+        loadComponent: () =>
+          import('./public/pages/cliente-registro-publico/cliente-registro-publico').then(m => m.ClienteRegistroPublicoComponent)
+      },
+{
+        path: 'cliente/perfil',
+        loadComponent: () =>
+          import('./public/pages/cliente-perfil-publico/cliente-perfil-publico').then(m => m.ClientePerfilPublicoComponent)
       }
 ]
   },

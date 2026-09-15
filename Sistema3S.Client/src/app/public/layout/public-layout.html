@@ -30,9 +30,52 @@
       <div class="header-actions">
         
 
-        
+        <div class="account-menu">
+          <button type="button" class="account-btn" (click)="toggleCuenta()">
+            {{ clienteLogueado ? nombreClienteCorto : 'Mi cuenta' }}
+          </button>
 
-        
+          <div class="account-dropdown" *ngIf="cuentaAbierta">
+            <ng-container *ngIf="clienteLogueado && clienteSesion; else accesoCliente">
+              <div class="account-summary">
+                <strong>{{ clienteSesion.nombreCliente }}</strong>
+                <span>{{ clienteSesion.tipoDocumento }}: {{ clienteSesion.numeroDocumento }}</span>
+                <small>{{ clienteSesion.correo }}</small>
+              </div>
+
+              <button type="button" (click)="irClientePerfil()">
+                Ver mi perfil
+              </button>
+
+              
+
+              
+
+              <button type="button" class="logout-option" (click)="cerrarSesionCliente()">
+                Cerrar sesión
+              </button>
+            </ng-container>
+
+            <ng-template #accesoCliente>
+              <div class="account-summary">
+                <strong>Acceso cliente</strong>
+                
+              </div>
+
+              <button type="button" (click)="irClienteLogin()">
+                Iniciar sesión
+              </button>
+
+              <button type="button" (click)="irClienteRegistro()">
+                Crear cuenta
+              </button>
+            </ng-template>
+          </div>
+        </div>
+
+        <button type="button" class="quote-btn" (click)="abrirWhatsAppGeneral()">
+          Cotizar
+        </button>
       </div>
     </div>
   </header>
@@ -83,7 +126,9 @@
           para productos y servicios industriales.
         </p>
 
-        
+        <button type="button" class="footer-whatsapp" (click)="abrirWhatsAppGeneral()">
+          Cotizar por WhatsApp
+        </button>
       </div>
     </div>
 
@@ -95,5 +140,10 @@
 
   
 
-  
+  <button type="button" class="whatsapp-float" (click)="abrirWhatsAppGeneral()" aria-label="Cotizar por WhatsApp">
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path
+        d="M16.02 3.2C9.02 3.2 3.34 8.75 3.34 15.59c0 2.38.7 4.6 1.9 6.48L3.2 28.8l6.96-1.98a12.92 12.92 0 0 0 5.86 1.42c7 0 12.68-5.55 12.68-12.39S23.02 3.2 16.02 3.2Zm0 22.92c-1.92 0-3.7-.52-5.25-1.42l-.38-.22-4.12 1.17 1.2-3.95-.25-.4a10.35 10.35 0 0 1-1.66-5.71c0-5.67 4.7-10.28 10.46-10.28 5.77 0 10.46 4.61 10.46 10.28 0 5.68-4.69 10.53-10.46 10.53Zm5.74-7.7c-.31-.16-1.86-.9-2.15-1-.29-.1-.5-.16-.71.16-.21.31-.82 1-.99 1.21-.18.21-.36.23-.67.08-.31-.16-1.32-.48-2.52-1.52-.93-.82-1.56-1.84-1.74-2.15-.18-.31-.02-.48.14-.63.14-.14.31-.36.47-.54.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.54-.08-.16-.71-1.68-.98-2.3-.26-.6-.52-.52-.71-.53h-.61c-.21 0-.54.08-.82.39-.29.31-1.08 1.04-1.08 2.53 0 1.49 1.11 2.93 1.26 3.13.16.21 2.18 3.27 5.28 4.58.74.31 1.32.5 1.77.64.74.23 1.41.2 1.94.12.59-.09 1.86-.75 2.12-1.47.26-.73.26-1.35.18-1.48-.08-.13-.29-.21-.6-.36Z" />
+    </svg>
+  </button>
 </div>

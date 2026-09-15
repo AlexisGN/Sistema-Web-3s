@@ -1,0 +1,49 @@
+<section class="profile-page" *ngIf="sesion">
+  <div class="profile-hero">
+    <span>Mi cuenta</span>
+    <h1>{{ sesion.nombreCliente }}</h1>
+    <p>
+      Administra tu acceso cliente y continúa solicitando cotizaciones web desde el catálogo público 3S.
+    </p>
+  </div>
+
+  <div class="profile-grid">
+    <article class="profile-card main">
+      <span>Datos de cuenta</span>
+
+      <div class="profile-data">
+        <div>
+          <small>Tipo de cliente</small>
+          <strong>{{ sesion.tipoCliente }}</strong>
+        </div>
+
+        <div>
+          <small>Documento</small>
+          <strong>{{ sesion.tipoDocumento }}: {{ sesion.numeroDocumento }}</strong>
+        </div>
+
+        <div>
+          <small>Correo</small>
+          <strong>{{ sesion.correo }}</strong>
+        </div>
+
+        <div>
+          <small>Cuenta</small>
+          <strong>{{ sesion.rol }}</strong>
+        </div>
+      </div>
+    </article>
+
+    <article class="profile-card actions">
+      <span>Acciones rápidas</span>
+      <h2>Continúa tu solicitud</h2>
+      
+
+      <div class="action-buttons">
+        <a routerLink="/productos">Ver productos</a>
+        
+        <button type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+      </div>
+    </article>
+  </div>
+</section>
