@@ -1,0 +1,74 @@
+<div class="admin-shell" [class.sidebar-collapsed]="sidebarCollapsed" (keydown.escape)="closeMobileMenu()">
+  <button type="button" class="mobile-toggle" [attr.aria-expanded]="mobileMenuOpen" aria-controls="admin-sidebar" [attr.aria-label]="mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'" (click)="toggleMobileMenu()">
+    ☰
+  </button>
+
+  <button *ngIf="mobileMenuOpen" type="button" class="sidebar-backdrop" aria-label="Cerrar menú" (click)="closeMobileMenu()"></button>
+
+  <aside id="admin-sidebar" class="sidebar" [class.mobile-open]="mobileMenuOpen">
+    <button type="button" class="sidebar-toggle" [attr.aria-expanded]="!sidebarCollapsed" [attr.aria-label]="sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'" (click)="toggleSidebar()">
+      {{ sidebarCollapsed ? '›' : '‹' }}
+    </button>
+
+    <div class="brand">
+      <div class="brand-logo">
+        <img src="/assets/images/logo-3s.png" alt="Sistema 3S" />
+      </div>
+
+      <div class="brand-text">
+        <strong>Sistema 3S</strong>
+        <span>Panel administrador</span>
+      </div>
+    </div>
+
+    <nav class="menu-scroll">
+      <section
+        class="menu-group"
+        *ngFor="let group of menuVisible; trackBy: trackByGroup"
+      >
+        <h3>{{ group.title }}</h3>
+
+        <a
+          *ngFor="let item of group.items; trackBy: trackByItem"
+          [routerLink]="item.route" [attr.aria-label]="item.label" [title]="item.label"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: false }"
+          (click)="closeMobileMenu()"
+        >
+          <span class="menu-icon">{{ item.icon }}</span>
+          <span class="menu-label">{{ item.label }}</span>
+        </a>
+      </section>
+    </nav>
+
+    <button type="button" class="logout-card" (click)="cerrarSesion()">
+      <strong>3S</strong>
+      <span>CERRAR SESIÓN</span>
+    </button>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Panel administrador</h1>
+        <p>Gestión comercial, inventario, operaciones y seguridad.</p>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="system-status" [ngClass]="estadoSistema">
+          <span></span>
+          {{ textoEstadoSistema }}
+        </div>
+
+        <div class="user-card">
+          <strong>{{ usuarioRol || 'Usuario' }}</strong>
+          <span>{{ usuarioCorreo || 'sesión activa' }}</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-content">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+</div>

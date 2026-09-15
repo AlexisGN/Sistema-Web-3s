@@ -1,0 +1,460 @@
+<div class="productos-page">
+  <section class="page-hero">
+    <div class="page-hero__content">
+      <span class="hero-chip">Catálogo industrial</span>
+
+      <h1>Gestión de productos</h1>
+
+      <p>
+        Administra productos industriales, categorías, stock inicial y contenido
+        del catálogo para cotizaciones, ventas internas e inventario.
+      </p>
+    </div>
+
+    <div class="page-hero__stats">
+      <div class="hero-stat">
+        <span class="hero-stat__number">{{ totalRegistros }}</span>
+        <span class="hero-stat__label">{{ verInactivos ? 'Productos inactivos encontrados' : 'Productos encontrados' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="productos-grid">
+    <article class="panel panel-form">
+      <div class="panel-header">
+        <div>
+          <h2>{{ editando ? 'Editar producto' : 'Nuevo producto' }}</h2>
+
+          <p>
+            {{
+              editando
+                ? 'Actualiza la información comercial y técnica.'
+                : 'Registra la información comercial y técnica del producto.'
+            }}
+          </p>
+        </div>
+      </div>
+
+      <form class="producto-form" (ngSubmit)="guardarProducto()" #productoForm="ngForm">
+        <div class="field field-full field-name">
+          <label>Nombre del producto</label>
+
+          <input
+            type="text"
+            [(ngModel)]="producto.nombre"
+            name="nombre"
+            placeholder="Ej. Sensor de temperatura industrial"
+            required
+            (input)="limpiarErrorCampo('nombre')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['nombre']">
+            {{ erroresCampo['nombre'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label>Código</label>
+
+          <input
+            type="text"
+            [(ngModel)]="producto.codigoProducto"
+            name="codigoProducto"
+            placeholder="Ej. PROD-003"
+            required
+            (input)="limpiarErrorCampo('codigoProducto')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['codigoProducto']">
+            {{ erroresCampo['codigoProducto'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label>Precio referencial</label>
+
+          <input
+            type="number"
+            [(ngModel)]="producto.precioReferencial"
+            name="precioReferencial"
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+            required
+            (input)="limpiarErrorCampo('precioReferencial')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['precioReferencial']">
+            {{ erroresCampo['precioReferencial'] }}
+          </small>
+        </div>
+
+        <div class="field field-full field-description">
+          <label>Descripción</label>
+
+          <textarea
+            [(ngModel)]="producto.descripcion"
+            name="descripcion"
+            rows="2"
+            placeholder="Describe el uso técnico del producto"
+            required
+            (input)="limpiarErrorCampo('descripcion')"
+          ></textarea>
+
+          <small class="field-error" *ngIf="erroresCampo['descripcion']">
+            {{ erroresCampo['descripcion'] }}
+          </small>
+        </div>
+
+        <div class="field field-third">
+          <label>Categoría</label>
+
+          <select
+            [(ngModel)]="producto.idCategoria"
+            name="idCategoria"
+            required
+            (change)="limpiarErrorCampo('idCategoria')"
+          >
+            <option [ngValue]="0">Selecciona</option>
+
+            <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
+              {{ categoria.nombre }}
+            </option>
+          </select>
+
+          <small class="field-error" *ngIf="erroresCampo['idCategoria']">
+            {{ erroresCampo['idCategoria'] }}
+          </small>
+        </div>
+
+        <div class="field field-third">
+          <label>Marca</label>
+
+          <select [(ngModel)]="producto.idMarca" name="idMarca">
+            <option [ngValue]="null">Sin marca</option>
+
+            <option *ngFor="let marca of marcas" [ngValue]="marca.id">
+              {{ marca.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="field field-third">
+          <label>Unidad de medida</label>
+
+          <select
+            [(ngModel)]="producto.idUnidadMedida"
+            name="idUnidadMedida"
+            required
+            (change)="limpiarErrorCampo('idUnidadMedida')"
+          >
+            <option [ngValue]="null">Selecciona</option>
+
+            <option *ngFor="let unidad of unidades" [ngValue]="unidad.id">
+              {{ unidad.nombre }}
+            </option>
+          </select>
+
+          <small class="field-error" *ngIf="erroresCampo['idUnidadMedida']">
+            {{ erroresCampo['idUnidadMedida'] }}
+          </small>
+        </div>
+
+        <div class="field field-media">
+          <label>Imagen del producto</label>
+
+          <div class="file-picker">
+            <input
+              #imagenProducto
+              type="file"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              (change)="seleccionarImagen($event)"
+            />
+
+            <small>JPG, PNG o WebP. Tamaño máximo: 5 MB.</small>
+
+            <div class="media-preview" *ngIf="obtenerImagenFormulario()">
+              <img [src]="obtenerImagenFormulario()" alt="Vista previa del producto" />
+
+              <div>
+                <strong>{{ imagenArchivo?.name || 'Imagen actual' }}</strong>
+                <span>{{ imagenArchivo ? 'Se guardará al registrar el producto.' : 'Selecciona otra imagen para reemplazarla.' }}</span>
+              </div>
+
+              <button
+                *ngIf="imagenArchivo"
+                type="button"
+                class="btn-file-clear"
+                (click)="quitarImagenSeleccionada(imagenProducto)"
+              >
+                Quitar selección
+              </button>
+            </div>
+          </div>
+
+          <small class="field-error" *ngIf="erroresCampo['imagenUrl']">
+            {{ erroresCampo['imagenUrl'] }}
+          </small>
+        </div>
+
+        <div class="field field-media">
+          <label>Ficha técnica del producto</label>
+
+          <div class="file-picker">
+            <input
+              #fichaProducto
+              type="file"
+              accept="application/pdf,.pdf"
+              (change)="seleccionarFichaTecnica($event)"
+            />
+
+            <small>Archivo PDF opcional. Tamaño máximo: 15 MB.</small>
+
+            <div class="file-selected" *ngIf="fichaTecnicaArchivo || producto.fichaTecnicaPdf">
+              <div>
+                <strong>{{ fichaTecnicaArchivo?.name || 'Ficha técnica actual' }}</strong>
+                <span>{{ fichaTecnicaArchivo ? 'El PDF seleccionado reemplazará al actual.' : 'El PDF actual se conservará.' }}</span>
+              </div>
+
+              <button
+                *ngIf="producto.fichaTecnicaPdf && !fichaTecnicaArchivo"
+                type="button"
+                class="btn-file-action"
+                (click)="abrirFichaTecnicaActual()"
+              >
+                Ver PDF
+              </button>
+
+              <button
+                *ngIf="fichaTecnicaArchivo"
+                type="button"
+                class="btn-file-clear"
+                (click)="quitarFichaSeleccionada(fichaProducto)"
+              >
+                Quitar selección
+              </button>
+            </div>
+          </div>
+
+          <small class="field-error" *ngIf="erroresCampo['fichaTecnicaPdf']">
+            {{ erroresCampo['fichaTecnicaPdf'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label>Stock inicial</label>
+
+          <input
+            type="number"
+            [(ngModel)]="producto.stockInicial"
+            name="stockInicial"
+            min="0"
+            required
+            [disabled]="editando"
+            (input)="limpiarErrorCampo('stockInicial')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['stockInicial']">
+            {{ erroresCampo['stockInicial'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label>Stock mínimo</label>
+
+          <input
+            type="number"
+            [(ngModel)]="producto.stockMinimo"
+            name="stockMinimo"
+            min="0"
+            required
+            (input)="limpiarErrorCampo('stockMinimo')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['stockMinimo']">
+            {{ erroresCampo['stockMinimo'] }}
+          </small>
+        </div>
+
+        <div class="field field-full stock-note">
+          <span>
+            El stock inicial se guardará como stock actual y debe ser mayor que el stock mínimo.
+          </span>
+        </div>
+
+        <div class="field field-full form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="guardando || cargandoCombos || !formularioProductoValido()"
+          >
+            {{
+              guardando
+                ? 'Guardando...'
+                : (editando ? 'Actualizar producto' : 'Registrar producto')
+            }}
+          </button>
+
+          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
+            {{ editando ? 'Cancelar edición' : 'Limpiar' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="mensaje" class="alert success">
+        {{ mensaje }}
+      </div>
+
+      <div *ngIf="error" class="alert error">
+        {{ error }}
+      </div>
+    </article>
+
+    <article class="panel panel-list">
+      <div class="panel-header">
+        <div>
+          <h2>Productos registrados</h2>
+
+          <p>
+            Catálogo disponible para cotizaciones y ventas internas.
+          </p>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <input
+          type="text"
+          [(ngModel)]="buscar"
+          name="buscar"
+          placeholder="Buscar por nombre, código o categoría..."
+          (keyup.enter)="buscarProductos()"
+        />
+
+        <button type="button" class="btn btn-dark" (click)="buscarProductos()">
+          Buscar
+        </button>
+      </div>
+
+      <div class="catalogo-toolbar">
+        <button type="button" class="estado-filter" [class.selected]="verInactivos"
+                [attr.aria-pressed]="verInactivos" [disabled]="cargando"
+                (click)="alternarInactivos()">
+          {{ verInactivos ? 'Ver todos' : 'Ver inactivos' }}
+        </button>
+        <span role="status">{{ verInactivos ? 'Mostrando solo inactivos' : 'Activos primero · Inactivos al final' }}</span>
+      </div>
+
+      <div *ngIf="cargando" class="estado-box">
+        Cargando productos...
+      </div>
+
+      <div *ngIf="!cargando && productos.length === 0" class="estado-box">
+        {{ verInactivos ? 'No se encontraron productos inactivos con esta búsqueda.' : 'No se encontraron productos con esta búsqueda.' }}
+      </div>
+
+      <div class="productos-list" *ngIf="!cargando && productos.length > 0">
+        <div class="producto-card" *ngFor="let item of productos">
+          <div class="producto-card__image">
+            <img
+              *ngIf="item.imagenUrl"
+              [src]="resolverImagen(item.imagenUrl)"
+              [alt]="item.nombre"
+              loading="lazy"
+              (error)="marcarImagenFallida(item)"
+            />
+
+            <div *ngIf="!item.imagenUrl" class="producto-card__placeholder">
+              Sin imagen
+            </div>
+          </div>
+
+          <div class="producto-card__body">
+            <div class="producto-card__top">
+              <div>
+                <h3>{{ item.nombre }}</h3>
+
+                <p>
+                  {{ item.descripcion || 'Sin descripción registrada.' }}
+                </p>
+              </div>
+
+              <span class="estado-badge" [class.inactivo]="!item.estado">
+                {{ item.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+
+            <div class="producto-tags">
+              <span>{{ item.codigoProducto }}</span>
+              <span>{{ item.categoria }}</span>
+              <span *ngIf="item.marca">{{ item.marca }}</span>
+            </div>
+
+            <div class="producto-meta">
+              <div>
+                <small>Stock actual</small>
+                <strong>{{ item.stockActual }}</strong>
+              </div>
+
+              <div>
+                <small>Stock mínimo</small>
+                <strong>{{ item.stockMinimo }}</strong>
+              </div>
+
+              <div>
+                <small>Precio ref.</small>
+                <strong>S/ {{ item.precioReferencial || 0 }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="producto-card__actions">
+            <button type="button" class="btn btn-edit" (click)="editarProducto(item)">
+              Editar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!cargando && totalRegistros > 0">
+        <div class="pagination-info">
+          Mostrando {{ productos.length }} de {{ totalRegistros }} productos
+        </div>
+
+        <div class="pagination-controls">
+          <select
+            [(ngModel)]="tamanioPagina"
+            name="tamanioPagina"
+            (change)="cambiarTamanioPagina()"
+          >
+            <option *ngFor="let opcion of opcionesTamanioPagina" [ngValue]="opcion">
+              {{ opcion }} por página
+            </option>
+          </select>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaAnterior()"
+            [disabled]="pagina <= 1"
+          >
+            Anterior
+          </button>
+
+          <span>
+            Página {{ pagina }} de {{ totalPaginas }}
+          </span>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaSiguiente()"
+            [disabled]="pagina >= totalPaginas"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>
+

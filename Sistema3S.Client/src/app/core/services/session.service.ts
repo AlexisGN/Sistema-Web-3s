@@ -194,45 +194,19 @@ export class SessionService {
     }
 
     if (this.esAdministrador()) {
-      return '/admin/inicio';
+      return '/admin/productos';
     }
 
     const rol = this.normalizarTexto(this.obtenerRol());
 
-    if (rol.includes('compras')) {
-      return '/admin/compras';
-    }
-
-    if (rol.includes('encargado de almacen') || rol === 'almacen' || rol.includes('almacen')) {
-      return '/admin/inventario';
-    }
-
-    if (rol.includes('encargado de ventas')) {
-      return '/admin/ventas';
-    }
-
-    if (rol.includes('vendedor')) {
-      return '/admin/cotizaciones';
-    }
-
     const rutasPorPermiso: Array<{ permiso: string; ruta: string }> = [
-      { permiso: 'COMPRAS_VER', ruta: '/admin/compras' },
-      { permiso: 'PROVEEDORES_VER', ruta: '/admin/proveedores' },
-      { permiso: 'INVENTARIO_VER', ruta: '/admin/inventario' },
-      { permiso: 'VENTAS_VER', ruta: '/admin/ventas' },
-      { permiso: 'COTIZACIONES_VER', ruta: '/admin/cotizaciones' },
-      { permiso: 'CLIENTES_VER', ruta: '/admin/clientes' },
-      { permiso: 'PRODUCTOS_VER', ruta: '/admin/productos' },
-      { permiso: 'SERVICIOS_VER', ruta: '/admin/servicios' },
-      { permiso: 'CAJA_VER', ruta: '/admin/caja' },
-      { permiso: 'USUARIOS_VER', ruta: '/admin/usuarios-roles' },
-      { permiso: 'ROLES_VER', ruta: '/admin/usuarios-roles' },
-      { permiso: 'INICIO_VER', ruta: '/admin/inicio' }
-    ];
+{ permiso: 'PRODUCTOS_VER', ruta: '/admin/productos' },
+{ permiso: 'SERVICIOS_VER', ruta: '/admin/servicios' }
+];
 
     const rutaPermitida = rutasPorPermiso.find(item => this.tienePermiso(item.permiso));
 
-    return rutaPermitida?.ruta || '/admin/cotizaciones';
+    return rutaPermitida?.ruta || '/';
   }
 
   cerrarSesion(): void {
