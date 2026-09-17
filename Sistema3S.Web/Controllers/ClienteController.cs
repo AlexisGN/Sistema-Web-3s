@@ -105,6 +105,25 @@ namespace Sistema3S.Web.Controllers
 
 
 
+        [HttpDelete("{idCliente:int}")]
+        public async Task<IActionResult> Eliminar(int idCliente)
+        {
+            var eliminado = await _clienteService.EliminarLogicoAsync(idCliente);
+
+            if (!eliminado)
+            {
+                return NotFound(new
+                {
+                    mensaje = "Cliente no encontrado."
+                });
+            }
+
+            return Ok(new
+            {
+                mensaje = "Cliente desactivado correctamente."
+            });
+        }
+
         [HttpGet("tipos-cliente")]
         public async Task<IActionResult> ListarTiposCliente()
         {

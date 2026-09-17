@@ -463,6 +463,10 @@
             <button type="button" class="btn btn-edit" (click)="editarCliente(item)">
               Editar
             </button>
+
+            <button type="button" class="btn btn-delete" (click)="eliminarCliente(item)" [disabled]="!item.estado">
+              Desactivar
+            </button>
           </div>
         </div>
       </div>
