@@ -206,5 +206,34 @@ namespace Sistema3S.Web.Controllers
 
 
 
+        [HttpDelete("{idServicio:int}")]
+        public async Task<IActionResult> Eliminar(int idServicio)
+        {
+            try
+            {
+                var eliminado = await _servicioService.EliminarLogicoAsync(idServicio);
+
+                if (!eliminado)
+                {
+                    return NotFound(new
+                    {
+                        mensaje = "Servicio no encontrado."
+                    });
+                }
+
+                return Ok(new
+                {
+                    mensaje = "Servicio eliminado correctamente."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "No se pudo eliminar el servicio."
+                });
+            }
+        }
+
     }
 }

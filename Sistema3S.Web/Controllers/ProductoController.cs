@@ -226,6 +226,35 @@ namespace Sistema3S.Web.Controllers
 
 
 
+        [HttpDelete("{idProducto:int}")]
+        public async Task<IActionResult> EliminarLogico(int idProducto)
+        {
+            try
+            {
+                var eliminado = await _productoService.EliminarLogicoAsync(idProducto);
+
+                if (!eliminado)
+                {
+                    return NotFound(new
+                    {
+                        mensaje = "Producto no encontrado."
+                    });
+                }
+
+                return Ok(new
+                {
+                    mensaje = "Producto eliminado correctamente."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "No se pudo eliminar el producto."
+                });
+            }
+        }
+
         private async Task LimpiarArchivosNuevosAsync(
             string? imagenNueva,
             string? fichaNueva
