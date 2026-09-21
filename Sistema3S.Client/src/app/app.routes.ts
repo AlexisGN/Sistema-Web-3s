@@ -97,9 +97,25 @@ export const routes: Routes = [
           import('./public/pages/cliente-registro-publico/cliente-registro-publico').then(m => m.ClienteRegistroPublicoComponent)
       },
       
-      
-      
-      ]
+      {
+        path: 'cliente/carrito',
+        title: 'Carrito de cotización | 3S', data: { titulo: 'Carrito de cotización' },
+        loadComponent: () =>
+          import('./public/pages/cliente-carrito-publico/cliente-carrito-publico').then(m => m.ClienteCarritoPublicoComponent)
+      },
+      {
+        path: 'cliente/historial-cotizaciones',
+        title: 'Mis cotizaciones | 3S', data: { titulo: 'Mis cotizaciones' },
+        loadComponent: () =>
+          import('./public/pages/cliente-historial-cotizaciones-publico/cliente-historial-cotizaciones-publico').then(m => m.ClienteHistorialCotizacionesPublicoComponent)
+      },
+      {
+        path: 'cliente/historial-cotizaciones/:id',
+        title: 'Detalle de cotización | 3S', data: { titulo: 'Detalle de cotización' },
+        loadComponent: () =>
+          import('./public/pages/cliente-cotizacion-detalle-publico/cliente-cotizacion-detalle-publico').then(m => m.ClienteCotizacionDetallePublicoComponent)
+      }
+    ]
   },
   {
     path: 'login',
@@ -133,7 +149,14 @@ export const routes: Routes = [
           permisos: ['SERVICIOS_VER']
         }
       },
-      
+      {
+        path: 'cotizaciones',
+        loadComponent: () => import('./pages/cotizaciones/cotizaciones').then(m => m.CotizacionesComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['COTIZACIONES_VER']
+        }
+      },
       {
         path: 'clientes',
         loadComponent: () => import('./pages/clientes/clientes').then(m => m.ClientesComponent),

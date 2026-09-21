@@ -3,6 +3,15 @@ IF EXISTS(SELECT 1 FROM sys.tables WHERE is_ms_shipped=0) THROW 79001,N'La insta
 GO
 SET ANSI_NULLS ON; SET QUOTED_IDENTIFIER ON;
 GO
+CREATE TYPE dbo.[CotizacionDetalleType] AS TABLE ([IdElementoCatalogo] int NOT NULL,
+[Cantidad] int NOT NULL,
+[PrecioUnitario] decimal(18,2) NOT NULL,
+[Observacion] nvarchar(600) NULL);
+GO
+CREATE TYPE dbo.[CotizacionWebDetalleType] AS TABLE ([IdProducto] int NOT NULL,
+[Cantidad] int NOT NULL,
+[Observacion] nvarchar(1000) NULL);
+GO
 CREATE TABLE dbo.[AceptacionDocumentoLegal] ([IdAceptacionDocumentoLegal] int IDENTITY(1,1) NOT NULL,
 [IdUsuario] int NOT NULL,
 [IdDocumentoLegal] int NOT NULL,
@@ -825,6 +834,40 @@ END;
 
 GO
 /* =========================================================
+   7. ACTUALIZAR ARCHIVO PDF DE COTIZACIÓN
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ActualizarPdfCotizacion
+    @IdCotizacion INT,
+    @ArchivoPdf NVARCHAR(600)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @ArchivoPdf = NULLIF(LTRIM(RTRIM(ISNULL(@ArchivoPdf, ''))), '');
+
+    IF @IdCotizacion <= 0
+        THROW 63001, 'Selecciona una cotización válida.', 1;
+
+    IF @ArchivoPdf IS NULL
+        THROW 63002, 'La ruta del PDF no es válida.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM Cotizacion WHERE IdCotizacion = @IdCotizacion)
+        THROW 63003, 'La cotización seleccionada no existe.', 1;
+
+    UPDATE Cotizacion
+    SET ArchivoPdf = @ArchivoPdf,
+        FechaActualizacion = GETDATE()
+    WHERE IdCotizacion = @IdCotizacion;
+
+    SELECT
+        @IdCotizacion AS IdCotizacion,
+        @ArchivoPdf AS ArchivoPdf,
+        'PDF de cotización actualizado correctamente.' AS Mensaje;
+END;
+
+GO
+/* =========================================================
    15. PROCEDIMIENTO: CAMBIAR CONTRASEÑA DE USUARIO
    La contraseña llega como hash desde backend.
    ========================================================= */
@@ -854,6 +897,126 @@ BEGIN
 END;
 
 GO
+/* =========================================================
+   9. CAMBIAR ESTADO DE COTIZACIÓN
+   Flujo:
+   Pendiente -> Respondida / Cancelada
+   Respondida -> Aprobada / Cancelada
+   Aprobada -> Cancelada
+   Convertida en venta solo desde venta.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_CambiarEstadoCotizacion
+    @IdCotizacion INT,
+    @NuevoEstado NVARCHAR(100),
+    @IdUsuarioAtencion INT = NULL
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    IF LTRIM(RTRIM(@NuevoEstado)) = 'Cancelada' EXEC dbo.sp_ExigirAdministradorAuditoria @IdUsuarioAtencion;
+    DECLARE @EstadoActual NVARCHAR(100);
+    DECLARE @IdNuevoEstado INT;
+
+    SET @NuevoEstado = NULLIF(LTRIM(RTRIM(ISNULL(@NuevoEstado, ''))), '');
+
+    IF @IdCotizacion <= 0
+        THROW 65001, 'Selecciona una cotización válida.', 1;
+
+    IF @NuevoEstado IS NULL
+        THROW 65002, 'Selecciona el nuevo estado de la cotización.', 1;
+
+    IF @IdUsuarioAtencion IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioAtencion)
+        THROW 65003, 'El usuario que atiende la cotización no existe.', 1;
+
+    SELECT @EstadoActual = ec.Nombre
+    FROM Cotizacion c
+    INNER JOIN EstadoCotizacion ec ON ec.IdEstadoCotizacion = c.IdEstadoCotizacion
+    WHERE c.IdCotizacion = @IdCotizacion;
+
+    IF @EstadoActual IS NULL
+        THROW 65004, 'La cotización seleccionada no existe.', 1;
+
+    IF @EstadoActual = @NuevoEstado
+    BEGIN
+        SELECT
+            @IdCotizacion AS IdCotizacion,
+            @EstadoActual AS EstadoCotizacion,
+            'La cotización ya se encuentra en ese estado.' AS Mensaje;
+        COMMIT TRANSACTION; RETURN;
+    END;
+
+    IF @EstadoActual IN ('Cancelada', 'Convertida en venta')
+        THROW 65005, 'No se puede modificar una cotización cancelada o convertida en venta.', 1;
+
+    IF @NuevoEstado = 'Convertida en venta'
+        THROW 65006, 'La conversión a venta debe realizarse desde el registro de venta.', 1;
+
+    IF @EstadoActual = 'Pendiente'
+       AND @NuevoEstado NOT IN ('Respondida', 'Cancelada')
+        THROW 65007, 'Una cotización pendiente solo puede pasar a Respondida o Cancelada.', 1;
+
+    IF @EstadoActual = 'Respondida'
+       AND @NuevoEstado NOT IN ('Aprobada', 'Cancelada')
+        THROW 65008, 'Una cotización respondida solo puede pasar a Aprobada o Cancelada.', 1;
+
+    IF @EstadoActual = 'Aprobada'
+       AND @NuevoEstado NOT IN ('Cancelada')
+        THROW 65009, 'Una cotización aprobada solo puede cancelarse o convertirse desde ventas.', 1;
+
+    SELECT @IdNuevoEstado = IdEstadoCotizacion
+    FROM EstadoCotizacion
+    WHERE Nombre = @NuevoEstado
+      AND Estado = 1;
+
+    IF @IdNuevoEstado IS NULL
+        THROW 65010, 'El nuevo estado seleccionado no existe o está inactivo.', 1;
+
+    UPDATE Cotizacion
+    SET
+        IdEstadoCotizacion = @IdNuevoEstado,
+        IdUsuarioAtencion = COALESCE(@IdUsuarioAtencion, IdUsuarioAtencion),
+        FechaActualizacion = GETDATE()
+    WHERE IdCotizacion = @IdCotizacion;
+
+    SELECT
+        @IdCotizacion AS IdCotizacion,
+        @NuevoEstado AS EstadoCotizacion,
+        CONCAT('Cotización actualizada a estado ', @NuevoEstado, '.') AS Mensaje;
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+
+GO
+/* =========================================================
+   10. CANCELAR COTIZACIÓN
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_CancelarCotizacion
+    @IdCotizacion INT,
+    @IdUsuarioAtencion INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    EXEC dbo.sp_CambiarEstadoCotizacion
+        @IdCotizacion = @IdCotizacion,
+        @NuevoEstado = 'Cancelada',
+        @IdUsuarioAtencion = @IdUsuarioAtencion;
+END;
+
+GO
 CREATE   PROCEDURE dbo.sp_ExigirAdministradorAuditoria @IdUsuario INT
 AS
 BEGIN
@@ -862,6 +1025,129 @@ BEGIN
        OR NOT EXISTS (SELECT 1 FROM dbo.Usuario u JOIN dbo.Rol r ON r.IdRol=u.IdRol
            WHERE u.IdUsuario=@IdUsuario AND u.Estado=1 AND r.Estado=1 AND LOWER(LTRIM(RTRIM(r.Nombre))) IN ('administrador','admin'))
         THROW 72001, 'Sólo el administrador autenticado puede anular operaciones.', 1;
+END;
+
+GO
+/* =========================================================
+   4. LISTAR COTIZACIONES
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ListarCotizaciones
+    @Buscar NVARCHAR(150) = NULL,
+    @Estado NVARCHAR(50) = NULL,
+    @Origen NVARCHAR(60) = NULL,
+    @Pagina INT = 1,
+    @TamanioPagina INT = 8
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @Buscar = NULLIF(LTRIM(RTRIM(ISNULL(@Buscar, ''))), '');
+    SET @Estado = NULLIF(LTRIM(RTRIM(ISNULL(@Estado, ''))), '');
+    SET @Origen = NULLIF(LTRIM(RTRIM(ISNULL(@Origen, ''))), '');
+
+    IF @Pagina <= 0 SET @Pagina = 1;
+    IF @TamanioPagina <= 0 SET @TamanioPagina = 8;
+
+    DECLARE @Offset INT = (@Pagina - 1) * @TamanioPagina;
+
+    ;WITH Detalles AS (
+        SELECT 
+            IdCotizacion,
+            COUNT(*) AS CantidadDetalles
+        FROM DetalleCotizacion
+        GROUP BY IdCotizacion
+    )
+    SELECT
+        COUNT(*) OVER() AS TotalRegistros,
+
+        c.IdCotizacion,
+        CONCAT('COT-', RIGHT(REPLICATE('0', 5) + CAST(c.IdCotizacion AS NVARCHAR(20)), 5)) AS CodigoCotizacion,
+
+        c.IdCliente,
+        td.Nombre AS TipoDocumentoCliente,
+        cli.NumeroDocumento AS DocumentoCliente,
+
+        COALESCE(
+            ce.RazonSocial,
+            LTRIM(RTRIM(CONCAT(pn.Nombres, ' ', pn.ApellidoPaterno, ' ', ISNULL(pn.ApellidoMaterno, '')))),
+            'Cliente sin nombre'
+        ) AS Cliente,
+
+        cli.Correo AS CorreoCliente,
+        cli.Telefono AS TelefonoCliente,
+        cli.Direccion AS DireccionCliente,
+
+        c.IdUsuarioRegistro,
+        c.IdUsuarioAtencion,
+
+        c.IdEstadoCotizacion,
+        ec.Nombre AS EstadoCotizacion,
+
+        c.FechaCotizacion,
+        c.TotalReferencial,
+        c.Subtotal,
+        c.Descuento,
+        c.Igv,
+        c.Total,
+
+        c.Observacion,
+        c.ArchivoPdf,
+        c.CorreoEnviado,
+        ISNULL(c.WhatsappEnviado, 0) AS WhatsappEnviado,
+        c.OrigenCotizacion,
+        c.FechaRespuesta,
+        c.CanalRespuesta,
+        c.IdVentaGenerada,
+        venta.IdVenta AS IdVentaAsociada,
+
+        ISNULL(d.CantidadDetalles, 0) AS CantidadDetalles,
+
+        CASE
+            WHEN c.ArchivoPdf IS NOT NULL AND LTRIM(RTRIM(c.ArchivoPdf)) <> '' THEN 1
+            ELSE 0
+        END AS PdfGenerado,
+
+        CASE
+            WHEN ec.Nombre = 'Aprobada'
+                 AND venta.IdVenta IS NULL
+                 AND c.IdVentaGenerada IS NULL
+            THEN 1
+            ELSE 0
+        END AS PuedeConvertirVenta,
+
+        CASE
+            WHEN ec.Nombre IN ('Cancelada', 'Convertida en venta') THEN 0
+            ELSE 1
+        END AS PuedeGestionar
+    FROM Cotizacion c
+    INNER JOIN EstadoCotizacion ec ON ec.IdEstadoCotizacion = c.IdEstadoCotizacion
+    INNER JOIN Cliente cli ON cli.IdCliente = c.IdCliente
+    INNER JOIN TipoDocumento td ON td.IdTipoDocumento = cli.IdTipoDocumento
+    LEFT JOIN ClientePersonaNatural pn ON pn.IdCliente = cli.IdCliente
+    LEFT JOIN ClienteEmpresa ce ON ce.IdCliente = cli.IdCliente
+    LEFT JOIN Detalles d ON d.IdCotizacion = c.IdCotizacion
+    OUTER APPLY (
+        SELECT TOP 1 v.IdVenta
+        FROM Venta v
+        WHERE v.IdCotizacion = c.IdCotizacion
+        ORDER BY v.IdVenta DESC
+    ) venta
+    WHERE
+        (@Estado IS NULL OR ec.Nombre = @Estado)
+        AND (@Origen IS NULL OR c.OrigenCotizacion = @Origen)
+        AND (
+            @Buscar IS NULL
+            OR CONCAT('COT-', RIGHT(REPLICATE('0', 5) + CAST(c.IdCotizacion AS NVARCHAR(20)), 5)) LIKE '%' + @Buscar + '%'
+            OR cli.NumeroDocumento LIKE '%' + @Buscar + '%'
+            OR COALESCE(ce.RazonSocial, pn.Nombres, '') LIKE '%' + @Buscar + '%'
+            OR COALESCE(ce.NombreComercial, pn.ApellidoPaterno, '') LIKE '%' + @Buscar + '%'
+            OR ec.Nombre LIKE '%' + @Buscar + '%'
+            OR c.OrigenCotizacion LIKE '%' + @Buscar + '%'
+            OR ISNULL(c.Observacion, '') LIKE '%' + @Buscar + '%'
+        )
+    ORDER BY c.FechaCotizacion DESC, c.IdCotizacion DESC
+    OFFSET @Offset ROWS FETCH NEXT @TamanioPagina ROWS ONLY;
 END;
 
 GO
@@ -899,6 +1185,225 @@ BEGIN
 
     IF @@ROWCOUNT = 0
         THROW 72002, 'Credenciales incorrectas.', 1;
+END;
+
+GO
+/* =========================================================
+   8. MARCAR COTIZACIÓN COMO RESPONDIDA
+   Se usa después de enviar por correo o WhatsApp.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_MarcarCotizacionRespondida
+    @IdCotizacion INT,
+    @IdUsuarioAtencion INT = NULL,
+    @CanalEnvio NVARCHAR(30),
+    @ArchivoPdf NVARCHAR(600) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdEstadoActual INT;
+    DECLARE @EstadoActual NVARCHAR(100);
+    DECLARE @IdEstadoRespondida INT;
+    DECLARE @ArchivoFinal NVARCHAR(600);
+    DECLARE @CorreoCliente NVARCHAR(150);
+    DECLARE @TelefonoCliente NVARCHAR(20);
+
+    SET @CanalEnvio = NULLIF(LTRIM(RTRIM(ISNULL(@CanalEnvio, ''))), '');
+    SET @ArchivoPdf = NULLIF(LTRIM(RTRIM(ISNULL(@ArchivoPdf, ''))), '');
+
+    IF @IdCotizacion <= 0
+        THROW 64001, 'Selecciona una cotización válida.', 1;
+
+    IF @CanalEnvio NOT IN ('Correo', 'WhatsApp')
+        THROW 64002, 'Canal de envío no válido.', 1;
+
+    IF @IdUsuarioAtencion IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioAtencion)
+        THROW 64003, 'El usuario que atiende la cotización no existe.', 1;
+
+    SELECT
+        @IdEstadoActual = c.IdEstadoCotizacion,
+        @EstadoActual = ec.Nombre,
+        @ArchivoFinal = COALESCE(@ArchivoPdf, c.ArchivoPdf),
+        @CorreoCliente = cli.Correo,
+        @TelefonoCliente = cli.Telefono
+    FROM Cotizacion c
+    INNER JOIN EstadoCotizacion ec ON ec.IdEstadoCotizacion = c.IdEstadoCotizacion
+    INNER JOIN Cliente cli ON cli.IdCliente = c.IdCliente
+    WHERE c.IdCotizacion = @IdCotizacion;
+
+    IF @IdEstadoActual IS NULL
+        THROW 64004, 'La cotización seleccionada no existe.', 1;
+
+    IF @EstadoActual IN ('Cancelada', 'Convertida en venta')
+        THROW 64005, 'No se puede responder una cotización cancelada o convertida en venta.', 1;
+
+    IF @ArchivoFinal IS NULL
+        THROW 64006, 'Primero genera el PDF de la cotización antes de enviarla.', 1;
+
+    IF @CanalEnvio = 'Correo' AND NULLIF(LTRIM(RTRIM(ISNULL(@CorreoCliente, ''))), '') IS NULL
+        THROW 64007, 'El cliente no tiene correo registrado. Agrega un correo antes de enviar la cotización.', 1;
+
+    IF @CanalEnvio = 'WhatsApp' AND NULLIF(LTRIM(RTRIM(ISNULL(@TelefonoCliente, ''))), '') IS NULL
+        THROW 64008, 'El cliente no tiene teléfono registrado. Agrega un número antes de enviar por WhatsApp.', 1;
+
+    SELECT @IdEstadoRespondida = IdEstadoCotizacion
+    FROM EstadoCotizacion
+    WHERE Nombre = 'Respondida'
+      AND Estado = 1;
+
+    IF @IdEstadoRespondida IS NULL
+        THROW 64009, 'No existe el estado Respondida para cotizaciones.', 1;
+
+    UPDATE Cotizacion
+    SET
+        IdEstadoCotizacion =
+            CASE
+                WHEN @EstadoActual = 'Pendiente' THEN @IdEstadoRespondida
+                ELSE IdEstadoCotizacion
+            END,
+        IdUsuarioAtencion = COALESCE(@IdUsuarioAtencion, IdUsuarioAtencion),
+        ArchivoPdf = @ArchivoFinal,
+        CorreoEnviado =
+            CASE
+                WHEN @CanalEnvio = 'Correo' THEN 1
+                ELSE CorreoEnviado
+            END,
+        WhatsappEnviado =
+            CASE
+                WHEN @CanalEnvio = 'WhatsApp' THEN 1
+                ELSE WhatsappEnviado
+            END,
+        FechaRespuesta = GETDATE(),
+        CanalRespuesta = @CanalEnvio,
+        FechaActualizacion = GETDATE()
+    WHERE IdCotizacion = @IdCotizacion;
+
+    SELECT
+        @IdCotizacion AS IdCotizacion,
+        @CanalEnvio AS CanalEnvio,
+        'Cotización marcada como respondida correctamente.' AS Mensaje;
+END;
+
+GO
+/* =========================================================
+   6. OBTENER DETALLE DE COTIZACIÓN
+   Resultado 1: cabecera
+   Resultado 2: detalles
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ObtenerCotizacionDetalle
+    @IdCotizacion INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @IdCotizacion <= 0
+        THROW 62001, 'Selecciona una cotización válida.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM Cotizacion WHERE IdCotizacion = @IdCotizacion)
+        THROW 62002, 'La cotización seleccionada no existe.', 1;
+
+    SELECT
+        c.IdCotizacion,
+        CONCAT('COT-', RIGHT(REPLICATE('0', 5) + CAST(c.IdCotizacion AS NVARCHAR(20)), 5)) AS CodigoCotizacion,
+
+        c.IdCliente,
+        td.Nombre AS TipoDocumentoCliente,
+        cli.NumeroDocumento AS DocumentoCliente,
+
+        COALESCE(
+            ce.RazonSocial,
+            LTRIM(RTRIM(CONCAT(pn.Nombres, ' ', pn.ApellidoPaterno, ' ', ISNULL(pn.ApellidoMaterno, '')))),
+            'Cliente sin nombre'
+        ) AS Cliente,
+
+        ce.RazonSocial,
+        ce.NombreComercial,
+        pn.Nombres,
+        pn.ApellidoPaterno,
+        pn.ApellidoMaterno,
+
+        cli.Correo AS CorreoCliente,
+        cli.Telefono AS TelefonoCliente,
+        cli.Direccion AS DireccionCliente,
+
+        c.IdUsuarioRegistro,
+        c.IdUsuarioAtencion,
+
+        c.IdEstadoCotizacion,
+        ec.Nombre AS EstadoCotizacion,
+
+        c.FechaCotizacion,
+        c.TotalReferencial,
+        c.Subtotal,
+        c.Descuento,
+        c.Igv,
+        c.Total,
+
+        c.Observacion,
+        c.ArchivoPdf,
+        c.CorreoEnviado,
+        ISNULL(c.WhatsappEnviado, 0) AS WhatsappEnviado,
+        c.OrigenCotizacion,
+        c.FechaRespuesta,
+        c.CanalRespuesta,
+        c.IdVentaGenerada,
+        venta.IdVenta AS IdVentaAsociada,
+
+        CASE
+            WHEN c.ArchivoPdf IS NOT NULL AND LTRIM(RTRIM(c.ArchivoPdf)) <> '' THEN 1
+            ELSE 0
+        END AS PdfGenerado,
+
+        CASE
+            WHEN ec.Nombre = 'Aprobada'
+                 AND venta.IdVenta IS NULL
+                 AND c.IdVentaGenerada IS NULL
+            THEN 1
+            ELSE 0
+        END AS PuedeConvertirVenta
+    FROM Cotizacion c
+    INNER JOIN EstadoCotizacion ec ON ec.IdEstadoCotizacion = c.IdEstadoCotizacion
+    INNER JOIN Cliente cli ON cli.IdCliente = c.IdCliente
+    INNER JOIN TipoDocumento td ON td.IdTipoDocumento = cli.IdTipoDocumento
+    LEFT JOIN ClientePersonaNatural pn ON pn.IdCliente = cli.IdCliente
+    LEFT JOIN ClienteEmpresa ce ON ce.IdCliente = cli.IdCliente
+    OUTER APPLY (
+        SELECT TOP 1 v.IdVenta
+        FROM Venta v
+        WHERE v.IdCotizacion = c.IdCotizacion
+        ORDER BY v.IdVenta DESC
+    ) venta
+    WHERE c.IdCotizacion = @IdCotizacion;
+
+    SELECT
+        dc.IdDetalleCotizacion,
+        dc.IdCotizacion,
+        dc.IdElementoCatalogo,
+
+        e.Nombre AS Elemento,
+        te.Nombre AS TipoElemento,
+
+        p.IdProducto,
+        p.CodigoProducto,
+
+        s.IdServicio,
+
+        COALESCE(p.CodigoProducto, CONCAT('SV-', s.IdServicio), '-') AS Codigo,
+
+        dc.Cantidad,
+        dc.PrecioUnitario,
+        dc.Subtotal,
+        dc.Observacion
+    FROM DetalleCotizacion dc
+    INNER JOIN ElementoCatalogo e ON e.IdElementoCatalogo = dc.IdElementoCatalogo
+    INNER JOIN TipoElemento te ON te.IdTipoElemento = e.IdTipoElemento
+    LEFT JOIN Producto p ON p.IdElementoCatalogo = e.IdElementoCatalogo
+    LEFT JOIN Servicio s ON s.IdElementoCatalogo = e.IdElementoCatalogo
+    WHERE dc.IdCotizacion = @IdCotizacion
+    ORDER BY dc.IdDetalleCotizacion;
 END;
 
 GO
@@ -1288,6 +1793,394 @@ BEGIN
 END;
 
 GO
+/* =========================================================
+   5. REGISTRAR COTIZACIÓN
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_RegistrarCotizacion
+    @IdCliente INT,
+    @IdUsuarioRegistro INT = NULL,
+    @OrigenCotizacion NVARCHAR(60) = 'Manual',
+    @Descuento DECIMAL(18,2) = 0,
+    @Observacion NVARCHAR(1000) = NULL,
+    @Detalles dbo.CotizacionDetalleType READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdCotizacion INT;
+    DECLARE @IdEstadoPendiente INT;
+    DECLARE @Subtotal DECIMAL(18,2);
+    DECLARE @Total DECIMAL(18,2);
+    DECLARE @Igv DECIMAL(18,2);
+
+    SET @OrigenCotizacion = NULLIF(LTRIM(RTRIM(ISNULL(@OrigenCotizacion, ''))), '');
+    SET @Observacion = NULLIF(LTRIM(RTRIM(ISNULL(@Observacion, ''))), '');
+    SET @Descuento = ROUND(ISNULL(@Descuento, 0), 2);
+
+    IF @IdCliente <= 0
+        THROW 61001, 'Selecciona un cliente válido.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM Cliente WHERE IdCliente = @IdCliente AND Estado = 1)
+        THROW 61002, 'El cliente seleccionado no existe o está inactivo.', 1;
+
+    IF @IdUsuarioRegistro IS NOT NULL
+       AND @IdUsuarioRegistro <= 0
+        THROW 61003, 'El usuario que registra la cotización no es válido.', 1;
+
+    IF @IdUsuarioRegistro IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioRegistro)
+        THROW 61004, 'El usuario que registra la cotización no existe.', 1;
+
+    IF @OrigenCotizacion IS NULL
+        SET @OrigenCotizacion = 'Manual';
+
+    IF @OrigenCotizacion NOT IN ('Manual', 'Web', 'WhatsApp', 'Correo')
+        THROW 61005, 'Origen de cotización no válido.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM @Detalles)
+        THROW 61006, 'Agrega al menos un producto o servicio a la cotización.', 1;
+
+    IF EXISTS (SELECT 1 FROM @Detalles WHERE Cantidad <= 0)
+        THROW 61007, 'La cantidad de cada detalle debe ser mayor a 0.', 1;
+
+    IF EXISTS (SELECT 1 FROM @Detalles WHERE PrecioUnitario <= 0)
+        THROW 61008, 'El precio unitario de cada detalle debe ser mayor a 0.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM @Detalles d
+        LEFT JOIN ElementoCatalogo e ON e.IdElementoCatalogo = d.IdElementoCatalogo
+        WHERE e.IdElementoCatalogo IS NULL
+           OR e.Estado = 0
+    )
+    BEGIN
+        THROW 61009, 'Uno o más productos o servicios no existen o están inactivos.', 1;
+    END;
+
+    SELECT @IdEstadoPendiente = IdEstadoCotizacion
+    FROM EstadoCotizacion
+    WHERE Nombre = 'Pendiente'
+      AND Estado = 1;
+
+    IF @IdEstadoPendiente IS NULL
+        THROW 61010, 'No existe el estado Pendiente para cotizaciones.', 1;
+
+    SELECT @Subtotal = ROUND(SUM(Cantidad * PrecioUnitario), 2)
+    FROM @Detalles;
+
+    SET @Subtotal = ROUND(ISNULL(@Subtotal, 0), 2);
+
+    IF @Descuento < 0
+        THROW 61011, 'El descuento no puede ser negativo.', 1;
+
+    IF @Descuento > @Subtotal
+        THROW 61012, 'El descuento no puede superar el subtotal.', 1;
+
+    SET @Total = ROUND(@Subtotal - @Descuento, 2);
+    SET @Igv = ROUND(@Total - (@Total / 1.18), 2);
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        INSERT INTO Cotizacion (
+            IdCliente,
+            IdUsuarioRegistro,
+            IdUsuarioAtencion,
+            IdEstadoCotizacion,
+            FechaCotizacion,
+            TotalReferencial,
+            Observacion,
+            ArchivoPdf,
+            CorreoEnviado,
+            OrigenCotizacion,
+            Subtotal,
+            Descuento,
+            Igv,
+            Total,
+            WhatsappEnviado,
+            FechaRespuesta,
+            CanalRespuesta,
+            FechaActualizacion,
+            IdVentaGenerada
+        )
+        VALUES (
+            @IdCliente,
+            @IdUsuarioRegistro,
+            NULL,
+            @IdEstadoPendiente,
+            GETDATE(),
+            @Total,
+            @Observacion,
+            NULL,
+            0,
+            @OrigenCotizacion,
+            @Subtotal,
+            @Descuento,
+            @Igv,
+            @Total,
+            0,
+            NULL,
+            NULL,
+            GETDATE(),
+            NULL
+        );
+
+        SET @IdCotizacion = SCOPE_IDENTITY();
+
+        INSERT INTO DetalleCotizacion (
+            IdCotizacion,
+            IdElementoCatalogo,
+            Cantidad,
+            PrecioUnitario,
+            Subtotal,
+            Observacion
+        )
+        SELECT
+            @IdCotizacion,
+            IdElementoCatalogo,
+            Cantidad,
+            PrecioUnitario,
+            ROUND(Cantidad * PrecioUnitario, 2),
+            NULLIF(LTRIM(RTRIM(ISNULL(Observacion, ''))), '')
+        FROM @Detalles;
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdCotizacion AS IdCotizacion,
+            CONCAT('COT-', RIGHT(REPLICATE('0', 5) + CAST(@IdCotizacion AS NVARCHAR(20)), 5)) AS CodigoCotizacion,
+            @Subtotal AS Subtotal,
+            @Descuento AS Descuento,
+            @Igv AS Igv,
+            @Total AS Total,
+            'Pendiente' AS EstadoCotizacion,
+            'Cotización registrada correctamente.' AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END;
+
+GO
+CREATE   PROCEDURE dbo.sp_RegistrarCotizacionWeb
+    @IdCliente INT,
+    @IdUsuarioRegistro INT = NULL,
+    @Observacion NVARCHAR(1000) = NULL,
+    @Detalles dbo.CotizacionWebDetalleType READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdCotizacion INT;
+    DECLARE @IdEstadoPendiente INT;
+    DECLARE @Subtotal DECIMAL(18,2);
+    DECLARE @Descuento DECIMAL(18,2) = 0;
+    DECLARE @Total DECIMAL(18,2);
+    DECLARE @Igv DECIMAL(18,2);
+    DECLARE @EsEmpresa BIT = 0;
+    DECLARE @Mensaje NVARCHAR(600);
+
+    SET @Observacion = NULLIF(LTRIM(RTRIM(ISNULL(@Observacion, ''))), '');
+
+    IF @IdCliente <= 0
+        THROW 68001, 'No se pudo identificar al cliente web.', 1;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Cliente
+        WHERE IdCliente = @IdCliente
+          AND Estado = 1
+          AND IdUsuario IS NOT NULL
+    )
+    BEGIN
+        THROW 68002, 'La cuenta cliente no está activa o no está vinculada correctamente.', 1;
+    END;
+
+    IF @IdUsuarioRegistro IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioRegistro AND Estado = 1)
+        THROW 68003, 'El usuario cliente no existe o se encuentra inactivo.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM @Detalles)
+        THROW 68004, 'Agrega al menos un producto al carrito de cotización.', 1;
+
+    IF EXISTS (SELECT 1 FROM @Detalles WHERE IdProducto <= 0)
+        THROW 68005, 'Uno o más productos del carrito no son válidos.', 1;
+
+    IF EXISTS (SELECT 1 FROM @Detalles WHERE Cantidad <= 0)
+        THROW 68006, 'La cantidad de cada producto debe ser mayor a 0.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM @Detalles d
+        LEFT JOIN Producto p ON p.IdProducto = d.IdProducto
+        LEFT JOIN ElementoCatalogo e ON e.IdElementoCatalogo = p.IdElementoCatalogo
+        WHERE p.IdProducto IS NULL
+           OR e.IdElementoCatalogo IS NULL
+           OR e.Estado = 0
+    )
+    BEGIN
+        THROW 68007, 'Uno o más productos ya no están disponibles para cotización.', 1;
+    END;
+
+    SELECT @IdEstadoPendiente = IdEstadoCotizacion
+    FROM EstadoCotizacion
+    WHERE Nombre = 'Pendiente'
+      AND Estado = 1;
+
+    IF @IdEstadoPendiente IS NULL
+        THROW 68008, 'No existe el estado Pendiente para cotizaciones.', 1;
+
+    SELECT @EsEmpresa =
+        CASE
+            WHEN EXISTS (
+                SELECT 1
+                FROM Cliente c
+                INNER JOIN TipoDocumento td ON td.IdTipoDocumento = c.IdTipoDocumento
+                WHERE c.IdCliente = @IdCliente
+                  AND UPPER(td.Nombre) = 'RUC'
+            )
+            THEN 1
+            ELSE 0
+        END;
+
+    DECLARE @DetalleFinal TABLE
+    (
+        IdElementoCatalogo INT NOT NULL,
+        Cantidad INT NOT NULL,
+        PrecioUnitario DECIMAL(18,2) NOT NULL,
+        Subtotal DECIMAL(18,2) NOT NULL,
+        Observacion NVARCHAR(1000) NULL
+    );
+
+    INSERT INTO @DetalleFinal (
+        IdElementoCatalogo,
+        Cantidad,
+        PrecioUnitario,
+        Subtotal,
+        Observacion
+    )
+    SELECT
+        p.IdElementoCatalogo,
+        SUM(d.Cantidad) AS Cantidad,
+        CAST(ISNULL(NULLIF(e.PrecioReferencial, 0), 0) AS DECIMAL(18,2)) AS PrecioUnitario,
+        ROUND(SUM(d.Cantidad) * CAST(ISNULL(NULLIF(e.PrecioReferencial, 0), 0) AS DECIMAL(18,2)), 2) AS Subtotal,
+        NULLIF(LTRIM(RTRIM(MAX(ISNULL(d.Observacion, '')))), '') AS Observacion
+    FROM @Detalles d
+    INNER JOIN Producto p ON p.IdProducto = d.IdProducto
+    INNER JOIN ElementoCatalogo e ON e.IdElementoCatalogo = p.IdElementoCatalogo
+    WHERE e.Estado = 1
+    GROUP BY
+        p.IdElementoCatalogo,
+        CAST(ISNULL(NULLIF(e.PrecioReferencial, 0), 0) AS DECIMAL(18,2));
+
+    SELECT @Subtotal = ROUND(SUM(Subtotal), 2)
+    FROM @DetalleFinal;
+
+    SET @Subtotal = ISNULL(@Subtotal, 0);
+    SET @Total = ROUND(@Subtotal - @Descuento, 2);
+    SET @Igv = ROUND(@Total - (@Total / 1.18), 2);
+
+    SET @Mensaje =
+        CASE
+            WHEN @EsEmpresa = 1 THEN
+                'Tu solicitud empresarial fue enviada correctamente. Nuestro equipo comercial revisará el requerimiento de tu empresa y responderá por el correo empresarial o canal registrado.'
+            ELSE
+                'Tu solicitud fue enviada correctamente. Nuestro equipo encargado revisará los productos solicitados y se comunicará contigo por WhatsApp para brindarte la atención correspondiente.'
+        END;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        INSERT INTO Cotizacion (
+            IdCliente,
+            IdUsuarioRegistro,
+            IdUsuarioAtencion,
+            IdEstadoCotizacion,
+            FechaCotizacion,
+            TotalReferencial,
+            Observacion,
+            ArchivoPdf,
+            CorreoEnviado,
+            OrigenCotizacion,
+            Subtotal,
+            Descuento,
+            Igv,
+            Total,
+            WhatsappEnviado,
+            FechaRespuesta,
+            CanalRespuesta,
+            FechaActualizacion,
+            IdVentaGenerada
+        )
+        VALUES (
+            @IdCliente,
+            @IdUsuarioRegistro,
+            NULL,
+            @IdEstadoPendiente,
+            GETDATE(),
+            @Total,
+            @Observacion,
+            NULL,
+            0,
+            'Web',
+            @Subtotal,
+            @Descuento,
+            @Igv,
+            @Total,
+            0,
+            NULL,
+            NULL,
+            GETDATE(),
+            NULL
+        );
+
+        SET @IdCotizacion = SCOPE_IDENTITY();
+
+        INSERT INTO DetalleCotizacion (
+            IdCotizacion,
+            IdElementoCatalogo,
+            Cantidad,
+            PrecioUnitario,
+            Subtotal,
+            Observacion
+        )
+        SELECT
+            @IdCotizacion,
+            IdElementoCatalogo,
+            Cantidad,
+            PrecioUnitario,
+            Subtotal,
+            Observacion
+        FROM @DetalleFinal;
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdCotizacion AS IdCotizacion,
+            CONCAT('COT-', RIGHT(REPLICATE('0', 5) + CAST(@IdCotizacion AS NVARCHAR(20)), 5)) AS CodigoCotizacion,
+            GETDATE() AS FechaCotizacion,
+            'Pendiente' AS EstadoCotizacion,
+            'Web' AS OrigenCotizacion,
+            @Subtotal AS Subtotal,
+            @Descuento AS Descuento,
+            @Igv AS Igv,
+            @Total AS Total,
+            @EsEmpresa AS EsEmpresa,
+            @Mensaje AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_Categoria_Auditoria ON dbo.[Categoria] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -1381,6 +2274,50 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdContactoCliente]=d.[IdContactoCliente];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_Cotizacion_AnulacionAdministrador ON dbo.Cotizacion AFTER UPDATE AS
+BEGIN
+ SET NOCOUNT ON;
+ IF EXISTS (SELECT 1 FROM inserted i JOIN deleted d ON d.IdCotizacion=i.IdCotizacion JOIN dbo.EstadoCotizacion e ON e.IdEstadoCotizacion=i.IdEstadoCotizacion
+   WHERE i.IdEstadoCotizacion<>d.IdEstadoCotizacion AND e.Nombre=N'Cancelada')
+ BEGIN
+   DECLARE @usuario INT=TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria'));
+   EXEC dbo.sp_ExigirAdministradorAuditoria @usuario;
+ END;
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_Cotizacion_Auditoria ON dbo.[Cotizacion] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdCotizacion] IS NULL THEN N'CREAR' WHEN i.[IdCotizacion] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Cotizacion',
+ COALESCE(i.[IdCotizacion],d.[IdCotizacion]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdCotizacion] IS NOT NULL THEN (SELECT d.[IdCotizacion],d.[IdCliente],d.[IdUsuarioRegistro],d.[IdUsuarioAtencion],d.[IdEstadoCotizacion],d.[FechaCotizacion],d.[TotalReferencial],d.[Observacion],d.[ArchivoPdf],d.[CorreoEnviado],d.[OrigenCotizacion],d.[Subtotal],d.[Descuento],d.[Igv],d.[Total],d.[WhatsappEnviado],d.[FechaRespuesta],d.[CanalRespuesta],d.[FechaActualizacion],d.[IdVentaGenerada] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdCotizacion] IS NOT NULL THEN (SELECT i.[IdCotizacion],i.[IdCliente],i.[IdUsuarioRegistro],i.[IdUsuarioAtencion],i.[IdEstadoCotizacion],i.[FechaCotizacion],i.[TotalReferencial],i.[Observacion],i.[ArchivoPdf],i.[CorreoEnviado],i.[OrigenCotizacion],i.[Subtotal],i.[Descuento],i.[Igv],i.[Total],i.[WhatsappEnviado],i.[FechaRespuesta],i.[CanalRespuesta],i.[FechaActualizacion],i.[IdVentaGenerada] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdCotizacion]=d.[IdCotizacion];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_DetalleCotizacion_Auditoria ON dbo.[DetalleCotizacion] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdDetalleCotizacion] IS NULL THEN N'CREAR' WHEN i.[IdDetalleCotizacion] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'DetalleCotizacion',
+ COALESCE(i.[IdDetalleCotizacion],d.[IdDetalleCotizacion]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdDetalleCotizacion] IS NOT NULL THEN (SELECT d.[IdDetalleCotizacion],d.[IdCotizacion],d.[IdElementoCatalogo],d.[Cantidad],d.[PrecioUnitario],d.[Subtotal],d.[Observacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdDetalleCotizacion] IS NOT NULL THEN (SELECT i.[IdDetalleCotizacion],i.[IdCotizacion],i.[IdElementoCatalogo],i.[Cantidad],i.[PrecioUnitario],i.[Subtotal],i.[Observacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdDetalleCotizacion]=d.[IdDetalleCotizacion];
 END;
 
 GO

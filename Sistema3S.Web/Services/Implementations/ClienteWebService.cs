@@ -257,6 +257,258 @@ namespace Sistema3S.Web.Services.Implementations
             return sesion;
         }
 
+        public async Task<ClienteWebCotizacionRegistradaDto> RegistrarCotizacionAsync(
+            int idCliente,
+            int idUsuario,
+            ClienteWebCotizacionCrearDto dto
+        )
+        {
+            if (idCliente <= 0 || idUsuario <= 0)
+            {
+                throw new InvalidOperationException("Inicia sesión como cliente para enviar tu cotización.");
+            }
+
+            if (dto.Items == null || dto.Items.Count == 0)
+            {
+                throw new InvalidOperationException("Agrega al menos un producto al carrito de cotización.");
+            }
+
+            if (dto.Items.Any(i => i.IdProducto <= 0))
+            {
+                throw new InvalidOperationException("Uno o más productos del carrito no son válidos.");
+            }
+
+            if (dto.Items.Any(i => i.Cantidad <= 0))
+            {
+                throw new InvalidOperationException("La cantidad de cada producto debe ser mayor a 0.");
+            }
+
+            await using var connection = CrearConexionClienteWeb();
+            await connection.AbrirAuditadaAsync();
+
+            await using var command = new SqlCommand("dbo.sp_RegistrarCotizacionWeb", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            command.Parameters.AddWithValue("@IdCliente", idCliente);
+            command.Parameters.AddWithValue("@IdUsuarioRegistro", idUsuario);
+            command.Parameters.AddWithValue("@Observacion", ValorDb(dto.ObservacionGeneral));
+
+            var detallesParam = command.Parameters.AddWithValue(
+                "@Detalles",
+                CrearTablaDetallesCotizacionWeb(dto.Items)
+            );
+
+            detallesParam.SqlDbType = SqlDbType.Structured;
+            detallesParam.TypeName = "dbo.CotizacionWebDetalleType";
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            if (!await reader.ReadAsync())
+            {
+                throw new InvalidOperationException("No se pudo registrar la cotización web.");
+            }
+
+            return new ClienteWebCotizacionRegistradaDto
+            {
+                IdCotizacion = Convert.ToInt32(reader["IdCotizacion"]),
+                CodigoCotizacion = Convert.ToString(reader["CodigoCotizacion"]) ?? string.Empty,
+                FechaCotizacion = Convert.ToDateTime(reader["FechaCotizacion"]),
+                EstadoCotizacion = Convert.ToString(reader["EstadoCotizacion"]) ?? string.Empty,
+                OrigenCotizacion = Convert.ToString(reader["OrigenCotizacion"]) ?? "Web",
+                Subtotal = Convert.ToDecimal(reader["Subtotal"]),
+                Descuento = Convert.ToDecimal(reader["Descuento"]),
+                Igv = Convert.ToDecimal(reader["Igv"]),
+                Total = Convert.ToDecimal(reader["Total"]),
+                EsEmpresa = Convert.ToBoolean(reader["EsEmpresa"]),
+                Mensaje = Convert.ToString(reader["Mensaje"]) ?? string.Empty
+            };
+        }
+
+        public async Task<ResultadoPaginadoDto<ClienteWebCotizacionResumenDto>> ListarCotizacionesAsync(
+            int idCliente,
+            int pagina,
+            int tamanioPagina
+        )
+        {
+            if (idCliente <= 0)
+            {
+                throw new InvalidOperationException("Inicia sesión como cliente para ver tu historial.");
+            }
+
+            if (pagina <= 0)
+            {
+                pagina = 1;
+            }
+
+            if (tamanioPagina <= 0)
+            {
+                tamanioPagina = 10;
+            }
+
+            if (tamanioPagina > 50)
+            {
+                tamanioPagina = 50;
+            }
+
+            var query = _context.Cotizacion
+                .AsNoTracking()
+                .Where(c => c.IdCliente == idCliente);
+
+            var totalRegistros = await query.CountAsync();
+
+            var registros = await query
+                .OrderByDescending(c => c.FechaCotizacion)
+                .ThenByDescending(c => c.IdCotizacion)
+                .Skip((pagina - 1) * tamanioPagina)
+                .Take(tamanioPagina)
+                .Select(c => new
+                {
+                    c.IdCotizacion,
+                    c.FechaCotizacion,
+                    EstadoCotizacion = c.IdEstadoCotizacionNavigation.Nombre,
+                    c.OrigenCotizacion,
+                    c.Observacion,
+                    CantidadProductos = c.DetalleCotizacion.Count(),
+                    c.Subtotal,
+                    c.Descuento,
+                    c.Igv,
+                    c.Total
+                })
+                .ToListAsync();
+
+            var items = registros.Select(c => new ClienteWebCotizacionResumenDto
+            {
+                IdCotizacion = c.IdCotizacion,
+                CodigoCotizacion = FormatearCodigoCotizacion(c.IdCotizacion),
+                FechaCotizacion = c.FechaCotizacion,
+                EstadoCotizacion = c.EstadoCotizacion,
+                OrigenCotizacion = c.OrigenCotizacion,
+                Observacion = c.Observacion,
+                CantidadProductos = c.CantidadProductos,
+                Subtotal = c.Subtotal,
+                Descuento = c.Descuento,
+                Igv = c.Igv,
+                Total = c.Total
+            }).ToList();
+
+            return new ResultadoPaginadoDto<ClienteWebCotizacionResumenDto>
+            {
+                Items = items,
+                Pagina = pagina,
+                TamanioPagina = tamanioPagina,
+                TotalRegistros = totalRegistros
+            };
+        }
+
+        public async Task<ClienteWebCotizacionDetalleResponseDto?> ObtenerCotizacionAsync(
+            int idCliente,
+            int idCotizacion
+        )
+        {
+            if (idCliente <= 0)
+            {
+                throw new InvalidOperationException("Inicia sesión como cliente para ver el detalle.");
+            }
+
+            if (idCotizacion <= 0)
+            {
+                throw new InvalidOperationException("Selecciona una cotización válida.");
+            }
+
+            var cabecera = await _context.Cotizacion
+                .AsNoTracking()
+                .Where(c =>
+                    c.IdCliente == idCliente &&
+                    c.IdCotizacion == idCotizacion
+                )
+                .Select(c => new
+                {
+                    c.IdCotizacion,
+                    c.FechaCotizacion,
+                    EstadoCotizacion = c.IdEstadoCotizacionNavigation.Nombre,
+                    c.OrigenCotizacion,
+                    c.Observacion,
+                    c.Subtotal,
+                    c.Descuento,
+                    c.Igv,
+                    c.Total
+                })
+                .FirstOrDefaultAsync();
+
+            if (cabecera == null)
+            {
+                return null;
+            }
+
+            var detallesRaw = await _context.DetalleCotizacion
+                .AsNoTracking()
+                .Where(d =>
+                    d.IdCotizacion == idCotizacion &&
+                    d.IdCotizacionNavigation.IdCliente == idCliente
+                )
+                .OrderBy(d => d.IdDetalleCotizacion)
+                .Select(d => new
+                {
+                    d.IdDetalleCotizacion,
+                    d.IdElementoCatalogo,
+
+                    IdProducto = d.IdElementoCatalogoNavigation.Producto != null
+                        ? d.IdElementoCatalogoNavigation.Producto.IdProducto
+                        : (int?)null,
+
+                    CodigoProducto = d.IdElementoCatalogoNavigation.Producto != null
+                        ? d.IdElementoCatalogoNavigation.Producto.CodigoProducto
+                        : string.Empty,
+
+                    NombreProducto = d.IdElementoCatalogoNavigation.Nombre,
+
+                    ImagenUrl =
+                        d.IdElementoCatalogoNavigation.ImagenElementoCatalogo
+                            .Where(i => i.Estado)
+                            .OrderByDescending(i => i.EsPrincipal)
+                            .ThenByDescending(i => i.IdImagenElementoCatalogo)
+                            .Select(i => i.UrlImagen)
+                            .FirstOrDefault()
+                        ?? d.IdElementoCatalogoNavigation.ImagenUrl
+                        ?? string.Empty,
+
+                    d.Cantidad,
+                    d.PrecioUnitario,
+                    d.Subtotal,
+                    d.Observacion
+                })
+                .ToListAsync();
+
+            return new ClienteWebCotizacionDetalleResponseDto
+            {
+                IdCotizacion = cabecera.IdCotizacion,
+                CodigoCotizacion = FormatearCodigoCotizacion(cabecera.IdCotizacion),
+                FechaCotizacion = cabecera.FechaCotizacion,
+                EstadoCotizacion = cabecera.EstadoCotizacion,
+                OrigenCotizacion = cabecera.OrigenCotizacion,
+                Observacion = cabecera.Observacion,
+                Subtotal = cabecera.Subtotal,
+                Descuento = cabecera.Descuento,
+                Igv = cabecera.Igv,
+                Total = cabecera.Total,
+                Detalles = detallesRaw.Select(d => new ClienteWebCotizacionDetalleItemDto
+                {
+                    IdDetalleCotizacion = d.IdDetalleCotizacion,
+                    IdElementoCatalogo = d.IdElementoCatalogo,
+                    IdProducto = d.IdProducto,
+                    CodigoProducto = d.CodigoProducto,
+                    NombreProducto = d.NombreProducto,
+                    ImagenUrl = d.ImagenUrl,
+                    Cantidad = d.Cantidad,
+                    PrecioUnitario = d.PrecioUnitario,
+                    Subtotal = d.Subtotal,
+                    Observacion = d.Observacion
+                }).ToList()
+            };
+        }
+
         private async Task CompletarDatosClienteExistenteAsync(ClienteWebConsultaDocumentoDto respuesta)
         {
             if (respuesta.IdClienteExistente == null)
@@ -434,6 +686,30 @@ namespace Sistema3S.Web.Services.Implementations
             return new SqlConnection(connectionString);
         }
 
+        private static DataTable CrearTablaDetallesCotizacionWeb(
+            List<ClienteWebCotizacionItemCrearDto> detalles
+        )
+        {
+            var table = new DataTable();
+
+            table.Columns.Add("IdProducto", typeof(int));
+            table.Columns.Add("Cantidad", typeof(int));
+            table.Columns.Add("Observacion", typeof(string));
+
+            foreach (var item in detalles)
+            {
+                table.Rows.Add(
+                    item.IdProducto,
+                    item.Cantidad,
+                    string.IsNullOrWhiteSpace(item.Observacion)
+                        ? DBNull.Value
+                        : item.Observacion.Trim()
+                );
+            }
+
+            return table;
+        }
+
         private static string ConstruirNombrePersona(
             string? nombres,
             string? apellidoPaterno,
@@ -454,6 +730,11 @@ namespace Sistema3S.Web.Services.Implementations
             return string.IsNullOrWhiteSpace(nombreCompleto)
                 ? "Cliente"
                 : nombreCompleto;
+        }
+
+        private static string FormatearCodigoCotizacion(int idCotizacion)
+        {
+            return $"COT-{idCotizacion.ToString().PadLeft(5, '0')}";
         }
 
         private static string NormalizarTipoDocumento(string? valor)

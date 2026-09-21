@@ -21,7 +21,7 @@
   <div class="services-grid"><article class="service-card" *ngFor="let servicio of servicios; trackBy: trackByServicio">
     <a class="service-image" [routerLink]="['/servicios', servicio.idServicio || servicio.id]"><app-imagen-catalogo ajuste="cover" [ruta]="servicio.imagenUrl" [descripcion]="servicio.nombre" /></a>
     <div class="service-body"><span class="sector-badge" *ngIf="servicio.sectorAplicacion">{{ servicio.sectorAplicacion }}</span><h3>{{ servicio.nombre }}</h3><p>{{ servicio.descripcion }}</p><small class="visit-badge" *ngIf="servicio.requiereVisitaTecnica">Requiere visita técnica</small>
-      <div class="service-actions"><a class="btn-secondary" [routerLink]="['/servicios', servicio.idServicio || servicio.id]">Ver servicio</a></div>
+      <div class="service-actions"><a class="btn-secondary" [routerLink]="['/servicios', servicio.idServicio || servicio.id]">Ver servicio</a><button type="button" class="btn-primary" (click)="abrirWhatsAppServicio(servicio)">Consultar</button></div>
     </div>
   </article></div>
 </section>
@@ -35,5 +35,5 @@
   <article><s3s-icon name="file" /><h3>02. Envía tu solicitud</h3><p>Usa el carrito con tu cuenta o consulta directamente por WhatsApp.</p></article>
   <article><s3s-icon name="people" /><h3>03. Recibe asesoría</h3><p>Nuestro equipo revisa tu requerimiento y prepara una propuesta.</p></article>
 </div></section>
-<section class="register-cta"><div><span class="eyebrow">Hablemos de tu próximo proyecto</span><h2>Una solicitud. La solución que necesitas.</h2><p>Reúne tus productos y recibe atención personalizada del equipo 3S.</p></div><div class="cta-actions"><a class="btn-primary" [routerLink]="clienteLogueado ? '/cliente/carrito' : '/cliente/registro'">{{ clienteLogueado ? 'Ver mi carrito' : 'Crear mi cuenta' }} <s3s-icon name="arrow" /></a></div></section>
+<section class="register-cta"><div><span class="eyebrow">Hablemos de tu próximo proyecto</span><h2>Una solicitud. La solución que necesitas.</h2><p>Reúne tus productos y recibe atención personalizada del equipo 3S.</p></div><div class="cta-actions"><a class="btn-primary" [routerLink]="clienteLogueado ? '/cliente/carrito' : '/cliente/registro'">{{ clienteLogueado ? 'Ver mi carrito' : 'Crear mi cuenta' }} <s3s-icon name="arrow" /></a><button type="button" class="btn-secondary" (click)="abrirWhatsAppGeneral()">Consultar por WhatsApp</button></div></section>
 

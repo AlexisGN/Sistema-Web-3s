@@ -22,7 +22,7 @@ import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
       <div class="product-actions">
         <label class="qty-control" *ngIf="cantidad">Cantidad<input type="number" min="1" step="1" [(ngModel)]="producto.cantidad" (change)="normalizar.emit(producto)" [attr.aria-label]="'Cantidad de ' + producto.nombre" /></label>
         <a class="btn-secondary" [routerLink]="['/productos', producto.idProducto || producto.id]">Ver producto</a>
-        
+        <button type="button" class="btn-primary" *ngIf="cotizable" (click)="cotizar.emit(producto)"><s3s-icon [name]="logueado ? 'cart' : 'file'" />{{ logueado ? 'Agregar al carrito' : 'Cotizar' }}</button>
       </div>
     </div>
   </article>`, styles: [':host{display:block;min-width:0;height:100%}']
@@ -32,7 +32,7 @@ export class PublicProductCardComponent {
   @Input() logueado = false;
   @Input() cantidad = false;
   @Input() descripcion = false;
-  @Input() cotizable = false;
+  @Input() cotizable = true;
   @Input() ficha = false;
   @Output() cotizar = new EventEmitter<ProductoPublico>();
   @Output() normalizar = new EventEmitter<ProductoPublico>();

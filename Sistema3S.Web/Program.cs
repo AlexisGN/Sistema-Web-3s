@@ -8,6 +8,7 @@ using QuestPDF.Infrastructure;
 using Sistema3S.Web.Data;
 using Sistema3S.Web.Services.Implementations;
 using Sistema3S.Web.Services.Interfaces;
+using Sistema3S.Web.Services.Pdf;
 using Sistema3S.Web.Services.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -101,6 +102,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Servicios de negocio
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IServicioService, ServicioService>();
+builder.Services.AddScoped<ICotizacionService, CotizacionService>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IPublicoService, PublicoService>();
 
@@ -117,6 +119,9 @@ builder.Services.AddScoped<ICatalogoArchivoService, CatalogoArchivoService>();
 
 // Servicios para PDF / correo / WhatsApp
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<IPdfCotizacionService, PdfCotizacionService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
 
 // CORS para Angular
 builder.Services.AddCors(options =>
