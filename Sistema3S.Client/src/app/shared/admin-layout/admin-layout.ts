@@ -88,8 +88,18 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           route: '/admin/ventas',
           permisos: ['VENTAS_VER']
         },
-        
-        
+        {
+          label: 'Proveedores',
+          icon: 'PV',
+          route: '/admin/proveedores',
+          permisos: ['PROVEEDORES_VER']
+        },
+        {
+          label: 'Compras',
+          icon: 'CP',
+          route: '/admin/compras',
+          permisos: ['COMPRAS_VER']
+        },
         
       ]
     },

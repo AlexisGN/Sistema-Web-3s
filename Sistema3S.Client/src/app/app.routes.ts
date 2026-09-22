@@ -173,8 +173,24 @@ export const routes: Routes = [
           permisos: ['VENTAS_VER']
         }
       },
-      
-      
+      {
+        path: 'proveedores',
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['PROVEEDORES_VER']
+        },
+        loadComponent: () =>
+          import('./pages/proveedores/proveedores').then(m => m.ProveedoresComponent)
+      },
+      {
+        path: 'compras',
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['COMPRAS_VER']
+        },
+        loadComponent: () =>
+          import('./pages/compras/compras').then(m => m.ComprasComponent)
+      },
       
       
       ]
