@@ -165,7 +165,14 @@ export const routes: Routes = [
           permisos: ['CLIENTES_VER']
         }
       },
-      
+      {
+        path: 'ventas',
+        loadComponent: () => import('./pages/ventas/ventas').then(m => m.VentasComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['VENTAS_VER']
+        }
+      },
       
       
       

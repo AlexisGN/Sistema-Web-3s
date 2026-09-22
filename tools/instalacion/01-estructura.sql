@@ -12,6 +12,10 @@ CREATE TYPE dbo.[CotizacionWebDetalleType] AS TABLE ([IdProducto] int NOT NULL,
 [Cantidad] int NOT NULL,
 [Observacion] nvarchar(1000) NULL);
 GO
+CREATE TYPE dbo.[VentaDetalleType] AS TABLE ([IdElementoCatalogo] int NOT NULL,
+[Cantidad] int NOT NULL,
+[PrecioUnitario] decimal(18,2) NOT NULL);
+GO
 CREATE TABLE dbo.[AceptacionDocumentoLegal] ([IdAceptacionDocumentoLegal] int IDENTITY(1,1) NOT NULL,
 [IdUsuario] int NOT NULL,
 [IdDocumentoLegal] int NOT NULL,
@@ -868,6 +872,128 @@ END;
 
 GO
 /* =========================================================
+   9. ANULAR VENTA
+   ========================================================= */
+
+CREATE   PROCEDURE sp_AnularVenta
+    @IdVenta INT,
+    @IdUsuarioRegistro INT,
+    @Motivo NVARCHAR(300)
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    EXEC dbo.sp_ExigirAdministradorAuditoria @IdUsuarioRegistro;
+    DECLARE @IdEstadoAnulada INT;
+    DECLARE @IdEstadoComprobanteAnulado INT;
+    DECLARE @IdTipoMovimientoEntrada INT;
+    DECLARE @EstadoActual NVARCHAR(50);
+
+    IF @IdVenta <= 0
+        THROW 53001, 'Selecciona una venta válida.', 1;
+
+    IF @IdUsuarioRegistro <= 0 OR NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioRegistro)
+        THROW 53002, 'El usuario que anula la venta no es válido.', 1;
+
+    IF @Motivo IS NULL OR LEN(LTRIM(RTRIM(@Motivo))) < 5
+        THROW 53003, 'Ingresa un motivo de anulación válido.', 1;
+
+    SELECT @IdEstadoAnulada = IdEstadoVenta
+    FROM EstadoVenta
+    WHERE Nombre = 'Anulada';
+
+    SELECT @IdEstadoComprobanteAnulado = IdEstadoComprobante
+    FROM EstadoComprobante
+    WHERE Nombre = 'Anulado';
+
+    SELECT @IdTipoMovimientoEntrada = IdTipoMovimientoStock
+    FROM TipoMovimientoStock
+    WHERE Nombre = 'Entrada';
+
+    SELECT @EstadoActual = ev.Nombre
+    FROM Venta v
+    INNER JOIN EstadoVenta ev ON ev.IdEstadoVenta = v.IdEstadoVenta
+    WHERE v.IdVenta = @IdVenta;
+
+    IF @EstadoActual IS NULL
+        THROW 53004, 'La venta seleccionada no existe.', 1;
+
+    IF @EstadoActual = 'Anulada'
+        THROW 53005, 'La venta ya se encuentra anulada.', 1;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        UPDATE Venta
+        SET
+            IdEstadoVenta = @IdEstadoAnulada,
+            Observacion = CONCAT(ISNULL(Observacion + ' | ', ''), 'ANULACIÓN: ', @Motivo)
+        WHERE IdVenta = @IdVenta;
+
+        UPDATE Comprobante
+        SET IdEstadoComprobante = @IdEstadoComprobanteAnulado
+        WHERE IdVenta = @IdVenta;
+
+        UPDATE i
+        SET
+            i.StockActual = i.StockActual + dv.Cantidad,
+            i.FechaActualizacion = GETDATE()
+        FROM Inventario i
+        INNER JOIN Producto p ON p.IdProducto = i.IdProducto
+        INNER JOIN DetalleVenta dv ON dv.IdElementoCatalogo = p.IdElementoCatalogo
+        WHERE dv.IdVenta = @IdVenta
+          AND p.AplicaInventario = 1;
+
+        INSERT INTO MovimientoStock (
+            IdProducto,
+            IdUsuarioRegistro,
+            IdTipoMovimientoStock,
+            IdVenta,
+            IdCompra,
+            Cantidad,
+            FechaMovimiento,
+            Motivo
+        )
+        SELECT
+            p.IdProducto,
+            @IdUsuarioRegistro,
+            @IdTipoMovimientoEntrada,
+            @IdVenta,
+            NULL,
+            dv.Cantidad,
+            GETDATE(),
+            CONCAT('Reversión por anulación de venta. Motivo: ', @Motivo)
+        FROM DetalleVenta dv
+        INNER JOIN Producto p ON p.IdElementoCatalogo = dv.IdElementoCatalogo
+        WHERE dv.IdVenta = @IdVenta
+          AND p.AplicaInventario = 1;
+
+        COMMIT TRANSACTION;
+
+        SELECT 'Venta anulada correctamente.' AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+
+GO
+/* =========================================================
    15. PROCEDIMIENTO: CAMBIAR CONTRASEÑA DE USUARIO
    La contraseña llega como hash desde backend.
    ========================================================= */
@@ -1152,6 +1278,112 @@ END;
 
 GO
 /* =========================================================
+   6. LISTAR VENTAS
+   ========================================================= */
+
+CREATE PROCEDURE sp_ListarVentas
+    @Buscar NVARCHAR(150) = NULL,
+    @EstadoPago NVARCHAR(30) = NULL,
+    @TipoComprobante NVARCHAR(50) = NULL,
+    @OrigenVenta NVARCHAR(30) = NULL,
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL,
+    @Pagina INT = 1,
+    @TamanioPagina INT = 8
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @Pagina <= 0 SET @Pagina = 1;
+    IF @TamanioPagina <= 0 SET @TamanioPagina = 8;
+
+    DECLARE @Offset INT = (@Pagina - 1) * @TamanioPagina;
+
+    ;WITH Base AS (
+        SELECT
+            v.IdVenta,
+            v.IdCliente,
+            v.IdCotizacion,
+            v.FechaVenta,
+            v.Subtotal,
+            v.Igv,
+            v.Total,
+            ev.Nombre AS EstadoVenta,
+            tc.Nombre AS TipoComprobante,
+            c.Serie,
+            c.Numero,
+            CONCAT(c.Serie, '-', c.Numero) AS DocumentoCompleto,
+            cl.NumeroDocumento AS DocumentoCliente,
+            COALESCE(
+                ce.RazonSocial,
+                CONCAT(cpn.Nombres, ' ', cpn.ApellidoPaterno, ' ', ISNULL(cpn.ApellidoMaterno, ''))
+            ) AS Cliente,
+            CASE WHEN v.IdCotizacion IS NULL THEN 'Directa' ELSE 'Cotización' END AS OrigenVenta,
+            ISNULL(pagos.TotalPagado, 0) AS TotalPagado,
+            ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) AS SaldoPendiente,
+            CASE
+                WHEN ev.Nombre = 'Anulada' THEN 'Anulada'
+                WHEN ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) <= 0 THEN 'Pagada'
+                WHEN EXISTS (SELECT 1 FROM CuotaVenta cv WHERE cv.IdVenta = v.IdVenta) THEN 'En cuotas'
+                WHEN ISNULL(pagos.TotalPagado, 0) > 0 THEN 'Parcial'
+                ELSE 'Pendiente'
+            END AS EstadoPago
+        FROM Venta v
+        INNER JOIN EstadoVenta ev ON ev.IdEstadoVenta = v.IdEstadoVenta
+        INNER JOIN Cliente cl ON cl.IdCliente = v.IdCliente
+        LEFT JOIN ClienteEmpresa ce ON ce.IdCliente = cl.IdCliente
+        LEFT JOIN ClientePersonaNatural cpn ON cpn.IdCliente = cl.IdCliente
+        INNER JOIN Comprobante c ON c.IdVenta = v.IdVenta
+        INNER JOIN TipoComprobante tc ON tc.IdTipoComprobante = c.IdTipoComprobante
+        OUTER APPLY (
+            SELECT SUM(pv.MontoPagado) AS TotalPagado
+            FROM PagoVenta pv
+            WHERE pv.IdVenta = v.IdVenta
+        ) pagos
+        WHERE
+            (@Buscar IS NULL OR @Buscar = ''
+                OR COALESCE(ce.RazonSocial, CONCAT(cpn.Nombres, ' ', cpn.ApellidoPaterno, ' ', ISNULL(cpn.ApellidoMaterno, ''))) LIKE '%' + @Buscar + '%'
+                OR cl.NumeroDocumento LIKE '%' + @Buscar + '%'
+                OR c.Serie LIKE '%' + @Buscar + '%'
+                OR c.Numero LIKE '%' + @Buscar + '%'
+                OR CONCAT(c.Serie, '-', c.Numero) LIKE '%' + @Buscar + '%')
+            AND (@TipoComprobante IS NULL OR @TipoComprobante = '' OR tc.Nombre = @TipoComprobante)
+            AND (@OrigenVenta IS NULL OR @OrigenVenta = '' OR CASE WHEN v.IdCotizacion IS NULL THEN 'Directa' ELSE 'Cotización' END = @OrigenVenta)
+            AND (@FechaInicio IS NULL OR CAST(v.FechaVenta AS DATE) >= @FechaInicio)
+            AND (@FechaFin IS NULL OR CAST(v.FechaVenta AS DATE) <= @FechaFin)
+    ),
+    Filtrada AS (
+        SELECT *
+        FROM Base
+        WHERE (@EstadoPago IS NULL OR @EstadoPago = '' OR EstadoPago = @EstadoPago)
+    )
+    SELECT
+        IdVenta,
+        IdCliente,
+        IdCotizacion,
+        FechaVenta,
+        TipoComprobante,
+        Serie,
+        Numero,
+        DocumentoCompleto,
+        DocumentoCliente,
+        Cliente,
+        OrigenVenta,
+        Subtotal,
+        Igv,
+        Total,
+        TotalPagado,
+        SaldoPendiente,
+        EstadoVenta,
+        EstadoPago,
+        COUNT(*) OVER() AS TotalRegistros
+    FROM Filtrada
+    ORDER BY FechaVenta DESC
+    OFFSET @Offset ROWS FETCH NEXT @TamanioPagina ROWS ONLY;
+END
+
+GO
+/* =========================================================
    8. PROCEDIMIENTO: LOGIN
    Nota: este SP NO valida contraseña.
    El backend validará la contraseña contra ContrasenaHash.
@@ -1185,6 +1417,86 @@ BEGIN
 
     IF @@ROWCOUNT = 0
         THROW 72002, 'Credenciales incorrectas.', 1;
+END;
+
+GO
+/* =========================================================
+   12. MARCAR COTIZACIÓN COMO CONVERTIDA EN VENTA
+   Este SP se llamará después de registrar la venta.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_MarcarCotizacionConvertidaVenta
+    @IdCotizacion INT,
+    @IdVenta INT,
+    @IdUsuarioAtencion INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @EstadoActual NVARCHAR(100);
+    DECLARE @IdEstadoConvertida INT;
+
+    IF @IdCotizacion <= 0
+        THROW 67001, 'Selecciona una cotización válida.', 1;
+
+    IF @IdVenta <= 0
+        THROW 67002, 'La venta generada no es válida.', 1;
+
+    IF @IdUsuarioAtencion IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioAtencion)
+        THROW 67003, 'El usuario que atiende la cotización no existe.', 1;
+
+    SELECT @EstadoActual = ec.Nombre
+    FROM Cotizacion c
+    INNER JOIN EstadoCotizacion ec ON ec.IdEstadoCotizacion = c.IdEstadoCotizacion
+    WHERE c.IdCotizacion = @IdCotizacion;
+
+    IF @EstadoActual IS NULL
+        THROW 67004, 'La cotización seleccionada no existe.', 1;
+
+    IF @EstadoActual <> 'Aprobada'
+        THROW 67005, 'Solo una cotización aprobada puede marcarse como convertida en venta.', 1;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Venta
+        WHERE IdVenta = @IdVenta
+          AND IdCotizacion = @IdCotizacion
+    )
+    BEGIN
+        THROW 67006, 'La venta indicada no pertenece a la cotización seleccionada.', 1;
+    END;
+
+    IF EXISTS (
+        SELECT 1
+        FROM Venta
+        WHERE IdCotizacion = @IdCotizacion
+          AND IdVenta <> @IdVenta
+    )
+    BEGIN
+        THROW 67007, 'Esta cotización ya tiene otra venta asociada.', 1;
+    END;
+
+    SELECT @IdEstadoConvertida = IdEstadoCotizacion
+    FROM EstadoCotizacion
+    WHERE Nombre = 'Convertida en venta'
+      AND Estado = 1;
+
+    IF @IdEstadoConvertida IS NULL
+        THROW 67008, 'No existe el estado Convertida en venta para cotizaciones.', 1;
+
+    UPDATE Cotizacion
+    SET
+        IdEstadoCotizacion = @IdEstadoConvertida,
+        IdUsuarioAtencion = COALESCE(@IdUsuarioAtencion, IdUsuarioAtencion),
+        IdVentaGenerada = @IdVenta,
+        FechaActualizacion = GETDATE()
+    WHERE IdCotizacion = @IdCotizacion;
+
+    SELECT
+        @IdCotizacion AS IdCotizacion,
+        @IdVenta AS IdVenta,
+        'Cotización marcada como convertida en venta correctamente.' AS Mensaje;
 END;
 
 GO
@@ -1498,6 +1810,154 @@ BEGIN
         @Numero AS Numero,
         CONCAT(@Serie, '-', @Numero) AS DocumentoCompleto;
 END
+
+GO
+/* =========================================================
+   7. OBTENER DETALLE DE VENTA
+   ========================================================= */
+
+CREATE PROCEDURE sp_ObtenerVentaDetalle
+    @IdVenta INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        v.IdVenta,
+        v.IdCliente,
+        v.IdCotizacion,
+        v.FechaVenta,
+        v.Subtotal,
+        v.Igv,
+        v.Total,
+        v.Observacion,
+        ev.Nombre AS EstadoVenta,
+        tc.Nombre AS TipoComprobante,
+        c.Serie,
+        c.Numero,
+        CONCAT(c.Serie, '-', c.Numero) AS DocumentoCompleto,
+        c.FechaEmision,
+        cl.NumeroDocumento AS DocumentoCliente,
+        td.Nombre AS TipoDocumentoCliente,
+        COALESCE(
+            ce.RazonSocial,
+            CONCAT(cpn.Nombres, ' ', cpn.ApellidoPaterno, ' ', ISNULL(cpn.ApellidoMaterno, ''))
+        ) AS Cliente,
+        cl.Correo AS CorreoCliente,
+        cl.Telefono AS TelefonoCliente,
+        cl.Direccion AS DireccionCliente,
+        ISNULL(pagos.TotalPagado, 0) AS TotalPagado,
+        ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) AS SaldoPendiente,
+        CASE
+            WHEN ev.Nombre = 'Anulada' THEN 'Anulada'
+            WHEN ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) <= 0 THEN 'Pagada'
+            WHEN EXISTS (SELECT 1 FROM CuotaVenta cv WHERE cv.IdVenta = v.IdVenta) THEN 'En cuotas'
+            WHEN ISNULL(pagos.TotalPagado, 0) > 0 THEN 'Parcial'
+            ELSE 'Pendiente'
+        END AS EstadoPago,
+        CASE WHEN v.IdCotizacion IS NULL THEN 'Directa' ELSE 'Cotización' END AS OrigenVenta
+    FROM Venta v
+    INNER JOIN EstadoVenta ev ON ev.IdEstadoVenta = v.IdEstadoVenta
+    INNER JOIN Cliente cl ON cl.IdCliente = v.IdCliente
+    INNER JOIN TipoDocumento td ON td.IdTipoDocumento = cl.IdTipoDocumento
+    LEFT JOIN ClienteEmpresa ce ON ce.IdCliente = cl.IdCliente
+    LEFT JOIN ClientePersonaNatural cpn ON cpn.IdCliente = cl.IdCliente
+    INNER JOIN Comprobante c ON c.IdVenta = v.IdVenta
+    INNER JOIN TipoComprobante tc ON tc.IdTipoComprobante = c.IdTipoComprobante
+    OUTER APPLY (
+        SELECT SUM(pv.MontoPagado) AS TotalPagado
+        FROM PagoVenta pv
+        WHERE pv.IdVenta = v.IdVenta
+    ) pagos
+    WHERE v.IdVenta = @IdVenta;
+
+    SELECT
+        dv.IdDetalleVenta,
+        dv.IdElementoCatalogo,
+        ec.Nombre AS Elemento,
+        te.Nombre AS TipoElemento,
+        p.IdProducto,
+        p.CodigoProducto,
+        s.IdServicio,
+        dv.Cantidad,
+        dv.PrecioUnitario,
+        dv.Subtotal
+    FROM DetalleVenta dv
+    INNER JOIN ElementoCatalogo ec ON ec.IdElementoCatalogo = dv.IdElementoCatalogo
+    INNER JOIN TipoElemento te ON te.IdTipoElemento = ec.IdTipoElemento
+    LEFT JOIN Producto p ON p.IdElementoCatalogo = ec.IdElementoCatalogo
+    LEFT JOIN Servicio s ON s.IdElementoCatalogo = ec.IdElementoCatalogo
+    WHERE dv.IdVenta = @IdVenta
+    ORDER BY dv.IdDetalleVenta;
+
+    SELECT
+        IdPagoVenta,
+        IdVenta,
+        MetodoPago,
+        MontoPagado,
+        FechaPago,
+        Observacion
+    FROM PagoVenta
+    WHERE IdVenta = @IdVenta
+    ORDER BY FechaPago;
+
+    SELECT
+        IdCuotaVenta,
+        IdVenta,
+        NumeroCuota,
+        FechaVencimiento,
+        MontoCuota,
+        MontoPagado,
+        EstadoCuota
+    FROM CuotaVenta
+    WHERE IdVenta = @IdVenta
+    ORDER BY NumeroCuota;
+END
+
+GO
+/* =========================================================
+   11. PREPARAR COTIZACIÓN PARA VENTA
+   Solo si está Aprobada y no fue convertida.
+   Resultado 1: cabecera
+   Resultado 2: detalles
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_PrepararCotizacionParaVenta
+    @IdCotizacion INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @EstadoActual NVARCHAR(100);
+    DECLARE @IdVentaExistente INT;
+
+    IF @IdCotizacion <= 0
+        THROW 66001, 'Selecciona una cotización válida.', 1;
+
+    SELECT
+        @EstadoActual = ec.Nombre,
+        @IdVentaExistente = venta.IdVenta
+    FROM Cotizacion c
+    INNER JOIN EstadoCotizacion ec ON ec.IdEstadoCotizacion = c.IdEstadoCotizacion
+    OUTER APPLY (
+        SELECT TOP 1 v.IdVenta
+        FROM Venta v
+        WHERE v.IdCotizacion = c.IdCotizacion
+        ORDER BY v.IdVenta DESC
+    ) venta
+    WHERE c.IdCotizacion = @IdCotizacion;
+
+    IF @EstadoActual IS NULL
+        THROW 66002, 'La cotización seleccionada no existe.', 1;
+
+    IF @EstadoActual <> 'Aprobada'
+        THROW 66003, 'Solo una cotización aprobada puede convertirse en venta.', 1;
+
+    IF @IdVentaExistente IS NOT NULL
+        THROW 66004, 'Esta cotización ya fue convertida en venta.', 1;
+
+    EXEC dbo.sp_ObtenerCotizacionDetalle @IdCotizacion = @IdCotizacion;
+END;
 
 GO
 CREATE   PROCEDURE dbo.sp_RegistrarClienteWeb
@@ -2181,6 +2641,792 @@ BEGIN
 END;
 
 GO
+CREATE   PROCEDURE sp_RegistrarPagoVenta
+    @IdVenta INT,
+    @IdUsuarioRegistro INT,
+    @MetodoPago NVARCHAR(50),
+    @MontoPagado DECIMAL(18,2),
+    @Observacion NVARCHAR(600) = NULL,
+    @CuotasCobradasJson NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    DECLARE @Total DECIMAL(18,2);
+    DECLARE @PagadoActual DECIMAL(18,2);
+    DECLARE @Saldo DECIMAL(18,2);
+    DECLARE @EstadoVenta NVARCHAR(50);
+    DECLARE @TieneCuotas BIT = 0;
+    DECLARE @IdPagoVenta INT;
+    DECLARE @MontoEsperadoCuotas DECIMAL(18,2) = 0;
+
+    DECLARE @CuotasSeleccionadas TABLE (
+        IdCuotaVenta INT NOT NULL PRIMARY KEY
+    );
+
+    SET @MetodoPago = LTRIM(RTRIM(ISNULL(@MetodoPago, '')));
+    SET @CuotasCobradasJson = NULLIF(LTRIM(RTRIM(ISNULL(@CuotasCobradasJson, ''))), '');
+    SET @MontoPagado = ROUND(ISNULL(@MontoPagado, 0), 2);
+
+    IF @IdVenta <= 0
+        THROW 52001, 'Selecciona una venta válida.', 1;
+
+    IF @IdUsuarioRegistro <= 0 OR NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioRegistro)
+        THROW 52002, 'El usuario que registra el cobro no es válido.', 1;
+
+    IF @MetodoPago = ''
+        THROW 52003, 'Selecciona el método de cobro.', 1;
+
+    IF @MontoPagado <= 0
+        THROW 52004, 'El monto cobrado debe ser mayor a 0.', 1;
+
+    SELECT
+        @Total = v.Total,
+        @EstadoVenta = ev.Nombre
+    FROM Venta v
+    INNER JOIN EstadoVenta ev ON ev.IdEstadoVenta = v.IdEstadoVenta
+    WHERE v.IdVenta = @IdVenta;
+
+    IF @Total IS NULL
+        THROW 52005, 'La venta seleccionada no existe.', 1;
+
+    IF @EstadoVenta = 'Anulada'
+        THROW 52006, 'No se puede registrar cobro para una venta anulada.', 1;
+
+    SELECT @PagadoActual = ISNULL(SUM(MontoPagado), 0)
+    FROM PagoVenta
+    WHERE IdVenta = @IdVenta;
+
+    SET @PagadoActual = ROUND(ISNULL(@PagadoActual, 0), 2);
+    SET @Saldo = ROUND(@Total - @PagadoActual, 2);
+
+    IF @Saldo <= 0
+        THROW 52007, 'La venta ya se encuentra cobrada.', 1;
+
+    IF @MontoPagado > @Saldo
+        THROW 52008, 'El monto no puede superar el saldo pendiente.', 1;
+
+    IF EXISTS (SELECT 1 FROM CuotaVenta WHERE IdVenta = @IdVenta)
+        SET @TieneCuotas = 1;
+
+    IF @TieneCuotas = 1
+    BEGIN
+        IF @CuotasCobradasJson IS NULL
+            THROW 52009, 'Selecciona las cuotas que se van a cobrar.', 1;
+
+        IF ISJSON(@CuotasCobradasJson) <> 1
+            THROW 52010, 'La lista de cuotas seleccionadas no tiene formato válido.', 1;
+
+        INSERT INTO @CuotasSeleccionadas (IdCuotaVenta)
+        SELECT DISTINCT
+            COALESCE(
+                TRY_CONVERT(INT, j.[value]),
+                TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.idCuotaVenta')),
+                TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.IdCuotaVenta'))
+            ) AS IdCuotaVenta
+        FROM OPENJSON(@CuotasCobradasJson) j
+        WHERE COALESCE(
+                TRY_CONVERT(INT, j.[value]),
+                TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.idCuotaVenta')),
+                TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.IdCuotaVenta'))
+              ) IS NOT NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM @CuotasSeleccionadas)
+            THROW 52011, 'Selecciona al menos una cuota pendiente.', 1;
+
+        IF EXISTS (
+            SELECT 1
+            FROM @CuotasSeleccionadas s
+            LEFT JOIN CuotaVenta cv ON cv.IdCuotaVenta = s.IdCuotaVenta
+            WHERE cv.IdCuotaVenta IS NULL
+               OR cv.IdVenta <> @IdVenta
+        )
+        BEGIN
+            THROW 52012, 'Una o más cuotas seleccionadas no pertenecen a la venta.', 1;
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM CuotaVenta cv
+            INNER JOIN @CuotasSeleccionadas s ON s.IdCuotaVenta = cv.IdCuotaVenta
+            WHERE cv.EstadoCuota = 'Pagada'
+               OR cv.MontoPagado >= cv.MontoCuota
+        )
+        BEGIN
+            THROW 52013, 'Una o más cuotas seleccionadas ya están cobradas.', 1;
+        END;
+
+        SELECT @MontoEsperadoCuotas = ROUND(SUM(cv.MontoCuota - cv.MontoPagado), 2)
+        FROM CuotaVenta cv
+        INNER JOIN @CuotasSeleccionadas s ON s.IdCuotaVenta = cv.IdCuotaVenta;
+
+        SET @MontoEsperadoCuotas = ROUND(ISNULL(@MontoEsperadoCuotas, 0), 2);
+
+        IF @MontoPagado <> @MontoEsperadoCuotas
+            THROW 52014, 'El monto cobrado debe ser igual a la suma de las cuotas seleccionadas.', 1;
+    END
+    ELSE
+    BEGIN
+        IF @CuotasCobradasJson IS NOT NULL
+            THROW 52015, 'Esta venta no tiene cuotas para seleccionar.', 1;
+
+        IF @MontoPagado <> @Saldo
+            THROW 52016, 'Para una venta parcial o pendiente, debes cobrar el saldo pendiente completo.', 1;
+    END;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        INSERT INTO PagoVenta (
+            IdVenta,
+            IdUsuarioRegistro,
+            MetodoPago,
+            MontoPagado,
+            FechaPago,
+            Observacion
+        )
+        VALUES (
+            @IdVenta,
+            @IdUsuarioRegistro,
+            @MetodoPago,
+            @MontoPagado,
+            GETDATE(),
+            @Observacion
+        );
+
+        SET @IdPagoVenta = SCOPE_IDENTITY();
+
+        IF @TieneCuotas = 1
+        BEGIN
+            INSERT INTO PagoVentaCuota (
+                IdPagoVenta,
+                IdCuotaVenta,
+                MontoAplicado
+            )
+            SELECT
+                @IdPagoVenta,
+                cv.IdCuotaVenta,
+                ROUND(cv.MontoCuota - cv.MontoPagado, 2)
+            FROM CuotaVenta cv
+            INNER JOIN @CuotasSeleccionadas s ON s.IdCuotaVenta = cv.IdCuotaVenta;
+
+            UPDATE cv
+            SET
+                cv.MontoPagado = cv.MontoCuota,
+                cv.EstadoCuota = 'Pagada'
+            FROM CuotaVenta cv
+            INNER JOIN @CuotasSeleccionadas s ON s.IdCuotaVenta = cv.IdCuotaVenta;
+        END;
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            @IdVenta AS IdVenta,
+            v.Subtotal,
+            v.Igv,
+            v.Total,
+            ISNULL(pagos.TotalPagado, 0) AS TotalPagado,
+            ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) AS SaldoPendiente,
+            CASE
+                WHEN ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) <= 0 THEN 'Pagada'
+                WHEN EXISTS (SELECT 1 FROM CuotaVenta cv WHERE cv.IdVenta = v.IdVenta) THEN 'En cuotas'
+                WHEN ISNULL(pagos.TotalPagado, 0) > 0 THEN 'Parcial'
+                ELSE 'Pendiente'
+            END AS EstadoPago,
+            'Cobro registrado correctamente.' AS Mensaje
+        FROM Venta v
+        OUTER APPLY (
+            SELECT SUM(pv.MontoPagado) AS TotalPagado
+            FROM PagoVenta pv
+            WHERE pv.IdVenta = v.IdVenta
+        ) pagos
+        WHERE v.IdVenta = @IdVenta;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+
+GO
+CREATE   PROCEDURE sp_RegistrarVentaCompleta
+    @IdCliente INT,
+    @IdCotizacion INT = NULL,
+    @IdUsuarioRegistro INT,
+    @TipoComprobante NVARCHAR(50),
+    @Serie NVARCHAR(10) = NULL,
+    @Numero NVARCHAR(20) = NULL,
+    @FechaEmision DATETIME = NULL,
+    @Observacion NVARCHAR(1000) = NULL,
+    @TipoPago NVARCHAR(30),
+    @MetodoPago NVARCHAR(50),
+    @MontoPagado DECIMAL(18,2),
+    @NumeroCuotas INT = NULL,
+    @FechaPrimerVencimiento DATE = NULL,
+    @Detalles VentaDetalleType READONLY,
+    @CuotasJson NVARCHAR(MAX) = NULL
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    DECLARE @IdVenta INT;
+    DECLARE @IdEstadoVentaConfirmada INT;
+    DECLARE @IdTipoComprobante INT;
+    DECLARE @IdEstadoComprobanteEmitido INT;
+    DECLARE @IdTipoMovimientoSalida INT;
+    DECLARE @IdEstadoCotizacionConvertida INT;
+
+    DECLARE @Subtotal DECIMAL(18,2);
+    DECLARE @Igv DECIMAL(18,2);
+    DECLARE @Total DECIMAL(18,2);
+    DECLARE @SaldoPendiente DECIMAL(18,2);
+    DECLARE @EstadoPago NVARCHAR(30);
+
+    DECLARE @UltimoNumero INT;
+    DECLARE @SiguienteNumero INT;
+
+    DECLARE @CuotasProgramadas TABLE (
+        NumeroCuota INT NOT NULL,
+        FechaVencimiento DATE NOT NULL
+    );
+
+    IF @FechaEmision IS NULL
+        SET @FechaEmision = GETDATE();
+
+    SET @TipoComprobante = LTRIM(RTRIM(ISNULL(@TipoComprobante, '')));
+    SET @Serie = UPPER(LTRIM(RTRIM(ISNULL(@Serie, ''))));
+    SET @Numero = LTRIM(RTRIM(ISNULL(@Numero, '')));
+    SET @TipoPago = LTRIM(RTRIM(ISNULL(@TipoPago, '')));
+    SET @MetodoPago = LTRIM(RTRIM(ISNULL(@MetodoPago, '')));
+    SET @CuotasJson = NULLIF(LTRIM(RTRIM(ISNULL(@CuotasJson, ''))), '');
+
+    IF @IdCliente <= 0
+        THROW 51001, 'Selecciona un cliente válido.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM Cliente WHERE IdCliente = @IdCliente AND Estado = 1)
+        THROW 51002, 'El cliente seleccionado no existe o está inactivo.', 1;
+
+    IF @IdUsuarioRegistro <= 0 OR NOT EXISTS (SELECT 1 FROM Usuario WHERE IdUsuario = @IdUsuarioRegistro)
+        THROW 51003, 'El usuario que registra la venta no es válido.', 1;
+
+    IF @TipoComprobante = ''
+        THROW 51004, 'Selecciona el tipo de comprobante.', 1;
+
+    IF @TipoComprobante NOT IN ('Factura', 'Boleta', 'Nota de venta')
+        THROW 51005, 'Tipo de comprobante no válido.', 1;
+
+    IF @TipoPago NOT IN ('Total', 'Parcial', 'Cuotas')
+        THROW 51006, 'Selecciona un tipo de cobro válido.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM @Detalles)
+        THROW 51007, 'Agrega al menos un producto o servicio a la venta.', 1;
+
+    IF EXISTS (SELECT 1 FROM @Detalles WHERE Cantidad <= 0)
+        THROW 51008, 'La cantidad de cada detalle debe ser mayor a 0.', 1;
+
+    IF EXISTS (SELECT 1 FROM @Detalles WHERE PrecioUnitario <= 0)
+        THROW 51009, 'El precio de cada detalle debe ser mayor a 0.', 1;
+
+    SELECT @IdTipoComprobante = IdTipoComprobante
+    FROM TipoComprobante
+    WHERE Nombre = @TipoComprobante AND Estado = 1;
+
+    IF @IdTipoComprobante IS NULL
+        THROW 51010, 'El tipo de comprobante no existe o está inactivo.', 1;
+
+    IF @TipoComprobante = 'Factura'
+       AND NOT EXISTS (SELECT 1 FROM ClienteEmpresa WHERE IdCliente = @IdCliente)
+    BEGIN
+        THROW 51011, 'Para emitir factura, el cliente debe ser empresa con RUC.', 1;
+    END;
+
+    IF @Serie = ''
+    BEGIN
+        IF @TipoComprobante = 'Factura'
+            SET @Serie = 'F001';
+        ELSE IF @TipoComprobante = 'Boleta'
+            SET @Serie = 'B001';
+        ELSE IF @TipoComprobante = 'Nota de venta'
+            SET @Serie = 'NV01';
+        ELSE
+            THROW 51012, 'Tipo de comprobante no válido.', 1;
+    END;
+
+    IF @IdCotizacion IS NOT NULL
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM Cotizacion WHERE IdCotizacion = @IdCotizacion)
+            THROW 51013, 'La cotización seleccionada no existe.', 1;
+
+        IF EXISTS (SELECT 1 FROM Venta WHERE IdCotizacion = @IdCotizacion)
+            THROW 51014, 'La cotización ya fue convertida en venta.', 1;
+    END;
+
+    IF EXISTS (
+        SELECT 1
+        FROM @Detalles d
+        LEFT JOIN ElementoCatalogo e ON e.IdElementoCatalogo = d.IdElementoCatalogo
+        WHERE e.IdElementoCatalogo IS NULL OR e.Estado = 0
+    )
+    BEGIN
+        THROW 51015, 'Uno o más elementos seleccionados no existen o están inactivos.', 1;
+    END;
+
+    IF EXISTS (
+        SELECT 1
+        FROM @Detalles d
+        INNER JOIN Producto p ON p.IdElementoCatalogo = d.IdElementoCatalogo
+        LEFT JOIN Inventario i ON i.IdProducto = p.IdProducto
+        WHERE p.AplicaInventario = 1
+          AND (i.IdInventario IS NULL OR i.StockActual < d.Cantidad)
+    )
+    BEGIN
+        THROW 51016, 'No hay stock suficiente para uno o más productos.', 1;
+    END;
+
+    SELECT @IdEstadoVentaConfirmada = IdEstadoVenta
+    FROM EstadoVenta
+    WHERE Nombre = 'Confirmada';
+
+    SELECT @IdEstadoComprobanteEmitido = IdEstadoComprobante
+    FROM EstadoComprobante
+    WHERE Nombre = 'Emitido';
+
+    SELECT @IdTipoMovimientoSalida = IdTipoMovimientoStock
+    FROM TipoMovimientoStock
+    WHERE Nombre = 'Salida';
+
+    SELECT @IdEstadoCotizacionConvertida = IdEstadoCotizacion
+    FROM EstadoCotizacion
+    WHERE Nombre = 'Convertida a venta';
+
+    IF @IdEstadoVentaConfirmada IS NULL
+        THROW 51017, 'No existe el estado de venta Confirmada.', 1;
+
+    IF @IdEstadoComprobanteEmitido IS NULL
+        THROW 51018, 'No existe el estado de comprobante Emitido.', 1;
+
+    IF @IdTipoMovimientoSalida IS NULL
+        THROW 51019, 'No existe el tipo de movimiento de stock Salida.', 1;
+
+    SELECT @Total = SUM(Cantidad * PrecioUnitario)
+    FROM @Detalles;
+
+    SET @Total = ROUND(ISNULL(@Total, 0), 2);
+    SET @Subtotal = ROUND(@Total / 1.18, 2);
+    SET @Igv = ROUND(@Total - @Subtotal, 2);
+
+    IF @MontoPagado IS NULL
+        SET @MontoPagado = 0;
+
+    SET @MontoPagado = ROUND(@MontoPagado, 2);
+
+    IF @MontoPagado < 0
+        THROW 51020, 'El monto cobrado no puede ser negativo.', 1;
+
+    IF @MontoPagado > @Total
+        THROW 51021, 'El monto cobrado no puede ser mayor al total.', 1;
+
+    IF @MontoPagado > 0 AND @MetodoPago = ''
+        THROW 51022, 'Selecciona el método de cobro.', 1;
+
+    IF @TipoPago = 'Total' AND @MontoPagado <> @Total
+        THROW 51023, 'Para cobro total, el monto cobrado debe ser igual al total.', 1;
+
+    IF @TipoPago = 'Parcial' AND (@MontoPagado <= 0 OR @MontoPagado >= @Total)
+        THROW 51024, 'Para cobro parcial, el monto debe ser mayor a 0 y menor al total.', 1;
+
+    IF @TipoPago <> 'Cuotas' AND @CuotasJson IS NOT NULL
+        THROW 51025, 'Solo las ventas en cuotas pueden enviar cronograma de cuotas.', 1;
+
+    IF @TipoPago = 'Cuotas'
+    BEGIN
+        IF @NumeroCuotas IS NULL OR @NumeroCuotas <= 0
+            THROW 51026, 'Ingresa un número de cuotas válido.', 1;
+
+        IF @NumeroCuotas > 24
+            THROW 51027, 'El número máximo permitido es 24 cuotas.', 1;
+
+        IF @FechaPrimerVencimiento IS NULL
+            THROW 51028, 'Ingresa la fecha del primer vencimiento.', 1;
+
+        IF @MontoPagado >= @Total
+            THROW 51029, 'Para cobro en cuotas, debe quedar un saldo pendiente.', 1;
+
+        IF @CuotasJson IS NOT NULL
+        BEGIN
+            IF ISJSON(@CuotasJson) <> 1
+                THROW 51030, 'El cronograma de cuotas no tiene formato válido.', 1;
+
+            INSERT INTO @CuotasProgramadas (
+                NumeroCuota,
+                FechaVencimiento
+            )
+            SELECT
+                COALESCE(NumeroCuota, NumeroCuotaPascal),
+                COALESCE(FechaVencimiento, FechaVencimientoPascal)
+            FROM OPENJSON(@CuotasJson)
+            WITH (
+                NumeroCuota INT '$.numeroCuota',
+                NumeroCuotaPascal INT '$.NumeroCuota',
+                FechaVencimiento DATE '$.fechaVencimiento',
+                FechaVencimientoPascal DATE '$.FechaVencimiento'
+            );
+
+            IF (SELECT COUNT(*) FROM @CuotasProgramadas) <> @NumeroCuotas
+                THROW 51031, 'La cantidad de cuotas no coincide con el número de cuotas indicado.', 1;
+
+            IF EXISTS (
+                SELECT 1
+                FROM @CuotasProgramadas
+                WHERE NumeroCuota IS NULL
+                   OR NumeroCuota <= 0
+                   OR NumeroCuota > @NumeroCuotas
+                   OR FechaVencimiento IS NULL
+            )
+            BEGIN
+                THROW 51032, 'Existe una cuota con número o fecha inválida.', 1;
+            END;
+
+            IF EXISTS (
+                SELECT NumeroCuota
+                FROM @CuotasProgramadas
+                GROUP BY NumeroCuota
+                HAVING COUNT(*) > 1
+            )
+            BEGIN
+                THROW 51033, 'Las cuotas no pueden estar repetidas.', 1;
+            END;
+        END;
+    END;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        SELECT @UltimoNumero = ISNULL(MAX(TRY_CONVERT(INT, Numero)), 0)
+        FROM Comprobante WITH (UPDLOCK, HOLDLOCK)
+        WHERE Serie = @Serie;
+
+        SET @SiguienteNumero = @UltimoNumero + 1;
+        SET @Numero = RIGHT(REPLICATE('0', 6) + CAST(@SiguienteNumero AS NVARCHAR(20)), 6);
+
+        INSERT INTO Venta (
+            IdCliente,
+            IdCotizacion,
+            IdUsuarioRegistro,
+            IdEstadoVenta,
+            FechaVenta,
+            Subtotal,
+            Igv,
+            Total,
+            Observacion
+        )
+        VALUES (
+            @IdCliente,
+            @IdCotizacion,
+            @IdUsuarioRegistro,
+            @IdEstadoVentaConfirmada,
+            GETDATE(),
+            @Subtotal,
+            @Igv,
+            @Total,
+            @Observacion
+        );
+
+        SET @IdVenta = SCOPE_IDENTITY();
+
+        INSERT INTO DetalleVenta (
+            IdVenta,
+            IdElementoCatalogo,
+            Cantidad,
+            PrecioUnitario,
+            Subtotal
+        )
+        SELECT
+            @IdVenta,
+            IdElementoCatalogo,
+            Cantidad,
+            PrecioUnitario,
+            ROUND(Cantidad * PrecioUnitario, 2)
+        FROM @Detalles;
+
+        INSERT INTO Comprobante (
+            IdVenta,
+            IdTipoComprobante,
+            IdEstadoComprobante,
+            Serie,
+            Numero,
+            FechaEmision
+        )
+        VALUES (
+            @IdVenta,
+            @IdTipoComprobante,
+            @IdEstadoComprobanteEmitido,
+            @Serie,
+            @Numero,
+            @FechaEmision
+        );
+
+        UPDATE i
+        SET
+            i.StockActual = i.StockActual - d.Cantidad,
+            i.FechaActualizacion = GETDATE()
+        FROM Inventario i
+        INNER JOIN Producto p ON p.IdProducto = i.IdProducto
+        INNER JOIN @Detalles d ON d.IdElementoCatalogo = p.IdElementoCatalogo
+        WHERE p.AplicaInventario = 1;
+
+        INSERT INTO MovimientoStock (
+            IdProducto,
+            IdUsuarioRegistro,
+            IdTipoMovimientoStock,
+            IdVenta,
+            IdCompra,
+            Cantidad,
+            FechaMovimiento,
+            Motivo
+        )
+        SELECT
+            p.IdProducto,
+            @IdUsuarioRegistro,
+            @IdTipoMovimientoSalida,
+            @IdVenta,
+            NULL,
+            d.Cantidad,
+            GETDATE(),
+            CONCAT('Salida por venta interna ', @Serie, '-', @Numero)
+        FROM @Detalles d
+        INNER JOIN Producto p ON p.IdElementoCatalogo = d.IdElementoCatalogo
+        WHERE p.AplicaInventario = 1;
+
+        IF @MontoPagado > 0
+        BEGIN
+            INSERT INTO PagoVenta (
+                IdVenta,
+                IdUsuarioRegistro,
+                MetodoPago,
+                MontoPagado,
+                FechaPago,
+                Observacion
+            )
+            VALUES (
+                @IdVenta,
+                @IdUsuarioRegistro,
+                @MetodoPago,
+                @MontoPagado,
+                GETDATE(),
+                CASE
+                    WHEN @TipoPago = 'Total' THEN 'Cobro total de venta'
+                    WHEN @TipoPago = 'Parcial' THEN 'Cobro parcial inicial de venta'
+                    WHEN @TipoPago = 'Cuotas' THEN 'Cobro inicial de venta en cuotas'
+                    ELSE NULL
+                END
+            );
+        END;
+
+        SET @SaldoPendiente = ROUND(@Total - @MontoPagado, 2);
+
+        IF @TipoPago = 'Cuotas'
+        BEGIN
+            DECLARE @Contador INT = 1;
+            DECLARE @MontoBaseCuota DECIMAL(18,2);
+            DECLARE @MontoUltimaCuota DECIMAL(18,2);
+            DECLARE @AcumuladoCuotas DECIMAL(18,2) = 0;
+            DECLARE @FechaVencimientoCuota DATE;
+
+            SET @MontoBaseCuota = ROUND(@SaldoPendiente / @NumeroCuotas, 2);
+
+            WHILE @Contador <= @NumeroCuotas
+            BEGIN
+                SELECT @FechaVencimientoCuota = FechaVencimiento
+                FROM @CuotasProgramadas
+                WHERE NumeroCuota = @Contador;
+
+                IF @FechaVencimientoCuota IS NULL
+                    SET @FechaVencimientoCuota = DATEADD(MONTH, @Contador - 1, @FechaPrimerVencimiento);
+
+                IF @Contador < @NumeroCuotas
+                BEGIN
+                    INSERT INTO CuotaVenta (
+                        IdVenta,
+                        NumeroCuota,
+                        FechaVencimiento,
+                        MontoCuota,
+                        MontoPagado,
+                        EstadoCuota
+                    )
+                    VALUES (
+                        @IdVenta,
+                        @Contador,
+                        @FechaVencimientoCuota,
+                        @MontoBaseCuota,
+                        0,
+                        'Pendiente'
+                    );
+
+                    SET @AcumuladoCuotas = @AcumuladoCuotas + @MontoBaseCuota;
+                END
+                ELSE
+                BEGIN
+                    SET @MontoUltimaCuota = ROUND(@SaldoPendiente - @AcumuladoCuotas, 2);
+
+                    INSERT INTO CuotaVenta (
+                        IdVenta,
+                        NumeroCuota,
+                        FechaVencimiento,
+                        MontoCuota,
+                        MontoPagado,
+                        EstadoCuota
+                    )
+                    VALUES (
+                        @IdVenta,
+                        @Contador,
+                        @FechaVencimientoCuota,
+                        @MontoUltimaCuota,
+                        0,
+                        'Pendiente'
+                    );
+                END;
+
+                SET @FechaVencimientoCuota = NULL;
+                SET @Contador = @Contador + 1;
+            END;
+        END;
+
+        IF @IdCotizacion IS NOT NULL AND @IdEstadoCotizacionConvertida IS NOT NULL
+        BEGIN
+            UPDATE Cotizacion
+            SET IdEstadoCotizacion = @IdEstadoCotizacionConvertida
+            WHERE IdCotizacion = @IdCotizacion;
+        END;
+
+        COMMIT TRANSACTION;
+
+        SET @EstadoPago =
+            CASE
+                WHEN @SaldoPendiente <= 0 THEN 'Pagada'
+                WHEN @TipoPago = 'Cuotas' THEN 'En cuotas'
+                WHEN @MontoPagado > 0 THEN 'Parcial'
+                ELSE 'Pendiente'
+            END;
+
+        SELECT
+            @IdVenta AS IdVenta,
+            @Subtotal AS Subtotal,
+            @Igv AS Igv,
+            @Total AS Total,
+            @MontoPagado AS TotalPagado,
+            @SaldoPendiente AS SaldoPendiente,
+            @EstadoPago AS EstadoPago,
+            CONCAT('Venta registrada correctamente. Documento: ', @Serie, '-', @Numero) AS Mensaje;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+
+GO
+/* =========================================================
+   10. REPORTE DE VENTAS
+   ========================================================= */
+
+CREATE PROCEDURE sp_ReporteVentas
+    @Buscar NVARCHAR(150) = NULL,
+    @EstadoPago NVARCHAR(30) = NULL,
+    @TipoComprobante NVARCHAR(50) = NULL,
+    @OrigenVenta NVARCHAR(30) = NULL,
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH Base AS (
+        SELECT
+            v.IdVenta,
+            v.FechaVenta,
+            tc.Nombre AS TipoComprobante,
+            c.Serie,
+            c.Numero,
+            CONCAT(c.Serie, '-', c.Numero) AS DocumentoCompleto,
+            cl.NumeroDocumento AS DocumentoCliente,
+            COALESCE(
+                ce.RazonSocial,
+                CONCAT(cpn.Nombres, ' ', cpn.ApellidoPaterno, ' ', ISNULL(cpn.ApellidoMaterno, ''))
+            ) AS Cliente,
+            CASE WHEN v.IdCotizacion IS NULL THEN 'Directa' ELSE 'Cotización' END AS OrigenVenta,
+            v.Subtotal,
+            v.Igv,
+            v.Total,
+            ISNULL(pagos.TotalPagado, 0) AS TotalPagado,
+            ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) AS SaldoPendiente,
+            ev.Nombre AS EstadoVenta,
+            CASE
+                WHEN ev.Nombre = 'Anulada' THEN 'Anulada'
+                WHEN ROUND(v.Total - ISNULL(pagos.TotalPagado, 0), 2) <= 0 THEN 'Pagada'
+                WHEN EXISTS (SELECT 1 FROM CuotaVenta cv WHERE cv.IdVenta = v.IdVenta) THEN 'En cuotas'
+                WHEN ISNULL(pagos.TotalPagado, 0) > 0 THEN 'Parcial'
+                ELSE 'Pendiente'
+            END AS EstadoPago
+        FROM Venta v
+        INNER JOIN EstadoVenta ev ON ev.IdEstadoVenta = v.IdEstadoVenta
+        INNER JOIN Cliente cl ON cl.IdCliente = v.IdCliente
+        LEFT JOIN ClienteEmpresa ce ON ce.IdCliente = cl.IdCliente
+        LEFT JOIN ClientePersonaNatural cpn ON cpn.IdCliente = cl.IdCliente
+        INNER JOIN Comprobante c ON c.IdVenta = v.IdVenta
+        INNER JOIN TipoComprobante tc ON tc.IdTipoComprobante = c.IdTipoComprobante
+        OUTER APPLY (
+            SELECT SUM(pv.MontoPagado) AS TotalPagado
+            FROM PagoVenta pv
+            WHERE pv.IdVenta = v.IdVenta
+        ) pagos
+        WHERE
+            (@Buscar IS NULL OR @Buscar = ''
+                OR COALESCE(ce.RazonSocial, CONCAT(cpn.Nombres, ' ', cpn.ApellidoPaterno, ' ', ISNULL(cpn.ApellidoMaterno, ''))) LIKE '%' + @Buscar + '%'
+                OR cl.NumeroDocumento LIKE '%' + @Buscar + '%'
+                OR c.Serie LIKE '%' + @Buscar + '%'
+                OR c.Numero LIKE '%' + @Buscar + '%'
+                OR CONCAT(c.Serie, '-', c.Numero) LIKE '%' + @Buscar + '%')
+            AND (@TipoComprobante IS NULL OR @TipoComprobante = '' OR tc.Nombre = @TipoComprobante)
+            AND (@OrigenVenta IS NULL OR @OrigenVenta = '' OR CASE WHEN v.IdCotizacion IS NULL THEN 'Directa' ELSE 'Cotización' END = @OrigenVenta)
+            AND (@FechaInicio IS NULL OR CAST(v.FechaVenta AS DATE) >= @FechaInicio)
+            AND (@FechaFin IS NULL OR CAST(v.FechaVenta AS DATE) <= @FechaFin)
+    )
+    SELECT *
+    FROM Base
+    WHERE (@EstadoPago IS NULL OR @EstadoPago = '' OR EstadoPago = @EstadoPago)
+    ORDER BY FechaVenta DESC;
+END
+
+GO
 CREATE   TRIGGER dbo.trg_Categoria_Auditoria ON dbo.[Categoria] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -2305,6 +3551,22 @@ BEGIN
 END;
 
 GO
+CREATE   TRIGGER dbo.trg_CuotaVenta_Auditoria ON dbo.[CuotaVenta] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdCuotaVenta] IS NULL THEN N'CREAR' WHEN i.[IdCuotaVenta] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'CuotaVenta',
+ COALESCE(i.[IdCuotaVenta],d.[IdCuotaVenta]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdCuotaVenta] IS NOT NULL THEN (SELECT d.[IdCuotaVenta],d.[IdVenta],d.[NumeroCuota],d.[FechaVencimiento],d.[MontoCuota],d.[MontoPagado],d.[EstadoCuota] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdCuotaVenta] IS NOT NULL THEN (SELECT i.[IdCuotaVenta],i.[IdVenta],i.[NumeroCuota],i.[FechaVencimiento],i.[MontoCuota],i.[MontoPagado],i.[EstadoCuota] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdCuotaVenta]=d.[IdCuotaVenta];
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_DetalleCotizacion_Auditoria ON dbo.[DetalleCotizacion] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -2318,6 +3580,22 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdDetalleCotizacion]=d.[IdDetalleCotizacion];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_DetalleVenta_Auditoria ON dbo.[DetalleVenta] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdDetalleVenta] IS NULL THEN N'CREAR' WHEN i.[IdDetalleVenta] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'DetalleVenta',
+ COALESCE(i.[IdDetalleVenta],d.[IdDetalleVenta]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdDetalleVenta] IS NOT NULL THEN (SELECT d.[IdDetalleVenta],d.[IdVenta],d.[IdElementoCatalogo],d.[Cantidad],d.[PrecioUnitario],d.[Subtotal] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdDetalleVenta] IS NOT NULL THEN (SELECT i.[IdDetalleVenta],i.[IdVenta],i.[IdElementoCatalogo],i.[Cantidad],i.[PrecioUnitario],i.[Subtotal] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdDetalleVenta]=d.[IdDetalleVenta];
 END;
 
 GO
@@ -2366,6 +3644,38 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdMarca]=d.[IdMarca];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_PagoVenta_Auditoria ON dbo.[PagoVenta] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdPagoVenta] IS NULL THEN N'CREAR' WHEN i.[IdPagoVenta] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'PagoVenta',
+ COALESCE(i.[IdPagoVenta],d.[IdPagoVenta]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdPagoVenta] IS NOT NULL THEN (SELECT d.[IdPagoVenta],d.[IdVenta],d.[IdUsuarioRegistro],d.[MetodoPago],d.[MontoPagado],d.[FechaPago],d.[Observacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdPagoVenta] IS NOT NULL THEN (SELECT i.[IdPagoVenta],i.[IdVenta],i.[IdUsuarioRegistro],i.[MetodoPago],i.[MontoPagado],i.[FechaPago],i.[Observacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdPagoVenta]=d.[IdPagoVenta];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_PagoVentaCuota_Auditoria ON dbo.[PagoVentaCuota] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdPagoVentaCuota] IS NULL THEN N'CREAR' WHEN i.[IdPagoVentaCuota] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'PagoVentaCuota',
+ COALESCE(i.[IdPagoVentaCuota],d.[IdPagoVentaCuota]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdPagoVentaCuota] IS NOT NULL THEN (SELECT d.[IdPagoVentaCuota],d.[IdPagoVenta],d.[IdCuotaVenta],d.[MontoAplicado],d.[FechaRegistro],d.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdPagoVentaCuota] IS NOT NULL THEN (SELECT i.[IdPagoVentaCuota],i.[IdPagoVenta],i.[IdCuotaVenta],i.[MontoAplicado],i.[FechaRegistro],i.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdPagoVentaCuota]=d.[IdPagoVentaCuota];
 END;
 
 GO
@@ -2449,3 +3759,31 @@ BEGIN
 END;
 
 GO
+CREATE   TRIGGER dbo.trg_Venta_AnulacionAdministrador ON dbo.Venta AFTER UPDATE AS
+BEGIN
+ SET NOCOUNT ON;
+ IF EXISTS (SELECT 1 FROM inserted i JOIN deleted d ON d.IdVenta=i.IdVenta JOIN dbo.EstadoVenta e ON e.IdEstadoVenta=i.IdEstadoVenta
+   WHERE i.IdEstadoVenta<>d.IdEstadoVenta AND e.Nombre=N'Anulada')
+ BEGIN
+   DECLARE @usuario INT=TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria'));
+   EXEC dbo.sp_ExigirAdministradorAuditoria @usuario;
+ END;
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_Venta_Auditoria ON dbo.[Venta] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdVenta] IS NULL THEN N'CREAR' WHEN i.[IdVenta] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Venta',
+ COALESCE(i.[IdVenta],d.[IdVenta]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdVenta] IS NOT NULL THEN (SELECT d.[IdVenta],d.[IdCliente],d.[IdCotizacion],d.[IdUsuarioRegistro],d.[IdEstadoVenta],d.[FechaVenta],d.[Subtotal],d.[Igv],d.[Total],d.[Observacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdVenta] IS NOT NULL THEN (SELECT i.[IdVenta],i.[IdCliente],i.[IdCotizacion],i.[IdUsuarioRegistro],i.[IdEstadoVenta],i.[FechaVenta],i.[Subtotal],i.[Igv],i.[Total],i.[Observacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdVenta]=d.[IdVenta];
+END;
+
+GOGO

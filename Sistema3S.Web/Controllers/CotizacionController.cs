@@ -356,6 +356,73 @@ namespace Sistema3S.Web.Controllers
             }
         }
 
+        [HttpGet("{idCotizacion:int}/preparar-venta")]
+        public async Task<IActionResult> PrepararParaVenta(int idCotizacion)
+        {
+            try
+            {
+                var cotizacion = await _cotizacionService.PrepararParaVentaAsync(idCotizacion);
+
+                return Ok(cotizacion);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+        }
+
+        [HttpPut("{idCotizacion:int}/marcar-convertida-venta")]
+        public async Task<IActionResult> MarcarConvertidaVenta(
+            int idCotizacion,
+            [FromBody] CotizacionConvertirVentaDto dto
+        )
+        {
+            try
+            {
+                var actualizado = await _cotizacionService.MarcarConvertidaVentaAsync(
+                    idCotizacion,
+                    dto
+                );
+
+                if (!actualizado)
+                {
+                    return NotFound(new
+                    {
+                        mensaje = "Cotización no encontrada."
+                    });
+                }
+
+                return Ok(new
+                {
+                    mensaje = "Cotización marcada como convertida en venta correctamente."
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+        }
+
         [HttpGet("total-pendientes")]
         public async Task<IActionResult> ContarPendientes()
         {

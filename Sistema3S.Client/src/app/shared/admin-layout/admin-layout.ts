@@ -82,7 +82,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     {
       title: 'Operaciones',
       items: [
-        
+        {
+          label: 'Ventas internas',
+          icon: 'VT',
+          route: '/admin/ventas',
+          permisos: ['VENTAS_VER']
+        },
         
         
         
