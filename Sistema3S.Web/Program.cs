@@ -109,6 +109,7 @@ builder.Services.AddScoped<IPublicoService, PublicoService>();
 builder.Services.AddHttpClient<IConsultaDocumentoService, ConsultaDocumentoService>();
 builder.Services.AddHttpClient<IProveedorService, ProveedorService>();
 
+builder.Services.AddScoped<IInventarioService, InventarioService>();
 
 builder.Services.AddScoped<ICompraService, CompraService>();
 builder.Services.AddScoped<IPdfCompraService, PdfCompraService>();

@@ -4800,6 +4800,22 @@ BEGIN
 END;
 
 GO
+CREATE   TRIGGER dbo.trg_Inventario_Auditoria ON dbo.[Inventario] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdInventario] IS NULL THEN N'CREAR' WHEN i.[IdInventario] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Inventario',
+ COALESCE(i.[IdInventario],d.[IdInventario]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdInventario] IS NOT NULL THEN (SELECT d.[IdInventario],d.[IdProducto],d.[StockActual],d.[StockMinimo],d.[FechaActualizacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdInventario] IS NOT NULL THEN (SELECT i.[IdInventario],i.[IdProducto],i.[StockActual],i.[StockMinimo],i.[FechaActualizacion] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdInventario]=d.[IdInventario];
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_Marca_Auditoria ON dbo.[Marca] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -4813,6 +4829,22 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdMarca]=d.[IdMarca];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_MovimientoStock_Auditoria ON dbo.[MovimientoStock] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdMovimientoStock] IS NULL THEN N'CREAR' WHEN i.[IdMovimientoStock] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'MovimientoStock',
+ COALESCE(i.[IdMovimientoStock],d.[IdMovimientoStock]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdMovimientoStock] IS NOT NULL THEN (SELECT d.[IdMovimientoStock],d.[IdProducto],d.[IdUsuarioRegistro],d.[IdTipoMovimientoStock],d.[IdVenta],d.[IdCompra],d.[Cantidad],d.[FechaMovimiento],d.[Motivo] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdMovimientoStock] IS NOT NULL THEN (SELECT i.[IdMovimientoStock],i.[IdProducto],i.[IdUsuarioRegistro],i.[IdTipoMovimientoStock],i.[IdVenta],i.[IdCompra],i.[Cantidad],i.[FechaMovimiento],i.[Motivo] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdMovimientoStock]=d.[IdMovimientoStock];
 END;
 
 GO

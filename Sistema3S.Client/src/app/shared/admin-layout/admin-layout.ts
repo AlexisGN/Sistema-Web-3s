@@ -100,7 +100,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           route: '/admin/compras',
           permisos: ['COMPRAS_VER']
         },
-        
+        {
+          label: 'Inventario / Stock',
+          icon: 'ST',
+          route: '/admin/inventario',
+          permisos: ['INVENTARIO_VER']
+        }
       ]
     },
     {

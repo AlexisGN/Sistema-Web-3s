@@ -191,7 +191,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/compras/compras').then(m => m.ComprasComponent)
       },
-      
+      {
+        path: 'inventario',
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['INVENTARIO_VER']
+        },
+        loadComponent: () =>
+          import('./pages/inventario/inventario').then(m => m.InventarioComponent)
+      },
       
       ]
   },
