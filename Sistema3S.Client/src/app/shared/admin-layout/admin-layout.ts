@@ -115,7 +115,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     {
       title: 'Finanzas',
       items: [
-        
+        {
+          label: 'Caja',
+          icon: 'CJ',
+          route: '/admin/caja',
+          permisos: ['CAJA_VER']
+        }
       ]
     },
     {

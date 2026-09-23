@@ -119,6 +119,7 @@ builder.Services.AddScoped<IVentaService, VentaService>();
 builder.Services.AddScoped<IPdfVentaService, PdfVentaService>();
 builder.Services.AddScoped<IExcelVentaService, ExcelVentaService>();
 
+builder.Services.AddScoped<ICajaService, CajaService>();
 
 builder.Services.AddScoped<PasswordHashService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

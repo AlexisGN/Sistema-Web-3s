@@ -842,6 +842,126 @@ END;
 
 GO
 /* =========================================================
+   7. PROCEDIMIENTO: ABRIR CAJA
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_AbrirCaja
+    @IdUsuarioApertura INT,
+    @SaldoInicial DECIMAL(18,2),
+    @ObservacionApertura NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    DECLARE @IdEstadoAbierta INT;
+    DECLARE @IdCaja INT;
+
+    SET @SaldoInicial = ROUND(ISNULL(@SaldoInicial, 0), 2);
+    SET @ObservacionApertura = NULLIF(LTRIM(RTRIM(ISNULL(@ObservacionApertura, ''))), '');
+
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuarioApertura AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_ABRIR'))
+    )
+        THROW 70001, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
+
+    IF @SaldoInicial < 0
+        THROW 70002, 'El saldo inicial no puede ser negativo.', 1;
+
+    SELECT @IdEstadoAbierta = IdEstadoCaja
+    FROM dbo.EstadoCaja
+    WHERE Nombre = 'Abierta'
+      AND Estado = 1;
+
+    IF @IdEstadoAbierta IS NULL
+        THROW 70003, 'No existe el estado de caja Abierta.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.Caja c
+        INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+        WHERE ec.Nombre = 'Abierta'
+          AND ec.Estado = 1
+    )
+    BEGIN
+        THROW 70004, 'Ya existe una caja abierta. Debes cerrarla antes de abrir una nueva.', 1;
+    END;
+
+    INSERT INTO dbo.Caja (
+        IdUsuarioApertura,
+        IdUsuarioCierre,
+        IdEstadoCaja,
+        FechaApertura,
+        FechaCierre,
+        SaldoInicial,
+        SaldoFinal,
+        SaldoSistema,
+        TotalIngresos,
+        TotalEgresos,
+        SaldoContado,
+        Diferencia,
+        ObservacionApertura,
+        ObservacionCierre
+    )
+    VALUES (
+        @IdUsuarioApertura,
+        NULL,
+        @IdEstadoAbierta,
+        GETDATE(),
+        NULL,
+        @SaldoInicial,
+        NULL,
+        @SaldoInicial,
+        0,
+        0,
+        NULL,
+        NULL,
+        @ObservacionApertura,
+        NULL
+    );
+
+    SET @IdCaja = SCOPE_IDENTITY();
+
+    SELECT
+        c.IdCaja,
+        c.IdUsuarioApertura,
+        c.IdUsuarioCierre,
+        c.IdEstadoCaja,
+        ec.Nombre AS EstadoCaja,
+        c.FechaApertura,
+        c.FechaCierre,
+        c.SaldoInicial,
+        c.TotalIngresos,
+        c.TotalEgresos,
+        c.SaldoSistema,
+        c.SaldoFinal,
+        c.SaldoContado,
+        c.Diferencia,
+        c.ObservacionApertura,
+        c.ObservacionCierre,
+        'Caja abierta correctamente.' AS Mensaje
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE c.IdCaja = @IdCaja;
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+/* =========================================================
    7. ACTUALIZAR ARCHIVO PDF DE COTIZACIÓN
    ========================================================= */
 
@@ -1269,6 +1389,133 @@ BEGIN
 END;
 
 GO
+/* =========================================================
+   13. PROCEDIMIENTO: CERRAR CAJA
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_CerrarCaja
+    @IdUsuarioCierre INT,
+    @IdCaja INT,
+    @SaldoContado DECIMAL(18,2),
+    @ObservacionCierre NVARCHAR(1000) = NULL
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    DECLARE @IdEstadoCerrada INT;
+    DECLARE @EstadoActual NVARCHAR(100);
+    DECLARE @SaldoSistema DECIMAL(18,2);
+    DECLARE @TotalIngresos DECIMAL(18,2);
+    DECLARE @TotalEgresos DECIMAL(18,2);
+
+    SET @SaldoContado = ROUND(ISNULL(@SaldoContado, 0), 2);
+    SET @ObservacionCierre = NULLIF(LTRIM(RTRIM(ISNULL(@ObservacionCierre, ''))), '');
+
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuarioCierre AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_CERRAR'))
+    )
+        THROW 70601, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
+
+    IF @IdCaja <= 0
+        THROW 70602, 'Selecciona una caja válida.', 1;
+
+    IF @SaldoContado < 0
+        THROW 70603, 'El saldo contado no puede ser negativo.', 1;
+
+    SELECT
+        @EstadoActual = ec.Nombre
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE c.IdCaja = @IdCaja;
+
+    IF @EstadoActual IS NULL
+        THROW 70604, 'La caja seleccionada no existe.', 1;
+
+    IF @EstadoActual <> 'Abierta'
+        THROW 70605, 'Solo una caja abierta puede cerrarse.', 1;
+
+    SELECT @IdEstadoCerrada = IdEstadoCaja
+    FROM dbo.EstadoCaja
+    WHERE Nombre = 'Cerrada'
+      AND Estado = 1;
+
+    IF @IdEstadoCerrada IS NULL
+        THROW 70606, 'No existe el estado de caja Cerrada.', 1;
+
+    SELECT
+        @TotalIngresos = ISNULL(SUM(CASE
+            WHEN tmc.Nombre IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+            THEN mc.Monto ELSE 0 END), 0),
+        @TotalEgresos = ISNULL(SUM(CASE
+            WHEN tmc.Nombre IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+            THEN mc.Monto ELSE 0 END), 0)
+    FROM dbo.MovimientoCaja mc
+    INNER JOIN dbo.TipoMovimientoCaja tmc
+        ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+    WHERE mc.IdCaja = @IdCaja
+      AND mc.Estado = 1;
+
+    SET @TotalIngresos = ROUND(ISNULL(@TotalIngresos, 0), 2);
+    SET @TotalEgresos = ROUND(ISNULL(@TotalEgresos, 0), 2);
+
+    SELECT @SaldoSistema = ROUND(SaldoInicial + @TotalIngresos - @TotalEgresos, 2)
+    FROM dbo.Caja
+    WHERE IdCaja = @IdCaja;
+
+    UPDATE dbo.Caja
+    SET
+        IdUsuarioCierre = @IdUsuarioCierre,
+        IdEstadoCaja = @IdEstadoCerrada,
+        FechaCierre = GETDATE(),
+        TotalIngresos = @TotalIngresos,
+        TotalEgresos = @TotalEgresos,
+        SaldoSistema = @SaldoSistema,
+        SaldoFinal = @SaldoSistema,
+        SaldoContado = @SaldoContado,
+        Diferencia = ROUND(@SaldoContado - @SaldoSistema, 2),
+        ObservacionCierre = @ObservacionCierre
+    WHERE IdCaja = @IdCaja;
+
+    SELECT
+        c.IdCaja,
+        c.IdUsuarioApertura,
+        c.IdUsuarioCierre,
+        c.IdEstadoCaja,
+        ec.Nombre AS EstadoCaja,
+        c.FechaApertura,
+        c.FechaCierre,
+        c.SaldoInicial,
+        c.TotalIngresos,
+        c.TotalEgresos,
+        c.SaldoSistema,
+        c.SaldoFinal,
+        c.SaldoContado,
+        c.Diferencia,
+        c.ObservacionApertura,
+        c.ObservacionCierre,
+        'Caja cerrada correctamente.' AS Mensaje
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE c.IdCaja = @IdCaja;
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
 CREATE   PROCEDURE dbo.sp_ExigirAdministradorAuditoria @IdUsuario INT
 AS
 BEGIN
@@ -1482,6 +1729,74 @@ BEGIN
     OFFSET @Offset ROWS FETCH NEXT @TamanioPagina ROWS ONLY;
 END;
 
+GO
+/* =========================================================
+   12. PROCEDIMIENTO: LISTAR MOVIMIENTOS DE CAJA
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ListarMovimientosCaja
+    @IdUsuario INT,
+    @IdCaja INT = NULL,
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_VER'))
+    )
+        THROW 70501, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
+
+    IF @IdCaja IS NULL
+    BEGIN
+        SELECT TOP 1 @IdCaja = IdCaja
+        FROM dbo.Caja
+        ORDER BY IdCaja DESC;
+    END;
+
+    SELECT
+        mc.IdMovimientoCaja,
+        mc.IdCaja,
+        mc.IdTipoMovimientoCaja,
+        tmc.Nombre AS TipoMovimiento,
+        mc.IdVenta,
+        mc.IdCompra,
+        mc.IdPagoVenta,
+        mc.IdPagoCompra,
+        mc.IdUsuarioRegistro,
+        u.Correo AS UsuarioRegistro,
+        mc.MetodoPago,
+        mc.Monto,
+        mc.Descripcion,
+        mc.FechaMovimiento,
+        mc.OrigenMovimiento,
+        mc.EsAutomatico,
+        mc.Estado,
+        CASE
+            WHEN tmc.Nombre IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+            THEN mc.Monto ELSE 0
+        END AS Ingreso,
+        CASE
+            WHEN tmc.Nombre IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+            THEN mc.Monto ELSE 0
+        END AS Egreso
+    FROM dbo.MovimientoCaja mc
+    INNER JOIN dbo.TipoMovimientoCaja tmc
+        ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+    INNER JOIN dbo.Usuario u
+        ON u.IdUsuario = mc.IdUsuarioRegistro
+    WHERE (@IdCaja IS NULL OR mc.IdCaja = @IdCaja)
+      AND mc.Estado = 1
+      AND (@FechaInicio IS NULL OR CONVERT(DATE, mc.FechaMovimiento) >= @FechaInicio)
+      AND (@FechaFin IS NULL OR CONVERT(DATE, mc.FechaMovimiento) <= @FechaFin)
+    ORDER BY mc.FechaMovimiento DESC, mc.IdMovimientoCaja DESC;
+END;
 GO
 /* =========================================================
    6. LISTAR VENTAS
@@ -1806,6 +2121,54 @@ END;
 
 GO
 /* =========================================================
+   8. PROCEDIMIENTO: OBTENER CAJA ACTIVA
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ObtenerCajaActiva
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_VER'))
+    )
+        THROW 70101, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
+
+    SELECT TOP 1
+        c.IdCaja,
+        c.IdUsuarioApertura,
+        ua.Correo AS UsuarioApertura,
+        c.IdUsuarioCierre,
+        uc.Correo AS UsuarioCierre,
+        c.IdEstadoCaja,
+        ec.Nombre AS EstadoCaja,
+        c.FechaApertura,
+        c.FechaCierre,
+        c.SaldoInicial,
+        c.TotalIngresos,
+        c.TotalEgresos,
+        c.SaldoSistema,
+        c.SaldoFinal,
+        c.SaldoContado,
+        c.Diferencia,
+        c.ObservacionApertura,
+        c.ObservacionCierre
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    INNER JOIN dbo.Usuario ua ON ua.IdUsuario = c.IdUsuarioApertura
+    LEFT JOIN dbo.Usuario uc ON uc.IdUsuario = c.IdUsuarioCierre
+    WHERE ec.Nombre = 'Abierta'
+      AND ec.Estado = 1
+    ORDER BY c.IdCaja DESC;
+END;
+GO
+/* =========================================================
    7. DETALLE COMPLETO DE COMPRA
    ========================================================= */
 
@@ -2084,6 +2447,105 @@ END;
 
 GO
 /* =========================================================
+   11. PROCEDIMIENTO: RESUMEN DE CAJA
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ObtenerResumenCaja
+    @IdUsuario INT,
+    @IdCaja INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_VER'))
+    )
+        THROW 70401, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
+
+    IF @IdCaja IS NULL
+    BEGIN
+        SELECT TOP 1 @IdCaja = c.IdCaja
+        FROM dbo.Caja c
+        ORDER BY c.IdCaja DESC;
+    END;
+
+    IF @IdCaja IS NULL
+        THROW 70402, 'No existe una caja registrada.', 1;
+
+    ;WITH Movimientos AS (
+        SELECT
+            mc.IdCaja,
+            tmc.Nombre AS TipoMovimiento,
+            mc.Monto,
+            mc.Estado
+        FROM dbo.MovimientoCaja mc
+        INNER JOIN dbo.TipoMovimientoCaja tmc
+            ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+        WHERE mc.IdCaja = @IdCaja
+          AND mc.Estado = 1
+    )
+    SELECT
+        c.IdCaja,
+        c.IdEstadoCaja,
+        ec.Nombre AS EstadoCaja,
+        c.FechaApertura,
+        c.FechaCierre,
+        c.SaldoInicial,
+
+        ISNULL(SUM(CASE WHEN m.TipoMovimiento = 'Ingreso por venta' THEN m.Monto ELSE 0 END), 0) AS IngresosPorVenta,
+        ISNULL(SUM(CASE WHEN m.TipoMovimiento = 'Ingreso manual' THEN m.Monto ELSE 0 END), 0) AS IngresosManuales,
+        ISNULL(SUM(CASE WHEN m.TipoMovimiento = 'Ajuste ingreso' THEN m.Monto ELSE 0 END), 0) AS AjustesIngreso,
+
+        ISNULL(SUM(CASE WHEN m.TipoMovimiento = 'Egreso por compra' THEN m.Monto ELSE 0 END), 0) AS EgresosPorCompra,
+        ISNULL(SUM(CASE WHEN m.TipoMovimiento = 'Egreso manual' THEN m.Monto ELSE 0 END), 0) AS EgresosManuales,
+        ISNULL(SUM(CASE WHEN m.TipoMovimiento = 'Ajuste egreso' THEN m.Monto ELSE 0 END), 0) AS AjustesEgreso,
+
+        ISNULL(SUM(CASE
+            WHEN m.TipoMovimiento IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+            THEN m.Monto ELSE 0 END), 0) AS TotalIngresos,
+
+        ISNULL(SUM(CASE
+            WHEN m.TipoMovimiento IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+            THEN m.Monto ELSE 0 END), 0) AS TotalEgresos,
+
+        ROUND(
+            c.SaldoInicial
+            + ISNULL(SUM(CASE
+                WHEN m.TipoMovimiento IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+                THEN m.Monto ELSE 0 END), 0)
+            - ISNULL(SUM(CASE
+                WHEN m.TipoMovimiento IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+                THEN m.Monto ELSE 0 END), 0),
+            2
+        ) AS SaldoSistema,
+
+        c.SaldoContado,
+        c.Diferencia,
+        c.ObservacionApertura,
+        c.ObservacionCierre
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    LEFT JOIN Movimientos m ON m.IdCaja = c.IdCaja
+    WHERE c.IdCaja = @IdCaja
+    GROUP BY
+        c.IdCaja,
+        c.IdEstadoCaja,
+        ec.Nombre,
+        c.FechaApertura,
+        c.FechaCierre,
+        c.SaldoInicial,
+        c.SaldoContado,
+        c.Diferencia,
+        c.ObservacionApertura,
+        c.ObservacionCierre;
+END;
+GO
+/* =========================================================
    1. PROCEDURE PARA PREVISUALIZAR SIGUIENTE COMPROBANTE
    ========================================================= */
 
@@ -2268,6 +2730,20 @@ BEGIN
         THROW 66004, 'Esta cotización ya fue convertida en venta.', 1;
 
     EXEC dbo.sp_ObtenerCotizacionDetalle @IdCotizacion = @IdCotizacion;
+END;
+
+GO
+CREATE   PROCEDURE dbo.sp_RecalcularCajaAuditoria @IdCaja INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE c SET TotalIngresos=s.ingresos, TotalEgresos=s.egresos,
+        SaldoSistema=c.SaldoInicial+s.ingresos-s.egresos
+    FROM dbo.Caja c CROSS APPLY (
+        SELECT ISNULL(SUM(CASE WHEN t.Nombre IN ('Ingreso por venta','Ingreso manual','Ajuste ingreso') THEN m.Monto ELSE 0 END),0) ingresos,
+            ISNULL(SUM(CASE WHEN t.Nombre IN ('Egreso por compra','Egreso manual','Ajuste egreso') THEN m.Monto ELSE 0 END),0) egresos
+        FROM dbo.MovimientoCaja m JOIN dbo.TipoMovimientoCaja t ON t.IdTipoMovimientoCaja=m.IdTipoMovimientoCaja WHERE m.IdCaja=c.IdCaja AND m.Estado=1
+    ) s WHERE c.IdCaja=@IdCaja;
 END;
 
 GO
@@ -3442,6 +3918,309 @@ BEGIN
 END;
 
 GO
+/* =========================================================
+   9. PROCEDIMIENTO INTERNO: REGISTRAR MOVIMIENTO AUTOMÁTICO
+   Este procedimiento lo usarán ventas y compras.
+   No exige administrador porque es automático.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_RegistrarMovimientoCajaAutomatico
+    @OrigenMovimiento NVARCHAR(100),
+    @IdUsuarioRegistro INT,
+    @Monto DECIMAL(18,2),
+    @MetodoPago NVARCHAR(100),
+    @IdVenta INT = NULL,
+    @IdCompra INT = NULL,
+    @IdPagoVenta INT = NULL,
+    @IdPagoCompra INT = NULL,
+    @Descripcion NVARCHAR(600) = NULL
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    DECLARE @IdCaja INT;
+    DECLARE @IdTipoMovimientoCaja INT;
+    DECLARE @TipoMovimientoNombre NVARCHAR(100);
+
+    SET @OrigenMovimiento = LTRIM(RTRIM(ISNULL(@OrigenMovimiento, '')));
+    SET @MetodoPago = NULLIF(LTRIM(RTRIM(ISNULL(@MetodoPago, ''))), '');
+    SET @Descripcion = NULLIF(LTRIM(RTRIM(ISNULL(@Descripcion, ''))), '');
+    SET @Monto = ROUND(ISNULL(@Monto, 0), 2);
+
+    IF @IdUsuarioRegistro <= 0
+       OR NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE IdUsuario = @IdUsuarioRegistro AND Estado = 1)
+    BEGIN
+        THROW 70201, 'El usuario que registra el movimiento de caja no es válido.', 1;
+    END;
+
+    IF @Monto <= 0
+        THROW 70202, 'El monto del movimiento de caja debe ser mayor a 0.', 1;
+
+    IF @OrigenMovimiento NOT IN ('Venta', 'Compra')
+        THROW 70203, 'El origen automático de caja no es válido.', 1;
+
+    IF @OrigenMovimiento = 'Venta'
+    BEGIN
+        SET @TipoMovimientoNombre = 'Ingreso por venta';
+
+        IF @IdVenta IS NULL OR @IdPagoVenta IS NULL
+            THROW 70204, 'Para registrar ingreso por venta se requiere IdVenta e IdPagoVenta.', 1;
+
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.MovimientoCaja
+            WHERE IdPagoVenta = @IdPagoVenta
+              AND Estado = 1
+        )
+        BEGIN
+            COMMIT TRANSACTION; RETURN;
+        END;
+    END;
+
+    IF @OrigenMovimiento = 'Compra'
+    BEGIN
+        SET @TipoMovimientoNombre = 'Egreso por compra';
+
+        IF @IdCompra IS NULL OR @IdPagoCompra IS NULL
+            THROW 70205, 'Para registrar egreso por compra se requiere IdCompra e IdPagoCompra.', 1;
+
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.MovimientoCaja
+            WHERE IdPagoCompra = @IdPagoCompra
+              AND Estado = 1
+        )
+        BEGIN
+            COMMIT TRANSACTION; RETURN;
+        END;
+    END;
+
+    SELECT @IdCaja = c.IdCaja
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE ec.Nombre = 'Abierta'
+      AND ec.Estado = 1;
+
+    IF @IdCaja IS NULL
+        THROW 70206, 'No existe una caja abierta. El administrador debe abrir caja antes de registrar cobros o pagos.', 1;
+
+    SELECT @IdTipoMovimientoCaja = IdTipoMovimientoCaja
+    FROM dbo.TipoMovimientoCaja
+    WHERE Nombre = @TipoMovimientoNombre
+      AND Estado = 1;
+
+    IF @IdTipoMovimientoCaja IS NULL
+        THROW 70207, 'No existe el tipo de movimiento de caja requerido.', 1;
+
+    INSERT INTO dbo.MovimientoCaja (
+        IdCaja,
+        IdTipoMovimientoCaja,
+        IdVenta,
+        IdCompra,
+        IdUsuarioRegistro,
+        Monto,
+        Descripcion,
+        FechaMovimiento,
+        IdPagoVenta,
+        IdPagoCompra,
+        MetodoPago,
+        OrigenMovimiento,
+        EsAutomatico,
+        Estado
+    )
+    VALUES (
+        @IdCaja,
+        @IdTipoMovimientoCaja,
+        @IdVenta,
+        @IdCompra,
+        @IdUsuarioRegistro,
+        @Monto,
+        @Descripcion,
+        GETDATE(),
+        @IdPagoVenta,
+        @IdPagoCompra,
+        @MetodoPago,
+        @OrigenMovimiento,
+        1,
+        1
+    );
+
+    UPDATE c
+    SET
+        TotalIngresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+        ), 0),
+        TotalEgresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+        ), 0)
+    FROM dbo.Caja c
+    WHERE c.IdCaja = @IdCaja;
+
+    UPDATE dbo.Caja
+    SET SaldoSistema = ROUND(SaldoInicial + TotalIngresos - TotalEgresos, 2)
+    WHERE IdCaja = @IdCaja;
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+
+GO
+/* =========================================================
+   10. PROCEDIMIENTO: REGISTRAR MOVIMIENTO MANUAL
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_RegistrarMovimientoCajaManual
+    @IdUsuarioRegistro INT,
+    @TipoMovimiento NVARCHAR(100),
+    @MetodoPago NVARCHAR(100),
+    @Monto DECIMAL(18,2),
+    @Descripcion NVARCHAR(600)
+AS
+BEGIN
+    SET XACT_ABORT ON;
+    BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @BloqueoCaja INT;
+    EXEC @BloqueoCaja=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @BloqueoCaja<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    SET NOCOUNT ON;
+
+    DECLARE @IdCaja INT;
+    DECLARE @IdTipoMovimientoCaja INT;
+
+    SET @TipoMovimiento = LTRIM(RTRIM(ISNULL(@TipoMovimiento, '')));
+    SET @MetodoPago = NULLIF(LTRIM(RTRIM(ISNULL(@MetodoPago, ''))), '');
+    SET @Descripcion = NULLIF(LTRIM(RTRIM(ISNULL(@Descripcion, ''))), '');
+    SET @Monto = ROUND(ISNULL(@Monto, 0), 2);
+
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuarioRegistro AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_MOVIMIENTO_MANUAL'))
+    )
+        THROW 70301, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
+
+    IF @TipoMovimiento NOT IN ('Ingreso manual', 'Egreso manual', 'Ajuste ingreso', 'Ajuste egreso')
+        THROW 70302, 'Selecciona un tipo de movimiento manual válido.', 1;
+
+    IF @Monto <= 0
+        THROW 70303, 'El monto debe ser mayor a 0.', 1;
+
+    IF @Descripcion IS NULL
+        THROW 70304, 'Ingresa una descripción para el movimiento manual.', 1;
+
+    SELECT @IdCaja = c.IdCaja
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE ec.Nombre = 'Abierta'
+      AND ec.Estado = 1;
+
+    IF @IdCaja IS NULL
+        THROW 70305, 'No existe una caja abierta.', 1;
+
+    SELECT @IdTipoMovimientoCaja = IdTipoMovimientoCaja
+    FROM dbo.TipoMovimientoCaja
+    WHERE Nombre = @TipoMovimiento
+      AND Estado = 1;
+
+    IF @IdTipoMovimientoCaja IS NULL
+        THROW 70306, 'No existe el tipo de movimiento seleccionado.', 1;
+
+    INSERT INTO dbo.MovimientoCaja (
+        IdCaja,
+        IdTipoMovimientoCaja,
+        IdVenta,
+        IdCompra,
+        IdUsuarioRegistro,
+        Monto,
+        Descripcion,
+        FechaMovimiento,
+        IdPagoVenta,
+        IdPagoCompra,
+        MetodoPago,
+        OrigenMovimiento,
+        EsAutomatico,
+        Estado
+    )
+    VALUES (
+        @IdCaja,
+        @IdTipoMovimientoCaja,
+        NULL,
+        NULL,
+        @IdUsuarioRegistro,
+        @Monto,
+        @Descripcion,
+        GETDATE(),
+        NULL,
+        NULL,
+        @MetodoPago,
+        'Manual',
+        0,
+        1
+    );
+
+    UPDATE c
+    SET
+        TotalIngresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+        ), 0),
+        TotalEgresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+        ), 0)
+    FROM dbo.Caja c
+    WHERE c.IdCaja = @IdCaja;
+
+    UPDATE dbo.Caja
+    SET SaldoSistema = ROUND(SaldoInicial + TotalIngresos - TotalEgresos, 2)
+    WHERE IdCaja = @IdCaja;
+
+    SELECT
+        'Movimiento registrado correctamente.' AS Mensaje,
+        @IdCaja AS IdCaja;
+    COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
 CREATE   PROCEDURE sp_RegistrarPagoCompra
     @IdCompra INT,
     @IdUsuarioRegistro INT,
@@ -4374,6 +5153,53 @@ END;
 
 GO
 /* =========================================================
+   14. PROCEDIMIENTO: REPORTE DE CAJA
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ReporteCaja
+    @IdUsuario INT,
+    @FechaInicio DATE = NULL,
+    @FechaFin DATE = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_REPORTE'))
+    )
+        THROW 70701, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
+
+    SELECT
+        c.IdCaja,
+        ec.Nombre AS EstadoCaja,
+        c.FechaApertura,
+        c.FechaCierre,
+        c.SaldoInicial,
+        c.TotalIngresos,
+        c.TotalEgresos,
+        c.SaldoSistema,
+        c.SaldoFinal,
+        c.SaldoContado,
+        c.Diferencia,
+        ua.Correo AS UsuarioApertura,
+        uc.Correo AS UsuarioCierre,
+        c.ObservacionApertura,
+        c.ObservacionCierre
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    INNER JOIN dbo.Usuario ua ON ua.IdUsuario = c.IdUsuarioApertura
+    LEFT JOIN dbo.Usuario uc ON uc.IdUsuario = c.IdUsuarioCierre
+    WHERE (@FechaInicio IS NULL OR CONVERT(DATE, c.FechaApertura) >= @FechaInicio)
+      AND (@FechaFin IS NULL OR CONVERT(DATE, c.FechaApertura) <= @FechaFin)
+    ORDER BY c.IdCaja DESC;
+END;
+GO
+/* =========================================================
    10. REPORTE DE COMPRAS PDF/EXCEL
    ========================================================= */
 
@@ -4502,6 +5328,64 @@ BEGIN
     WHERE (@EstadoPago IS NULL OR @EstadoPago = '' OR EstadoPago = @EstadoPago)
     ORDER BY FechaVenta DESC;
 END
+
+GO
+CREATE   PROCEDURE dbo.sp_RevertirCajaCompra
+    @IdCompra INT, @IdUsuarioRegistro INT, @Motivo NVARCHAR(300)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        DECLARE @lock INT;
+        EXEC @lock=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+        IF @lock<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+        EXEC dbo.sp_ExigirAdministradorAuditoria @IdUsuarioRegistro;
+        IF NOT EXISTS (SELECT 1 FROM dbo.Compra c JOIN dbo.EstadoCompra e ON e.IdEstadoCompra=c.IdEstadoCompra WHERE c.IdCompra=@IdCompra AND e.Nombre='Anulada')
+            THROW 72005, 'La devolución corresponde únicamente a una compra anulada.', 1;
+        IF LEN(LTRIM(RTRIM(ISNULL(@Motivo,''))))<5 THROW 72006, 'Ingresa el motivo de la devolución.', 1;
+        IF EXISTS (SELECT 1 FROM dbo.MovimientoCaja m JOIN dbo.TipoMovimientoCaja t ON t.IdTipoMovimientoCaja=m.IdTipoMovimientoCaja
+            WHERE m.IdCompra=@IdCompra AND m.Estado=1 AND t.Nombre='Egreso por compra'
+            AND NOT EXISTS (SELECT 1 FROM dbo.MovimientoCaja r WHERE r.IdMovimientoRevertido=m.IdMovimientoCaja))
+        BEGIN
+            DECLARE @IdCaja INT, @cantidad INT, @tipo INT;
+            SELECT @IdCaja=MAX(c.IdCaja), @cantidad=COUNT(*) FROM dbo.Caja c WITH(UPDLOCK,HOLDLOCK)
+                JOIN dbo.EstadoCaja e ON e.IdEstadoCaja=c.IdEstadoCaja WHERE e.Nombre='Abierta' AND e.Estado=1;
+            IF @cantidad<>1 THROW 72007, 'Abre una única caja antes de devolver el dinero de la compra anulada.', 1;
+            SELECT @tipo=IdTipoMovimientoCaja FROM dbo.TipoMovimientoCaja WHERE Nombre='Ajuste ingreso' AND Estado=1;
+            IF @tipo IS NULL THROW 72008, 'No existe el tipo Ajuste ingreso activo.', 1;
+            INSERT dbo.MovimientoCaja(IdCaja,IdTipoMovimientoCaja,IdCompra,IdUsuarioRegistro,Monto,Descripcion,FechaMovimiento,MetodoPago,OrigenMovimiento,EsAutomatico,Estado,IdMovimientoRevertido)
+            SELECT @IdCaja,@tipo,@IdCompra,@IdUsuarioRegistro,m.Monto,
+                LEFT(CONCAT('Devolución compra ',@IdCompra,'; movimiento ',m.IdMovimientoCaja,'. ',@Motivo),300),GETDATE(),m.MetodoPago,'Anulación compra',1,1,m.IdMovimientoCaja
+            FROM dbo.MovimientoCaja m JOIN dbo.TipoMovimientoCaja t ON t.IdTipoMovimientoCaja=m.IdTipoMovimientoCaja
+            WHERE m.IdCompra=@IdCompra AND m.Estado=1 AND t.Nombre='Egreso por compra'
+                AND NOT EXISTS (SELECT 1 FROM dbo.MovimientoCaja r WHERE r.IdMovimientoRevertido=m.IdMovimientoCaja);
+            EXEC dbo.sp_RecalcularCajaAuditoria @IdCaja;
+        END;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_Caja_Auditoria ON dbo.[Caja] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdCaja] IS NULL THEN N'CREAR' WHEN i.[IdCaja] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Caja',
+ COALESCE(i.[IdCaja],d.[IdCaja]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdCaja] IS NOT NULL THEN (SELECT d.[IdCaja],d.[IdUsuarioApertura],d.[IdUsuarioCierre],d.[IdEstadoCaja],d.[FechaApertura],d.[FechaCierre],d.[SaldoInicial],d.[SaldoFinal],d.[SaldoSistema],d.[TotalIngresos],d.[TotalEgresos],d.[SaldoContado],d.[Diferencia],d.[ObservacionApertura],d.[ObservacionCierre] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdCaja] IS NOT NULL THEN (SELECT i.[IdCaja],i.[IdUsuarioApertura],i.[IdUsuarioCierre],i.[IdEstadoCaja],i.[FechaApertura],i.[FechaCierre],i.[SaldoInicial],i.[SaldoFinal],i.[SaldoSistema],i.[TotalIngresos],i.[TotalEgresos],i.[SaldoContado],i.[Diferencia],i.[ObservacionApertura],i.[ObservacionCierre] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdCaja]=d.[IdCaja];
+END;
 
 GO
 CREATE   TRIGGER dbo.trg_Categoria_Auditoria ON dbo.[Categoria] AFTER INSERT, UPDATE, DELETE AS
@@ -4832,6 +5716,49 @@ BEGIN
 END;
 
 GO
+CREATE   TRIGGER dbo.trg_MovimientoCaja_Auditoria ON dbo.[MovimientoCaja] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdMovimientoCaja] IS NULL THEN N'CREAR' WHEN i.[IdMovimientoCaja] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'MovimientoCaja',
+ COALESCE(i.[IdMovimientoCaja],d.[IdMovimientoCaja]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdMovimientoCaja] IS NOT NULL THEN (SELECT d.[IdMovimientoCaja],d.[IdCaja],d.[IdTipoMovimientoCaja],d.[IdVenta],d.[IdCompra],d.[IdUsuarioRegistro],d.[Monto],d.[Descripcion],d.[FechaMovimiento],d.[IdPagoVenta],d.[IdPagoCompra],d.[MetodoPago],d.[OrigenMovimiento],d.[EsAutomatico],d.[Estado],d.[IdMovimientoRevertido] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdMovimientoCaja] IS NOT NULL THEN (SELECT i.[IdMovimientoCaja],i.[IdCaja],i.[IdTipoMovimientoCaja],i.[IdVenta],i.[IdCompra],i.[IdUsuarioRegistro],i.[Monto],i.[Descripcion],i.[FechaMovimiento],i.[IdPagoVenta],i.[IdPagoCompra],i.[MetodoPago],i.[OrigenMovimiento],i.[EsAutomatico],i.[Estado],i.[IdMovimientoRevertido] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdMovimientoCaja]=d.[IdMovimientoCaja];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_MovimientoCaja_ValidarSaldo ON dbo.MovimientoCaja AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- El bloqueo se comparte con apertura, cierre, pagos y anulaciones.
+    DECLARE @lock INT;
+    EXEC @lock=sys.sp_getapplock @Resource=N'Sistema3S:operaciones-caja', @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=15000;
+    IF @lock<0 THROW 72002, 'Caja está ocupada. Intenta nuevamente.', 1;
+    IF EXISTS (SELECT 1 FROM inserted i JOIN dbo.Caja c ON c.IdCaja=i.IdCaja JOIN dbo.EstadoCaja e ON e.IdEstadoCaja=c.IdEstadoCaja WHERE e.Nombre<>'Abierta')
+       OR EXISTS (SELECT 1 FROM deleted i JOIN dbo.Caja c ON c.IdCaja=i.IdCaja JOIN dbo.EstadoCaja e ON e.IdEstadoCaja=c.IdEstadoCaja WHERE e.Nombre<>'Abierta')
+        THROW 72003, 'No se pueden modificar los movimientos de una caja cerrada.', 1;
+    -- Una devolución puede sanear un saldo negativo histórico; sólo bloqueamos las nuevas salidas netas.
+    IF EXISTS (
+        SELECT 1 FROM dbo.Caja c WITH (UPDLOCK,HOLDLOCK)
+        CROSS APPLY (SELECT ISNULL(SUM(CASE WHEN t.Nombre IN ('Ingreso por venta','Ingreso manual','Ajuste ingreso') THEN m.Monto ELSE -m.Monto END),0) neto
+            FROM dbo.MovimientoCaja m JOIN dbo.TipoMovimientoCaja t ON t.IdTipoMovimientoCaja=m.IdTipoMovimientoCaja WHERE m.IdCaja=c.IdCaja AND m.Estado=1) s
+        CROSS APPLY (SELECT ISNULL(SUM(d.valor),0) delta FROM (
+            SELECT CASE WHEN t.Nombre IN ('Ingreso por venta','Ingreso manual','Ajuste ingreso') THEN i.Monto ELSE -i.Monto END valor
+                FROM inserted i JOIN dbo.TipoMovimientoCaja t ON t.IdTipoMovimientoCaja=i.IdTipoMovimientoCaja WHERE i.IdCaja=c.IdCaja AND i.Estado=1
+            UNION ALL SELECT CASE WHEN t.Nombre IN ('Ingreso por venta','Ingreso manual','Ajuste ingreso') THEN -i.Monto ELSE i.Monto END
+                FROM deleted i JOIN dbo.TipoMovimientoCaja t ON t.IdTipoMovimientoCaja=i.IdTipoMovimientoCaja WHERE i.IdCaja=c.IdCaja AND i.Estado=1
+        ) d) cambio
+        WHERE cambio.delta<0 AND c.SaldoInicial+s.neto<0
+    ) THROW 72004, 'Saldo de caja insuficiente para el pago. Reduce el importe pagado o registra un ingreso antes de continuar.', 1;
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_MovimientoStock_Auditoria ON dbo.[MovimientoStock] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -4864,6 +5791,148 @@ BEGIN
 END;
 
 GO
+/* =========================================================
+   4. TRIGGER: PAGO DE COMPRA → EGRESO AUTOMÁTICO A CAJA
+   ========================================================= */
+
+CREATE   TRIGGER dbo.trg_PagoCompra_MovimientoCaja
+ON dbo.PagoCompra
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdCaja INT;
+    DECLARE @CantidadCajasAbiertas INT;
+    DECLARE @IdTipoMovimientoCaja INT;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE MontoPagado > 0
+          AND Estado = 1
+    )
+    BEGIN
+        RETURN;
+    END;
+
+    SELECT @CantidadCajasAbiertas = COUNT(*)
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE ec.Nombre = 'Abierta'
+      AND ec.Estado = 1;
+
+    IF @CantidadCajasAbiertas = 0
+    BEGIN
+        THROW 71101, 'No existe una caja abierta. El administrador debe abrir caja antes de registrar pagos de compra.', 1;
+    END;
+
+    IF @CantidadCajasAbiertas > 1
+    BEGIN
+        THROW 71102, 'Existe más de una caja abierta. Corrige el estado de caja antes de registrar pagos.', 1;
+    END;
+
+    SELECT TOP 1 @IdCaja = c.IdCaja
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE ec.Nombre = 'Abierta'
+      AND ec.Estado = 1
+    ORDER BY c.IdCaja DESC;
+
+    SELECT @IdTipoMovimientoCaja = IdTipoMovimientoCaja
+    FROM dbo.TipoMovimientoCaja
+    WHERE Nombre = 'Egreso por compra'
+      AND Estado = 1;
+
+    IF @IdTipoMovimientoCaja IS NULL
+    BEGIN
+        THROW 71103, 'No existe el tipo de movimiento de caja: Egreso por compra.', 1;
+    END;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        LEFT JOIN dbo.Usuario u ON u.IdUsuario = i.IdUsuarioRegistro
+        WHERE u.IdUsuario IS NULL
+           OR u.Estado = 0
+    )
+    BEGIN
+        THROW 71104, 'El usuario que registra el pago de compra no es válido para caja.', 1;
+    END;
+
+    INSERT INTO dbo.MovimientoCaja (
+        IdCaja,
+        IdTipoMovimientoCaja,
+        IdVenta,
+        IdCompra,
+        IdUsuarioRegistro,
+        Monto,
+        Descripcion,
+        FechaMovimiento,
+        IdPagoVenta,
+        IdPagoCompra,
+        MetodoPago,
+        OrigenMovimiento,
+        EsAutomatico,
+        Estado
+    )
+    SELECT
+        @IdCaja,
+        @IdTipoMovimientoCaja,
+        NULL,
+        i.IdCompra,
+        i.IdUsuarioRegistro,
+        ROUND(i.MontoPagado, 2),
+        COALESCE(
+            NULLIF(LTRIM(RTRIM(i.Observacion)), ''),
+            CONCAT('Egreso automático por pago de compra N° ', i.IdCompra)
+        ),
+        ISNULL(i.FechaPago, GETDATE()),
+        NULL,
+        i.IdPagoCompra,
+        i.MetodoPago,
+        'Compra',
+        1,
+        1
+    FROM inserted i
+    WHERE i.MontoPagado > 0
+      AND i.Estado = 1
+      AND NOT EXISTS (
+          SELECT 1
+          FROM dbo.MovimientoCaja mc
+          WHERE mc.IdPagoCompra = i.IdPagoCompra
+            AND mc.Estado = 1
+      );
+
+    UPDATE c
+    SET
+        TotalIngresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+        ), 0),
+        TotalEgresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+        ), 0)
+    FROM dbo.Caja c
+    WHERE c.IdCaja = @IdCaja;
+
+    UPDATE dbo.Caja
+    SET SaldoSistema = ROUND(SaldoInicial + TotalIngresos - TotalEgresos, 2)
+    WHERE IdCaja = @IdCaja;
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_PagoCompraCuota_Auditoria ON dbo.[PagoCompraCuota] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -4893,6 +5962,146 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdPagoVenta]=d.[IdPagoVenta];
+END;
+
+GO
+/* =========================================================
+   3. TRIGGER: PAGO DE VENTA → INGRESO AUTOMÁTICO A CAJA
+   ========================================================= */
+
+CREATE   TRIGGER dbo.trg_PagoVenta_MovimientoCaja
+ON dbo.PagoVenta
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdCaja INT;
+    DECLARE @CantidadCajasAbiertas INT;
+    DECLARE @IdTipoMovimientoCaja INT;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE MontoPagado > 0
+    )
+    BEGIN
+        RETURN;
+    END;
+
+    SELECT @CantidadCajasAbiertas = COUNT(*)
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE ec.Nombre = 'Abierta'
+      AND ec.Estado = 1;
+
+    IF @CantidadCajasAbiertas = 0
+    BEGIN
+        THROW 71001, 'No existe una caja abierta. El administrador debe abrir caja antes de registrar cobros de venta.', 1;
+    END;
+
+    IF @CantidadCajasAbiertas > 1
+    BEGIN
+        THROW 71002, 'Existe más de una caja abierta. Corrige el estado de caja antes de registrar cobros.', 1;
+    END;
+
+    SELECT TOP 1 @IdCaja = c.IdCaja
+    FROM dbo.Caja c
+    INNER JOIN dbo.EstadoCaja ec ON ec.IdEstadoCaja = c.IdEstadoCaja
+    WHERE ec.Nombre = 'Abierta'
+      AND ec.Estado = 1
+    ORDER BY c.IdCaja DESC;
+
+    SELECT @IdTipoMovimientoCaja = IdTipoMovimientoCaja
+    FROM dbo.TipoMovimientoCaja
+    WHERE Nombre = 'Ingreso por venta'
+      AND Estado = 1;
+
+    IF @IdTipoMovimientoCaja IS NULL
+    BEGIN
+        THROW 71003, 'No existe el tipo de movimiento de caja: Ingreso por venta.', 1;
+    END;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        LEFT JOIN dbo.Usuario u ON u.IdUsuario = i.IdUsuarioRegistro
+        WHERE u.IdUsuario IS NULL
+           OR u.Estado = 0
+    )
+    BEGIN
+        THROW 71004, 'El usuario que registra el cobro de venta no es válido para caja.', 1;
+    END;
+
+    INSERT INTO dbo.MovimientoCaja (
+        IdCaja,
+        IdTipoMovimientoCaja,
+        IdVenta,
+        IdCompra,
+        IdUsuarioRegistro,
+        Monto,
+        Descripcion,
+        FechaMovimiento,
+        IdPagoVenta,
+        IdPagoCompra,
+        MetodoPago,
+        OrigenMovimiento,
+        EsAutomatico,
+        Estado
+    )
+    SELECT
+        @IdCaja,
+        @IdTipoMovimientoCaja,
+        i.IdVenta,
+        NULL,
+        i.IdUsuarioRegistro,
+        ROUND(i.MontoPagado, 2),
+        COALESCE(
+            NULLIF(LTRIM(RTRIM(i.Observacion)), ''),
+            CONCAT('Ingreso automático por cobro de venta N° ', i.IdVenta)
+        ),
+        ISNULL(i.FechaPago, GETDATE()),
+        i.IdPagoVenta,
+        NULL,
+        i.MetodoPago,
+        'Venta',
+        1,
+        1
+    FROM inserted i
+    WHERE i.MontoPagado > 0
+      AND NOT EXISTS (
+          SELECT 1
+          FROM dbo.MovimientoCaja mc
+          WHERE mc.IdPagoVenta = i.IdPagoVenta
+            AND mc.Estado = 1
+      );
+
+    UPDATE c
+    SET
+        TotalIngresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Ingreso por venta', 'Ingreso manual', 'Ajuste ingreso')
+        ), 0),
+        TotalEgresos = ISNULL((
+            SELECT SUM(mc.Monto)
+            FROM dbo.MovimientoCaja mc
+            INNER JOIN dbo.TipoMovimientoCaja tmc
+                ON tmc.IdTipoMovimientoCaja = mc.IdTipoMovimientoCaja
+            WHERE mc.IdCaja = c.IdCaja
+              AND mc.Estado = 1
+              AND tmc.Nombre IN ('Egreso por compra', 'Egreso manual', 'Ajuste egreso')
+        ), 0)
+    FROM dbo.Caja c
+    WHERE c.IdCaja = @IdCaja;
+
+    UPDATE dbo.Caja
+    SET SaldoSistema = ROUND(SaldoInicial + TotalIngresos - TotalEgresos, 2)
+    WHERE IdCaja = @IdCaja;
 END;
 
 GO

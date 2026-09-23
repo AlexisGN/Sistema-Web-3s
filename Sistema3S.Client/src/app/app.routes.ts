@@ -200,7 +200,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/inventario/inventario').then(m => m.InventarioComponent)
       },
-      
+      {
+        path: 'caja',
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['CAJA_VER']
+        },
+        loadComponent: () =>
+          import('./pages/caja/caja').then(m => m.CajaComponent)
+      },
       ]
   },
   {
