@@ -131,8 +131,19 @@ export const routes: Routes = [
       
       
       
-      {path:'',redirectTo:'productos',pathMatch:'full'},
-      
+      {
+        path: '',
+        redirectTo: 'inicio',
+        pathMatch: 'full'
+      },
+      {
+        path: 'inicio',
+        loadComponent: () => import('./pages/dashboard/dashboard').then(m => m.DashboardComponent),
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['INICIO_VER']
+        }
+      },
       {
         path: 'productos',
         loadComponent: () => import('./pages/productos/productos').then(m => m.ProductosComponent),

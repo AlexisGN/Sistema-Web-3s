@@ -47,7 +47,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     {
       title: 'Principal',
       items: [
-        
+        {
+          label: 'Inicio',
+          icon: 'IN',
+          route: '/admin/inicio',
+          permisos: ['INICIO_VER']
+        }
       ]
     },
     {
