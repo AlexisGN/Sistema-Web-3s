@@ -1,3 +1,5 @@
+import { PublicProductCardComponent } from '../../shared/product-card';
+import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -9,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { combineLatest, forkJoin, Subject, takeUntil } from 'rxjs';
+import { CarritoCotizacionService } from '../../../core/services/carrito-cotizacion.service';
 
 import {
   CategoriaPublica,
@@ -18,15 +21,28 @@ import {
 import { ClienteWebService } from '../../../core/services/cliente-web.service';
 import { PublicoService } from '../../../core/services/publico.service';
 
+interface ProductoCarritoCotizacion {
+  idProducto: number;
+  idElementoCatalogo: number;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  marca: string | null;
+  imagenUrl: string;
+  cantidad: number;
+  observacion: string;
+}
+
 @Component({
   selector: 'app-productos-publico',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [PublicProductCardComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './productos-publico.html',
   styleUrl: './productos-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductosPublicoComponent implements OnInit, OnDestroy {
+  filtrosAbiertos = false;
   cargando = false;
   cargandoMas = false;
   error = '';
@@ -61,6 +77,7 @@ export class ProductosPublicoComponent implements OnInit, OnDestroy {
     private router: Router,
     private publicoService: PublicoService,
     private clienteWebService: ClienteWebService,
+    private carritoCotizacionService: CarritoCotizacionService,
     private cd: ChangeDetectorRef
   ) { }
 
@@ -288,6 +305,66 @@ export class ProductosPublicoComponent implements OnInit, OnDestroy {
     this.router.navigate(['/productos', producto.idProducto || producto.id]);
   }
 
+  accionCotizar(producto: ProductoPublico): void {
+    this.verificarSesionCliente();
+
+    if (this.clienteLogueado) {
+      this.agregarAlCarrito(producto);
+      return;
+    }
+
+    this.abrirWhatsAppProducto(producto);
+  }
+
+  agregarAlCarrito(producto: ProductoPublico): void {
+    this.verificarSesionCliente();
+
+    if (!this.clienteLogueado) {
+      this.abrirWhatsAppProducto(producto);
+      return;
+    }
+
+    this.normalizarCantidad(producto);
+
+    const carritoActual = this.obtenerCarrito();
+    const idProducto = producto.idProducto || producto.id;
+
+    if (!idProducto) {
+      this.mensajeOperacion = 'No se pudo agregar el producto al carrito.';
+      this.cd.markForCheck();
+      return;
+    }
+
+    const cantidadSeleccionada = Number(producto.cantidad || 1);
+    const itemExistente = carritoActual.find(item => item.idProducto === idProducto);
+
+    if (itemExistente) {
+      itemExistente.cantidad += cantidadSeleccionada;
+    } else {
+      carritoActual.push({
+        idProducto,
+        idElementoCatalogo: producto.idElementoCatalogo,
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        categoria: producto.categoria,
+        marca: producto.marca,
+        imagenUrl: producto.imagenUrl,
+        cantidad: cantidadSeleccionada,
+        observacion: ''
+      });
+    }
+
+    this.carritoCotizacionService.guardarItems(carritoActual, producto.nombre);
+
+    this.mensajeOperacion = 'Producto agregado al carrito de cotización.';
+    this.cd.markForCheck();
+
+    window.setTimeout(() => {
+      this.mensajeOperacion = '';
+      this.cd.markForCheck();
+    }, 2600);
+  }
+
   abrirWhatsAppProducto(producto: ProductoPublico): void {
     this.normalizarCantidad(producto);
 
@@ -318,6 +395,10 @@ export class ProductosPublicoComponent implements OnInit, OnDestroy {
     window.open(producto.fichaTecnicaPdf, '_blank');
   }
 
+  private obtenerCarrito(): ProductoCarritoCotizacion[] {
+    return this.carritoCotizacionService.obtenerItems<ProductoCarritoCotizacion>();
+  }
+
   private verificarSesionCliente(): void {
     const sesionCliente = this.clienteWebService.obtenerSesion();
 
@@ -328,11 +409,13 @@ export class ProductosPublicoComponent implements OnInit, OnDestroy {
   private registrarEventosSesionCliente(): void {
     window.addEventListener('storage', this.actualizarSesionClienteHandler);
     window.addEventListener('clienteWebSesionActualizada', this.actualizarSesionClienteHandler);
+    window.addEventListener('carritoCotizacionActualizado', this.actualizarSesionClienteHandler);
   }
 
   private quitarEventosSesionCliente(): void {
     window.removeEventListener('storage', this.actualizarSesionClienteHandler);
     window.removeEventListener('clienteWebSesionActualizada', this.actualizarSesionClienteHandler);
+    window.removeEventListener('carritoCotizacionActualizado', this.actualizarSesionClienteHandler);
   }
 
   trackByProducto(_: number, producto: ProductoPublico): number {

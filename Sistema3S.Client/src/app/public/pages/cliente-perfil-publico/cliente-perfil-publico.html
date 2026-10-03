@@ -1,49 +1,23 @@
-<section class="profile-page" *ngIf="sesion">
-  <div class="profile-hero">
-    <span>Mi cuenta</span>
-    <h1>{{ sesion.nombreCliente }}</h1>
-    <p>
-      Administra tu acceso cliente y continúa solicitando cotizaciones web desde el catálogo público 3S.
-    </p>
-  </div>
-
-  <div class="profile-grid">
-    <article class="profile-card main">
-      <span>Datos de cuenta</span>
-
-      <div class="profile-data">
-        <div>
-          <small>Tipo de cliente</small>
-          <strong>{{ sesion.tipoCliente }}</strong>
-        </div>
-
-        <div>
-          <small>Documento</small>
-          <strong>{{ sesion.tipoDocumento }}: {{ sesion.numeroDocumento }}</strong>
-        </div>
-
-        <div>
-          <small>Correo</small>
-          <strong>{{ sesion.correo }}</strong>
-        </div>
-
-        <div>
-          <small>Cuenta</small>
-          <strong>{{ sesion.rol }}</strong>
-        </div>
+<s3s-account-nav />
+<section class="history-hero"><div><span class="eyebrow">Mi cuenta</span><h1>Mi perfil</h1><p>Revisa tu información y mantén tus datos de contacto al día.</p></div><button type="button" class="btn-secondary" (click)="cerrarSesion()"><s3s-icon name="logout" /> Cerrar sesión</button></section>
+<div class="public-status" *ngIf="cargando" role="status">Cargando tu perfil…</div>
+<div class="auth-error" *ngIf="error" role="alert">{{ error }} <button *ngIf="!perfil" type="button" (click)="cargar()">Reintentar</button></div>
+<div class="auth-success" *ngIf="mensaje" role="status">{{ mensaje }}</div>
+<section class="profile-layout" *ngIf="perfil && !cargando">
+  <aside class="profile-card"><span class="eyebrow">Identidad de la cuenta</span><h2>{{ perfil.nombreCliente }}</h2>
+    <dl><dt>{{ perfil.tipoDocumento }}</dt><dd>{{ perfil.numeroDocumento }}</dd><dt>Correo de acceso</dt><dd>{{ perfil.correo }}</dd><dt>Tipo de cliente</dt><dd>{{ perfil.esEmpresa ? 'Empresa' : 'Persona natural' }}</dd></dl>
+    <p class="field-help">Los datos de identidad están protegidos. Para corregirlos, contacta al equipo 3S.</p>
+  </aside>
+  <form #form="ngForm" class="profile-card" (ngSubmit)="guardar(form)" novalidate><div class="section-heading"><h2>Datos de contacto</h2><button *ngIf="!editando" type="button" class="btn-secondary" (click)="editar()"><s3s-icon name="edit" /> Editar datos</button></div>
+    <div class="form-grid">
+      <div><label for="perfil-telefono">Teléfono / WhatsApp</label><div class="telefono-pe"><span aria-hidden="true">+51</span><input id="perfil-telefono" s3sTelefonoPe name="telefono" [(ngModel)]="perfil.telefono" [disabled]="!editando || guardando" required #telefono="ngModel" /></div><p class="field-error" *ngIf="telefono.touched && telefono.invalid">Ingresa tu teléfono.</p></div>
+      <div *ngIf="perfil.esEmpresa"><label for="perfil-comercial">Nombre comercial</label><input id="perfil-comercial" name="nombreComercial" [(ngModel)]="perfil.nombreComercial" [readonly]="!editando" [disabled]="guardando" maxlength="200" /></div>
+      <div class="wide"><label for="perfil-direccion">Dirección</label><input id="perfil-direccion" name="direccion" [(ngModel)]="perfil.direccion" [readonly]="!editando" [disabled]="guardando" maxlength="250" autocomplete="street-address" /></div>
+      <div class="wide"><label for="perfil-ubicacion">Ubicación</label><input id="perfil-ubicacion" [value]="perfil.ubicacion || 'Sin ubicación registrada'" readonly />
+        <div class="search-box" *ngIf="editando"><input aria-label="Buscar distrito, provincia o departamento" name="buscarUbicacion" [(ngModel)]="busquedaUbicacion" placeholder="Distrito, provincia o departamento" [disabled]="guardando" /><button type="button" (click)="buscarUbicacion()" [disabled]="buscandoUbicacion || guardando">{{ buscandoUbicacion ? 'Buscando…' : 'Buscar' }}</button></div>
+        <div class="location-results" *ngIf="editando && ubicaciones.length"><button *ngFor="let u of ubicaciones" type="button" class="btn-secondary" (click)="seleccionarUbicacion(u)">{{ u.nombre }}</button></div>
       </div>
-    </article>
-
-    <article class="profile-card actions">
-      <span>Acciones rápidas</span>
-      <h2>Continúa tu solicitud</h2>
-      
-
-      <div class="action-buttons">
-        <a routerLink="/productos">Ver productos</a>
-        
-        <button type="button" (click)="cerrarSesion()">Cerrar sesión</button>
-      </div>
-    </article>
-  </div>
+    </div>
+    <div class="register-actions" *ngIf="editando"><button type="submit" class="btn-primary" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button><button type="button" class="btn-secondary" (click)="cancelar()" [disabled]="guardando">Cancelar</button></div>
+  </form>
 </section>

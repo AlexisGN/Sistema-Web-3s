@@ -222,10 +222,6 @@ namespace Sistema3S.Web.Controllers
             }
         }
 
-
-
-
-
         [HttpDelete("{idProducto:int}")]
         public async Task<IActionResult> EliminarLogico(int idProducto)
         {
@@ -251,6 +247,27 @@ namespace Sistema3S.Web.Controllers
                 return StatusCode(500, new
                 {
                     mensaje = "No se pudo eliminar el producto."
+                });
+            }
+        }
+
+        [HttpGet("total-activos")]
+        public async Task<IActionResult> ContarActivos()
+        {
+            try
+            {
+                var total = await _productoService.ContarActivosAsync();
+
+                return Ok(new
+                {
+                    total
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "No se pudo obtener el total de productos activos."
                 });
             }
         }

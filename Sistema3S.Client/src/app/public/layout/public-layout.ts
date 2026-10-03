@@ -1,15 +1,18 @@
+import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
+import { Subscription, filter } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
 
 import { ClienteWebSesion } from '../../core/models/cliente-web.model';
 import { ClienteWebService } from '../../core/services/cliente-web.service';
+import { CarritoCotizacionService } from '../../core/services/carrito-cotizacion.service';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, UiIconComponent],
   templateUrl: './public-layout.html',
   styleUrl: './public-layout.scss'
 })
@@ -22,14 +25,31 @@ export class PublicLayoutComponent implements OnInit, OnDestroy {
 
   clienteLogueado = false;
   clienteSesion: ClienteWebSesion | null = null;
+  cantidadCarrito = 0;
+
+  toastCarritoVisible = false;
+  toastCarritoTitulo = '+ Producto agregado';
+  toastCarritoMensaje = 'Se agregó al carrito de cotización.';
+
+  private toastCarritoTimeout?: number;
 
   private actualizarCarritoHandler = (event: Event) => {
     this.verificarSesionCliente();
+
+    const detalle = (event as CustomEvent<{
+      mostrarToast?: boolean;
+      producto?: string;
+    }>).detail;
+
+    if (detalle?.mostrarToast) {
+      this.mostrarToastCarrito(detalle.producto);
+    }
   };
 
   constructor(
     private router: Router,
     private clienteWebService: ClienteWebService,
+    private carritoCotizacionService: CarritoCotizacionService
   ) { }
 
   @HostListener('window:scroll')
@@ -37,17 +57,30 @@ export class PublicLayoutComponent implements OnInit, OnDestroy {
     this.headerScrolled = window.scrollY > 80;
   }
 
+  private navigation?: Subscription;
+  @HostListener('document:keydown.escape') cerrarDesplegables(): void { this.menuAbierto = false; this.cuentaAbierta = false; }
   ngOnInit(): void {
+    this.navigation = this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => {
+      this.cerrarDesplegables();
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
     this.verificarSesionCliente();
     this.onWindowScroll();
 
     window.addEventListener('storage', this.actualizarCarritoHandler);
+    window.addEventListener('carritoCotizacionActualizado', this.actualizarCarritoHandler);
     window.addEventListener('clienteWebSesionActualizada', this.actualizarCarritoHandler);
   }
 
   ngOnDestroy(): void {
+    this.navigation?.unsubscribe();
     window.removeEventListener('storage', this.actualizarCarritoHandler);
+    window.removeEventListener('carritoCotizacionActualizado', this.actualizarCarritoHandler);
     window.removeEventListener('clienteWebSesionActualizada', this.actualizarCarritoHandler);
+
+    if (this.toastCarritoTimeout) {
+      window.clearTimeout(this.toastCarritoTimeout);
+    }
   }
 
   verificarSesionCliente(): void {
@@ -58,9 +91,11 @@ export class PublicLayoutComponent implements OnInit, OnDestroy {
 
   if (!this.clienteLogueado) {
     this.cuentaAbierta = false;
+    this.cantidadCarrito = 0;
     return;
   }
 
+  this.cantidadCarrito = this.carritoCotizacionService.contarItems();
 }
 
   get nombreClienteCorto(): string {
@@ -81,6 +116,24 @@ export class PublicLayoutComponent implements OnInit, OnDestroy {
     }
 
     return partes[0];
+  }
+
+  mostrarToastCarrito(nombreProducto?: string): void {
+    this.toastCarritoTitulo = '+ Producto agregado';
+
+    this.toastCarritoMensaje = nombreProducto
+      ? `${nombreProducto} se agregó al carrito de cotización.`
+      : 'El producto se agregó al carrito de cotización.';
+
+    this.toastCarritoVisible = true;
+
+    if (this.toastCarritoTimeout) {
+      window.clearTimeout(this.toastCarritoTimeout);
+    }
+
+    this.toastCarritoTimeout = window.setTimeout(() => {
+      this.toastCarritoVisible = false;
+    }, 2600);
   }
 
   toggleMenu(): void {
@@ -117,6 +170,11 @@ export class PublicLayoutComponent implements OnInit, OnDestroy {
     this.cerrarCuenta();
   }
 
+  irCarrito(): void {
+    this.router.navigate(['/cliente/carrito']);
+    this.cerrarCuenta();
+  }
+
   irClienteLogin(): void {
     this.router.navigate(['/cliente/login']);
     this.cerrarCuenta();
@@ -129,6 +187,11 @@ export class PublicLayoutComponent implements OnInit, OnDestroy {
 
   irClienteRegistro(): void {
     this.router.navigate(['/cliente/registro']);
+    this.cerrarCuenta();
+  }
+
+  irClienteHistorial(): void {
+    this.router.navigate(['/cliente/historial-cotizaciones']);
     this.cerrarCuenta();
   }
 

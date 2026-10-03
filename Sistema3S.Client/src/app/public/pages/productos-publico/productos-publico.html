@@ -1,113 +1,37 @@
-<section class="products-hero">
-  <div class="products-hero-content">
-    <span>Catálogo industrial 3S</span>
-
-    <h1>{{ tituloPagina }}</h1>
-
-    <p>
-      {{ descripcionPagina }}
-    </p>
-
-    <div class="hero-actions">
-      <a routerLink="/cliente/registro" *ngIf="!clienteLogueado">
-        Crear cuenta para cotizar varios productos
-      </a>
-
-      
-
-      <button type="button" (click)="limpiarFiltros()" *ngIf="hayFiltrosActivos">
-        Ver catálogo completo
-      </button>
-    </div>
-  </div>
+<header class="catalog-heading">
+  <div><span class="eyebrow">Catálogo industrial 3S</span><h1>{{ tituloPagina }}</h1><p>Equipos y repuestos para tu operación. Explora, selecciona y cotiza.</p></div>
+  <a class="btn-secondary" *ngIf="clienteLogueado" routerLink="/cliente/carrito"><s3s-icon name="cart" /> Mi carrito</a>
+</header>
+<section class="category-directory" aria-label="Categorías industriales" *ngIf="origenRuta === 'categorias' && !idCategoriaSeleccionada">
+  <a class="directory-card" *ngFor="let categoria of categorias; trackBy: trackByCategoria" [routerLink]="['/categorias', categoria.idCategoria || categoria.id]">
+    <div class="directory-icon"><s3s-icon name="layers" /></div><div><h2>{{ categoria.nombre }}</h2><span>{{ categoria.cantidadProductos }} productos</span></div><s3s-icon name="arrow" />
+  </a>
 </section>
-
-<section class="category-shortcuts" *ngIf="categorias.length > 0">
-  <div class="section-head">
-    <span>Categorías</span>
-    <h2>Explora productos por especialidad</h2>
-  </div>
-
-  <div class="category-pills">
-    <button
-      type="button"
-      [class.active]="!idCategoriaSeleccionada"
-      (click)="seleccionarCategoria(null)"
-    >
-      Todas
-    </button>
-
-    <button
-      type="button"
-      *ngFor="let categoria of categorias; trackBy: trackByCategoria"
-      [class.active]="idCategoriaSeleccionada === (categoria.idCategoria || categoria.id)"
-      (click)="seleccionarCategoria(categoria.idCategoria || categoria.id)"
-    >
-      <span>{{ categoria.icono }}</span>
-      {{ categoria.nombre }}
-    </button>
-  </div>
-</section>
-
-<section class="brands-shortcuts" *ngIf="marcas.length > 0">
-  <div class="section-head compact">
-    <span>Marcas</span>
-    <h2>Filtra por marca</h2>
-  </div>
-
-  <div class="brand-pills">
-    <button
-      type="button"
-      [class.active]="!idMarcaSeleccionada"
-      (click)="seleccionarMarca(null)"
-    >
-      Todas
-    </button>
-
-    <button
-      type="button"
-      *ngFor="let marca of marcas; trackBy: trackByMarca"
-      [class.active]="idMarcaSeleccionada === (marca.idMarca || marca.id)"
-      (click)="seleccionarMarca(marca.idMarca || marca.id)"
-    >
-      {{ marca.nombre }}
-    </button>
-  </div>
-</section>
-
+<div class="catalog-toolbar">
+  <form class="toolbar-search" (ngSubmit)="buscarProductos()"><label class="sr-only" for="catalog-query">Buscar productos</label><input id="catalog-query" name="busqueda" [(ngModel)]="busqueda" placeholder="Nombre, código o aplicación" /><button type="submit" aria-label="Buscar productos"><s3s-icon name="search" /><span>Buscar</span></button></form>
+  <div class="toolbar-field"><label for="catalog-category">Categoría</label><select id="catalog-category" [ngModel]="idCategoriaSeleccionada" (ngModelChange)="seleccionarCategoria($event)"><option [ngValue]="null">Todas las categorías</option><option *ngFor="let categoria of categorias; trackBy: trackByCategoria" [ngValue]="categoria.idCategoria || categoria.id">{{ categoria.nombre }}</option></select></div>
+  <div class="toolbar-field"><label for="catalog-brand">Marca</label><select id="catalog-brand" [ngModel]="idMarcaSeleccionada" (ngModelChange)="seleccionarMarca($event)"><option [ngValue]="null">Todas las marcas</option><option *ngFor="let marca of marcas; trackBy: trackByMarca" [ngValue]="marca.idMarca || marca.id">{{ marca.nombre }}</option></select></div>
+  <button type="button" class="toolbar-clear btn-secondary" (click)="limpiarFiltros()" *ngIf="hayFiltrosActivos">Limpiar</button>
+</div>
 <section class="products-results">
-  <div class="results-head">
-    <div>
-      <span>Productos</span>
-      <h2>
-        {{ totalRegistros }} producto{{ totalRegistros === 1 ? '' : 's' }} para cotización
-      </h2>
-    </div>
-
-    
-
-    <p *ngIf="!clienteLogueado">
-      Cotiza productos individualmente por WhatsApp o crea una cuenta para armar una solicitud con varios productos.
-    </p>
-  </div>
-
-  <div class="operation-message" *ngIf="busqueda.trim()">
+  <div class="results-head compact-results"><h2>{{ totalRegistros }} producto{{ totalRegistros === 1 ? '' : 's' }}</h2><span>Selecciona un producto para ver su ficha o cotizar.</span></div>
+  <div class="operation-message" *ngIf="busqueda.trim()" role="status">
     Resultados relacionados con: “{{ busqueda }}”
   </div>
 
-  <div class="public-status" *ngIf="cargando">
+  <div class="public-status" *ngIf="cargando" role="status">
     Cargando productos industriales...
   </div>
 
-  <div class="public-status error" *ngIf="error">
-    {{ error }}
+  <div class="public-status error" *ngIf="error" role="status">
+    {{ error }} <button type="button" (click)="reiniciarYCargarProductos()">Reintentar</button>
   </div>
 
-  <div class="operation-message" *ngIf="mensajeOperacion">
+  <div class="operation-message" *ngIf="mensajeOperacion" role="status">
     {{ mensajeOperacion }}
   </div>
 
-  <div class="empty-state" *ngIf="!cargando && productos.length === 0 && !error">
+  <div class="empty-state" *ngIf="!cargando && productos.length === 0 && !error"><div class="empty-icon"><s3s-icon name="box" /></div>
     <strong>No encontramos productos con los filtros seleccionados.</strong>
     <p>
       Ajusta la búsqueda o revisa el catálogo completo para encontrar la solución industrial que necesitas.
@@ -119,77 +43,7 @@
   </div>
 
   <div class="products-grid" *ngIf="productos.length > 0">
-    <article
-      class="product-card"
-      *ngFor="let producto of productos; trackBy: trackByProducto"
-    >
-      <button
-        type="button"
-        class="image-link"
-        (click)="verDetalle(producto)"
-        [attr.aria-label]="'Ver detalle de ' + producto.nombre"
-      >
-        <img
-          *ngIf="producto.imagenUrl"
-          [src]="producto.imagenUrl"
-          [alt]="producto.nombre"
-          loading="lazy"
-          decoding="async"
-        />
-
-        <div class="image-placeholder" *ngIf="!producto.imagenUrl">
-          <strong>3S</strong>
-          <small>Imagen no disponible</small>
-        </div>
-      </button>
-
-      <div class="product-content">
-        <div class="product-meta">
-          <span>{{ producto.codigo }}</span>
-          <span>{{ producto.marca || '3S' }}</span>
-        </div>
-
-        <h3>{{ producto.nombre }}</h3>
-
-        <p class="category-name">
-          {{ producto.categoria }}
-        </p>
-
-        <p class="description">
-          {{ producto.descripcion }}
-        </p>
-
-        <button
-          type="button"
-          class="technical-link"
-          *ngIf="producto.tieneFichaTecnica && producto.fichaTecnicaPdf"
-          (click)="abrirFichaTecnica(producto)"
-        >
-          Ver ficha técnica
-        </button>
-
-        <div class="product-actions">
-          <div class="qty-control">
-            <label>Cantidad</label>
-
-            <input
-              type="number"
-              min="1"
-              [(ngModel)]="producto.cantidad"
-              (change)="normalizarCantidad(producto)"
-            />
-          </div>
-
-          <button type="button" class="detail-btn" (click)="verDetalle(producto)">
-            Ver detalle
-          </button>
-
-          <button type="button" class="quote-btn-card" (click)="abrirWhatsAppProducto(producto)">
-            Cotizar por WhatsApp
-          </button>
-        </div>
-      </div>
-    </article>
+    <s3s-product-card *ngFor="let producto of productos; trackBy: trackByProducto" [producto]="producto" [logueado]="clienteLogueado" [cantidad]="true" [descripcion]="true" [ficha]="true" (cotizar)="accionCotizar($event)" (normalizar)="normalizarCantidad($event)" (verFicha)="abrirFichaTecnica($event)" />
   </div>
 
   <div class="load-more" *ngIf="hayMas && productos.length > 0">

@@ -1,3 +1,5 @@
+import { TelefonoPeDirective } from '../../shared/telefono-pe/telefono-pe';
+import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -19,7 +21,7 @@ import {
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [TelefonoPeDirective, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './clientes.html',
   styleUrl: './clientes.scss'
 })

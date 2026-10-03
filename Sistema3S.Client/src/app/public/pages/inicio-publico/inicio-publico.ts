@@ -1,3 +1,7 @@
+import { PublicCarouselComponent } from '../../shared/public-carousel';
+import { PublicProductCardComponent } from '../../shared/product-card';
+import { ImagenCatalogoComponent } from '../../../shared/imagen-catalogo/imagen-catalogo';
+import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import {
   AfterViewInit,
@@ -11,6 +15,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
+import { CarritoCotizacionService } from '../../../core/services/carrito-cotizacion.service';
 import {
   CategoriaPublica,
   MarcaPublica,
@@ -24,10 +29,22 @@ type CategoriaConProductos = CategoriaPublica & {
   productosInicio: ProductoPublico[];
 };
 
+interface ProductoCarritoCotizacion {
+  idProducto: number;
+  idElementoCatalogo: number;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  marca: string | null;
+  imagenUrl: string;
+  cantidad: number;
+  observacion: string;
+}
+
 @Component({
   selector: 'app-inicio-publico',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [PublicCarouselComponent, PublicProductCardComponent, ImagenCatalogoComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './inicio-publico.html',
   styleUrl: './inicio-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -68,6 +85,7 @@ export class InicioPublicoComponent implements OnInit, AfterViewInit, OnDestroy 
     private publicoService: PublicoService,
     private clienteWebService: ClienteWebService,
     private cd: ChangeDetectorRef,
+    private carritoCotizacionService: CarritoCotizacionService,
     private ngZone: NgZone
   ) { }
 
@@ -190,6 +208,66 @@ export class InicioPublicoComponent implements OnInit, AfterViewInit, OnDestroy 
     producto.cantidad = Math.floor(producto.cantidad);
   }
 
+  accionCotizarProducto(producto: ProductoPublico): void {
+    this.verificarSesionCliente();
+
+    if (this.clienteLogueado) {
+      this.agregarAlCarrito(producto);
+      return;
+    }
+
+    this.abrirWhatsAppProducto(producto);
+  }
+
+  agregarAlCarrito(producto: ProductoPublico): void {
+    this.verificarSesionCliente();
+
+    if (!this.clienteLogueado) {
+      this.abrirWhatsAppProducto(producto);
+      return;
+    }
+
+    this.normalizarCantidad(producto);
+
+    const carritoActual = this.obtenerCarrito();
+    const idProducto = producto.idProducto || producto.id;
+
+    if (!idProducto) {
+      this.mensajeOperacion = 'No se pudo agregar el producto al carrito.';
+      this.cd.markForCheck();
+      return;
+    }
+
+    const cantidadSeleccionada = Number(producto.cantidad || 1);
+    const itemExistente = carritoActual.find(item => item.idProducto === idProducto);
+
+    if (itemExistente) {
+      itemExistente.cantidad += cantidadSeleccionada;
+    } else {
+      carritoActual.push({
+        idProducto,
+        idElementoCatalogo: producto.idElementoCatalogo,
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        categoria: producto.categoria,
+        marca: producto.marca,
+        imagenUrl: producto.imagenUrl,
+        cantidad: cantidadSeleccionada,
+        observacion: ''
+      });
+    }
+
+    this.carritoCotizacionService.guardarItems(carritoActual, producto.nombre);
+
+    this.mensajeOperacion = 'Producto agregado al carrito de cotización.';
+    this.cd.markForCheck();
+
+    window.setTimeout(() => {
+      this.mensajeOperacion = '';
+      this.cd.markForCheck();
+    }, 2600);
+  }
+
   abrirWhatsAppProducto(producto: ProductoPublico): void {
     this.normalizarCantidad(producto);
 
@@ -298,6 +376,10 @@ export class InicioPublicoComponent implements OnInit, AfterViewInit, OnDestroy 
     return (valor || '').trim().toLowerCase();
   }
 
+  private obtenerCarrito(): ProductoCarritoCotizacion[] {
+    return this.carritoCotizacionService.obtenerItems<ProductoCarritoCotizacion>();
+  }
+
   private verificarSesionCliente(): void {
     const sesionCliente = this.clienteWebService.obtenerSesion();
 
@@ -308,11 +390,13 @@ export class InicioPublicoComponent implements OnInit, AfterViewInit, OnDestroy 
   private registrarEventosSesionCliente(): void {
     window.addEventListener('storage', this.actualizarSesionClienteHandler);
     window.addEventListener('clienteWebSesionActualizada', this.actualizarSesionClienteHandler);
+    window.addEventListener('carritoCotizacionActualizado', this.actualizarSesionClienteHandler);
   }
 
   private quitarEventosSesionCliente(): void {
     window.removeEventListener('storage', this.actualizarSesionClienteHandler);
     window.removeEventListener('clienteWebSesionActualizada', this.actualizarSesionClienteHandler);
+    window.removeEventListener('carritoCotizacionActualizado', this.actualizarSesionClienteHandler);
   }
 
   trackByCategoria(_: number, categoria: CategoriaPublica): number {

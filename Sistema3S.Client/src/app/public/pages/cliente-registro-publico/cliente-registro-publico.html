@@ -7,11 +7,11 @@
     </p>
   </div>
 
-  <form class="register-card" (ngSubmit)="registrar()">
+  <form class="register-card" (ngSubmit)="registroForm.valid && registrar()" #registroForm="ngForm" novalidate>
     <div class="document-tabs">
       <button
         type="button"
-        [class.active]="data.tipoDocumento === 'DNI'"
+        [class.active]="data.tipoDocumento === 'DNI'" [attr.aria-pressed]="data.tipoDocumento === 'DNI'"
         (click)="cambiarTipoDocumento('DNI')"
       >
         Persona natural / DNI
@@ -19,7 +19,7 @@
 
       <button
         type="button"
-        [class.active]="data.tipoDocumento === 'RUC'"
+        [class.active]="data.tipoDocumento === 'RUC'" [attr.aria-pressed]="data.tipoDocumento === 'RUC'"
         (click)="cambiarTipoDocumento('RUC')"
       >
         Empresa / RUC
@@ -28,15 +28,16 @@
 
     <div class="form-grid">
       <div class="form-group">
-        <label>{{ esEmpresa ? 'RUC' : 'DNI' }}</label>
-        <input
+        <label for="numeroDocumento">{{ esEmpresa ? 'RUC' : 'DNI' }}</label>
+        <input id="numeroDocumento"
           type="text"
           name="numeroDocumento"
           [(ngModel)]="data.numeroDocumento"
           (input)="alCambiarDocumento()"
           [maxlength]="longitudDocumento"
           [placeholder]="esEmpresa ? 'Ingresa 11 dígitos' : 'Ingresa 8 dígitos'"
-        />
+        required inputmode="numeric" [pattern]="esEmpresa ? '[0-9]{11}' : '[0-9]{8}'" #numeroDocumentoControl="ngModel" [attr.aria-invalid]="numeroDocumentoControl.invalid && (numeroDocumentoControl.touched || registroForm.submitted)" aria-describedby="numeroDocumento-error" />
+        <small id="numeroDocumento-error" class="field-error" *ngIf="numeroDocumentoControl.invalid && (numeroDocumentoControl.touched || registroForm.submitted)">Ingresa {{ longitudDocumento }} dígitos.</small>
       </div>
 
       <div class="document-status" *ngIf="consultandoDocumento">
@@ -62,28 +63,30 @@
 
       <div class="form-grid">
         <div class="form-group">
-          <label>Nombres</label>
-          <input
+          <label for="nombres">Nombres</label>
+          <input id="nombres"
             type="text"
             name="nombres"
             [(ngModel)]="data.nombres"
             placeholder="Nombres"
-          />
+          required pattern=".*\S.*" autocomplete="given-name" #nombresControl="ngModel" [attr.aria-invalid]="nombresControl.invalid && (nombresControl.touched || registroForm.submitted)" aria-describedby="nombres-error" />
+        <small id="nombres-error" class="field-error" *ngIf="nombresControl.invalid && (nombresControl.touched || registroForm.submitted)">Ingresa tus nombres.</small>
         </div>
 
         <div class="form-group">
-          <label>Apellido paterno</label>
-          <input
+          <label for="apellidoPaterno">Apellido paterno</label>
+          <input id="apellidoPaterno"
             type="text"
             name="apellidoPaterno"
             [(ngModel)]="data.apellidoPaterno"
             placeholder="Apellido paterno"
-          />
+          required pattern=".*\S.*" autocomplete="family-name" #apellidoPaternoControl="ngModel" [attr.aria-invalid]="apellidoPaternoControl.invalid && (apellidoPaternoControl.touched || registroForm.submitted)" aria-describedby="apellidoPaterno-error" />
+        <small id="apellidoPaterno-error" class="field-error" *ngIf="apellidoPaternoControl.invalid && (apellidoPaternoControl.touched || registroForm.submitted)">Ingresa tu apellido paterno.</small>
         </div>
 
         <div class="form-group">
-          <label>Apellido materno</label>
-          <input
+          <label for="apellidoMaterno">Apellido materno</label>
+          <input id="apellidoMaterno"
             type="text"
             name="apellidoMaterno"
             [(ngModel)]="data.apellidoMaterno"
@@ -98,18 +101,19 @@
 
       <div class="form-grid">
         <div class="form-group wide">
-          <label>Razón social</label>
-          <input
+          <label for="razonSocial">Razón social</label>
+          <input id="razonSocial"
             type="text"
             name="razonSocial"
             [(ngModel)]="data.razonSocial"
             placeholder="Razón social"
-          />
+          required pattern=".*\S.*" autocomplete="organization" #razonSocialControl="ngModel" [attr.aria-invalid]="razonSocialControl.invalid && (razonSocialControl.touched || registroForm.submitted)" aria-describedby="razonSocial-error" />
+        <small id="razonSocial-error" class="field-error" *ngIf="razonSocialControl.invalid && (razonSocialControl.touched || registroForm.submitted)">Ingresa la razón social.</small>
         </div>
 
         <div class="form-group wide">
-          <label>Nombre comercial</label>
-          <input
+          <label for="nombreComercial">Nombre comercial</label>
+          <input id="nombreComercial"
             type="text"
             name="nombreComercial"
             [(ngModel)]="data.nombreComercial"
@@ -123,28 +127,29 @@
 
     <div class="form-grid">
       <div class="form-group">
-        <label>Correo electrónico</label>
-        <input
+        <label for="correo">Correo electrónico</label>
+        <input id="correo"
           type="email"
           name="correo"
           [(ngModel)]="data.correo"
           placeholder="cliente@empresa.com"
-        />
+        required email autocomplete="email" #correoControl="ngModel" [attr.aria-invalid]="correoControl.invalid && (correoControl.touched || registroForm.submitted)" aria-describedby="correo-error" />
+        <small id="correo-error" class="field-error" *ngIf="correoControl.invalid && (correoControl.touched || registroForm.submitted)">Ingresa un correo electrónico válido.</small>
       </div>
 
       <div class="form-group">
-        <label>Teléfono / WhatsApp</label>
-        <input
-          type="text"
+        <label for="telefono">Teléfono / WhatsApp</label>
+        <div class="telefono-pe"><span aria-hidden="true">+51</span><input id="telefono" s3sTelefonoPe
+          type="tel"
           name="telefono"
           [(ngModel)]="data.telefono"
-          placeholder="Ej. 948327667"
-        />
+          placeholder="999999999" required pattern="[+]51[0-9]{9}" #telefonoControl="ngModel" [attr.aria-invalid]="telefonoControl.invalid && (telefonoControl.touched || registroForm.submitted)" aria-describedby="telefono-error"
+        /></div><small id="telefono-error" class="field-error" *ngIf="telefonoControl.invalid && (telefonoControl.touched || registroForm.submitted)">Ingresa los nueve dígitos. +51 ya está incluido.</small>
       </div>
 
       <div class="form-group wide">
-        <label>Dirección</label>
-        <input
+        <label for="direccion">Dirección</label>
+        <input id="direccion"
           type="text"
           name="direccion"
           [(ngModel)]="data.direccion"
@@ -157,33 +162,36 @@
 
     <div class="form-grid">
       <div class="form-group">
-        <label>Contraseña</label>
-        <input
+        <label for="contrasena">Contraseña</label>
+        <input id="contrasena"
           type="password"
           name="contrasena"
           [(ngModel)]="data.contrasena"
           placeholder="Mínimo 8 caracteres"
           autocomplete="new-password"
-        />
+        required minlength="8" #contrasenaControl="ngModel" [attr.aria-invalid]="contrasenaControl.invalid && (contrasenaControl.touched || registroForm.submitted)" aria-describedby="contrasena-error" />
+        <small id="contrasena-error" class="field-error" *ngIf="contrasenaControl.invalid && (contrasenaControl.touched || registroForm.submitted)">Usa al menos 8 caracteres.</small>
       </div>
 
       <div class="form-group">
-        <label>Confirmar contraseña</label>
-        <input
+        <label for="confirmarContrasena">Confirmar contraseña</label>
+        <input id="confirmarContrasena"
           type="password"
           name="confirmarContrasena"
           [(ngModel)]="data.confirmarContrasena"
           placeholder="Repite tu contraseña"
           autocomplete="new-password"
-        />
+        required #confirmarContrasenaControl="ngModel" [attr.aria-invalid]="confirmarContrasenaControl.invalid && (confirmarContrasenaControl.touched || registroForm.submitted)" aria-describedby="confirmarContrasena-error" />
+        <small id="confirmarContrasena-error" class="field-error" *ngIf="confirmarContrasenaControl.invalid && (confirmarContrasenaControl.touched || registroForm.submitted)">Confirma tu contraseña.</small>
       </div>
     </div>
 
-    <div class="auth-error" *ngIf="error">
+    <p class="field-error" *ngIf="data.confirmarContrasena && data.contrasena !== data.confirmarContrasena">Las contraseñas no coinciden.</p>
+    <div class="auth-error" *ngIf="error" role="alert">
       {{ error }}
     </div>
 
-    <div class="auth-success" *ngIf="mensaje">
+    <div class="auth-success" *ngIf="mensaje" role="status">
       {{ mensaje }}
     </div>
 

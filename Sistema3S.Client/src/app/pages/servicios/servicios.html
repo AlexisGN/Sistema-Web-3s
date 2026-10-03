@@ -1,6 +1,6 @@
 <div class="servicios-page">
   <section class="page-hero">
-    <div class="page-hero__content">
+    <div class="page-hero__content s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="tool"></s3s-icon></span>
       <span class="hero-chip">Servicios industriales</span>
 
       <h1>Gestión de servicios</h1>
@@ -36,10 +36,11 @@
       </div>
 
       <form class="servicio-form" (ngSubmit)="guardarServicio()" #servicioForm="ngForm">
-        <div class="field field-full">
-          <label>Nombre del servicio</label>
+        <div class="s3s-form-heading"><s3s-icon name="tool"></s3s-icon><h3>Información comercial</h3></div>
+<div class="field field-full">
+          <label for="s3s-servicios-52">Nombre del servicio</label>
 
-          <input
+          <input id="s3s-servicios-52"
             type="text"
             [(ngModel)]="servicio.nombre"
             name="nombre"
@@ -54,9 +55,9 @@
         </div>
 
         <div class="field">
-          <label>Sector de aplicación</label>
+          <label for="s3s-servicios-63">Sector de aplicación</label>
 
-          <input
+          <input id="s3s-servicios-63"
             type="text"
             [(ngModel)]="servicio.sectorAplicacion"
             name="sectorAplicacion"
@@ -71,9 +72,9 @@
         </div>
 
         <div class="field">
-          <label>Precio referencial</label>
+          <label for="s3s-servicios-74">Precio referencial</label>
 
-          <input
+          <input id="s3s-servicios-74"
             type="number"
             [(ngModel)]="servicio.precioReferencial"
             name="precioReferencial"
@@ -89,11 +90,12 @@
           </small>
         </div>
 
-        <div class="field field-full">
-          <label>Imagen del servicio</label>
+        <div class="s3s-form-heading"><s3s-icon name="upload"></s3s-icon><h3>Contenido del servicio</h3></div>
+<div class="field field-full">
+          <label for="s3s-servicios-87">Imagen del servicio</label>
 
           <div class="file-picker">
-            <input
+            <input id="s3s-servicios-87"
               #imagenServicio
               type="file"
               accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
@@ -127,9 +129,9 @@
         </div>
 
         <div class="field field-full">
-          <label>Descripción</label>
+          <label for="s3s-servicios-119">Descripción</label>
 
-          <textarea
+          <textarea id="s3s-servicios-119"
             [(ngModel)]="servicio.descripcion"
             name="descripcion"
             rows="2"
@@ -144,9 +146,9 @@
         </div>
 
         <div class="field field-full">
-          <label>Mensaje WhatsApp</label>
+          <label for="s3s-servicios-130">Mensaje WhatsApp</label>
 
-          <textarea
+          <textarea id="s3s-servicios-130"
             [(ngModel)]="servicio.mensajeWhatsApp"
             name="mensajeWhatsApp"
             rows="2"
@@ -179,7 +181,7 @@
             type="submit"
             class="btn btn-primary"
             [disabled]="guardando || !formularioServicioValido()"
-          >
+          ><s3s-icon name="check"></s3s-icon>
             {{
               guardando
                 ? 'Guardando...'
@@ -187,7 +189,7 @@
             }}
           </button>
 
-          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
+          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()"><s3s-icon name="refresh"></s3s-icon>
             {{ editando ? 'Cancelar edición' : 'Limpiar' }}
           </button>
         </div>
@@ -214,7 +216,7 @@
       </div>
 
       <div class="search-bar">
-        <input
+        <input aria-label="Buscar por nombre, descripción o sector..."
           type="text"
           [(ngModel)]="buscar"
           name="buscar"
@@ -222,7 +224,7 @@
           (keyup.enter)="buscarServicios()"
         />
 
-        <button type="button" class="btn btn-dark" (click)="buscarServicios()">
+        <button type="button" class="btn btn-dark" (click)="buscarServicios()"><s3s-icon name="search"></s3s-icon>
           Buscar
         </button>
       </div>
@@ -294,11 +296,11 @@
           </div>
 
           <div class="servicio-card__actions">
-            <button type="button" class="btn btn-edit" (click)="editarServicio(item)">
+            <button type="button" class="btn btn-edit" (click)="editarServicio(item)"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
-            <button type="button" class="btn btn-delete" (click)="eliminarServicio(item.idServicio)">
+            <button type="button" class="btn btn-delete" (click)="eliminarServicio(item.idServicio)"><s3s-icon name="trash"></s3s-icon>
               Eliminar
             </button>
           </div>

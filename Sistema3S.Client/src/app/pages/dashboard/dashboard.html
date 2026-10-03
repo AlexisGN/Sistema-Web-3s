@@ -1,0 +1,153 @@
+<section class="dashboard-page">
+  <div class="dashboard-hero">
+    <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="home"></s3s-icon></span>
+      <span class="hero-chip">Panel de control</span>
+
+      <h1>Bienvenido al sistema 3S</h1>
+
+      <p>
+        Resumen general de operaciones comerciales, catálogo industrial,
+        inventario, cotizaciones, caja y gestión interna.
+      </p>
+    </div>
+
+    <div class="hero-card">
+      <span>Estado general</span>
+      <strong>Sistema operativo</strong>
+      <small>
+        {{ cargando ? 'Actualizando indicadores...' : 'Indicadores listos para revisión' }}
+      </small>
+    </div>
+  </div>
+
+  <div class="metrics-grid">
+    <article class="metric-card" *ngFor="let card of cards" [class.ready]="card.status === 'ready'"
+      [class.warning]="card.status === 'warning'" [class.money]="card.status === 'money'">
+      <div class="metric-top">
+        <span class="metric-tag"><s3s-icon [name]="card.tag"></s3s-icon><span class="s3s-sr-only">{{ card.tag }}</span></span>
+
+        <span class="metric-state">
+          {{ obtenerEstadoCard(card) }}
+        </span>
+      </div>
+
+      <strong>{{ card.value }}</strong>
+      <h2>{{ card.label }}</h2>
+      <p>{{ card.description }}</p>
+    </article>
+  </div>
+
+  <section class="dashboard-layout">
+    <article class="panel quick-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Accesos rápidos</h2>
+          <p>Acciones principales para operar el sistema.</p>
+        </div>
+      </div>
+
+      <div class="quick-grid">
+        <a *ngFor="let action of quickActions" class="quick-action" [class.disabled]="action.disabled"
+          [routerLink]="action.disabled ? null : action.route">
+          <span>{{ action.label }}</span>
+          <small>{{ action.description }}</small>
+        <s3s-icon name="arrow"></s3s-icon></a>
+      </div>
+    </article>
+
+    <article class="panel alert-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Alertas operativas</h2>
+          <p>Eventos importantes para seguimiento interno.</p>
+        </div>
+      </div>
+
+      <div class="alert-list">
+        <div class="alert-item">
+          <span class="alert-dot danger"></span>
+
+          <div>
+            <strong>Stock bajo</strong>
+
+            <ng-container *ngFor="let card of cards">
+              <p *ngIf="card.label === 'Productos con stock bajo'">
+                {{ card.value }} productos requieren atención por stock bajo o sin stock.
+              </p>
+            </ng-container>
+
+            <a class="alert-link" routerLink="/admin/inventario">
+              Ver inventario
+            </a>
+          </div>
+        </div>
+
+        <div class="alert-item">
+          <span class="alert-dot warning"></span>
+
+          <div>
+            <strong>Cotizaciones pendientes</strong>
+
+            <ng-container *ngFor="let card of cards">
+              <p *ngIf="card.label === 'Cotizaciones pendientes'">
+                {{ card.value }} cotizaciones están pendientes de revisión.
+              </p>
+            </ng-container>
+
+            <a class="alert-link" routerLink="/admin/cotizaciones">
+              Ver cotizaciones
+            </a>
+          </div>
+        </div>
+
+        <div class="alert-item">
+          <span class="alert-dot warning"></span>
+
+          <div>
+            <strong>Compras pendientes de pago</strong>
+
+            <ng-container *ngFor="let card of cards">
+              <p *ngIf="card.label === 'Compras pendientes de pago'">
+                {{ card.value }} compras tienen saldo pendiente por pagar al proveedor.
+              </p>
+            </ng-container>
+
+            <a class="alert-link" routerLink="/admin/compras">
+              Ver compras
+            </a>
+          </div>
+        </div>
+
+        <div class="alert-item">
+          <span class="alert-dot neutral"></span>
+
+          <div>
+            <strong>Movimientos recientes</strong>
+
+            <ng-container *ngIf="movimientosRecientes.length > 0; else sinMovimientos">
+              <div class="movement-preview" *ngFor="let mov of movimientosRecientes">
+                <span class="movement-preview__type" [class.entrada]="mov.tipoMovimiento.toLowerCase() === 'entrada'"
+                  [class.salida]="mov.tipoMovimiento.toLowerCase() === 'salida'"
+                  [class.ajuste]="mov.tipoMovimiento.toLowerCase() === 'ajuste'">
+                  {{ obtenerSignoMovimiento(mov.tipoMovimiento) }}
+                </span>
+
+                <p>
+                  {{ mov.tipoMovimiento }} · {{ mov.producto }} · Cantidad: {{ mov.cantidad }}
+                </p>
+              </div>
+            </ng-container>
+
+            <ng-template #sinMovimientos>
+              <p>Aún no hay movimientos registrados en inventario.</p>
+            </ng-template>
+
+            <a class="alert-link" routerLink="/admin/inventario">
+              Ver movimientos
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+</section>

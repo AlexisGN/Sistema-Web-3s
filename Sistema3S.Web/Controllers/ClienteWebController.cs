@@ -122,11 +122,131 @@ namespace Sistema3S.Web.Controllers
             }
         }
 
+        [Authorize]
+        [HttpPost("cotizaciones")]
+        public async Task<IActionResult> RegistrarCotizacion(
+            [FromBody] ClienteWebCotizacionCrearDto dto
+        )
+        {
+            try
+            {
+                var idCliente = ObtenerClaimEntero("idCliente");
+                var idUsuario = ObtenerClaimEntero("idUsuario");
 
+                if (idCliente <= 0 || idUsuario <= 0)
+                {
+                    return Unauthorized(new
+                    {
+                        mensaje = "Inicia sesión como cliente para enviar tu cotización."
+                    });
+                }
 
+                var resultado = await _clienteWebService.RegistrarCotizacionAsync(
+                    idCliente,
+                    idUsuario,
+                    dto
+                );
 
+                return Ok(resultado);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "No se pudo enviar la cotización web."
+                });
+            }
+        }
 
+        [Authorize]
+        [HttpGet("cotizaciones")]
+        public async Task<IActionResult> ListarCotizaciones(
+            [FromQuery] int pagina = 1,
+            [FromQuery] int tamanioPagina = 10
+        )
+        {
+            try
+            {
+                var idCliente = ObtenerClaimEntero("idCliente");
 
+                if (idCliente <= 0)
+                {
+                    return Unauthorized(new
+                    {
+                        mensaje = "Inicia sesión como cliente para ver tu historial."
+                    });
+                }
+
+                var resultado = await _clienteWebService.ListarCotizacionesAsync(
+                    idCliente,
+                    pagina,
+                    tamanioPagina
+                );
+
+                return Ok(resultado);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "No se pudo cargar el historial de cotizaciones."
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("cotizaciones/{idCotizacion:int}")]
+        public async Task<IActionResult> ObtenerCotizacion(int idCotizacion)
+        {
+            try
+            {
+                var idCliente = ObtenerClaimEntero("idCliente");
+
+                if (idCliente <= 0)
+                {
+                    return Unauthorized(new
+                    {
+                        mensaje = "Inicia sesión como cliente para ver el detalle."
+                    });
+                }
+
+                var resultado = await _clienteWebService.ObtenerCotizacionAsync(
+                    idCliente,
+                    idCotizacion
+                );
+
+                if (resultado == null)
+                {
+                    return NotFound(new
+                    {
+                        mensaje = "Cotización no encontrada."
+                    });
+                }
+
+                return Ok(resultado);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "No se pudo cargar el detalle de la cotización."
+                });
+            }
+        }
 
         private int ObtenerClaimEntero(string nombre)
         {

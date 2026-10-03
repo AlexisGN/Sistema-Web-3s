@@ -101,10 +101,6 @@ namespace Sistema3S.Web.Controllers
             }
         }
 
-
-
-
-
         [HttpDelete("{idCliente:int}")]
         public async Task<IActionResult> Eliminar(int idCliente)
         {
@@ -121,6 +117,17 @@ namespace Sistema3S.Web.Controllers
             return Ok(new
             {
                 mensaje = "Cliente desactivado correctamente."
+            });
+        }
+
+        [HttpGet("total-activos")]
+        public async Task<IActionResult> ContarActivos()
+        {
+            var total = await _clienteService.ContarActivosAsync();
+
+            return Ok(new
+            {
+                total
             });
         }
 

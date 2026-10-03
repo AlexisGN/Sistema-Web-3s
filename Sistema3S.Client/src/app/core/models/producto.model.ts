@@ -37,8 +37,6 @@ export interface ProductoCrear {
   codigoProducto: string;
   fichaTecnicaPdf?: string | null;
 
-  stockInicial: number;
-  stockMinimo: number;
 }
 
 export interface ProductoActualizar {
@@ -54,6 +52,5 @@ export interface ProductoActualizar {
   codigoProducto: string;
   fichaTecnicaPdf?: string | null;
 
-  stockMinimo: number;
   estado: boolean;
 }

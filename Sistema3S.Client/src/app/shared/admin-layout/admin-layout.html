@@ -1,13 +1,13 @@
 <div class="admin-shell" [class.sidebar-collapsed]="sidebarCollapsed" (keydown.escape)="closeMobileMenu()">
   <button type="button" class="mobile-toggle" [attr.aria-expanded]="mobileMenuOpen" aria-controls="admin-sidebar" [attr.aria-label]="mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'" (click)="toggleMobileMenu()">
-    ☰
+    <s3s-icon [name]="mobileMenuOpen ? 'close' : 'menu'"></s3s-icon>
   </button>
 
   <button *ngIf="mobileMenuOpen" type="button" class="sidebar-backdrop" aria-label="Cerrar menú" (click)="closeMobileMenu()"></button>
 
   <aside id="admin-sidebar" class="sidebar" [class.mobile-open]="mobileMenuOpen">
     <button type="button" class="sidebar-toggle" [attr.aria-expanded]="!sidebarCollapsed" [attr.aria-label]="sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'" (click)="toggleSidebar()">
-      {{ sidebarCollapsed ? '›' : '‹' }}
+      <s3s-icon [name]="sidebarCollapsed ? 'right' : 'left'"></s3s-icon>
     </button>
 
     <div class="brand">
@@ -35,14 +35,14 @@
           [routerLinkActiveOptions]="{ exact: false }"
           (click)="closeMobileMenu()"
         >
-          <span class="menu-icon">{{ item.icon }}</span>
+          <span class="menu-icon"><s3s-icon [name]="item.icon"></s3s-icon></span>
           <span class="menu-label">{{ item.label }}</span>
         </a>
       </section>
     </nav>
 
-    <button type="button" class="logout-card" (click)="cerrarSesion()">
-      <strong>3S</strong>
+    <button type="button" class="logout-card" aria-label="Cerrar sesión" (click)="cerrarSesion()">
+      <s3s-icon name="logout"></s3s-icon>
       <span>CERRAR SESIÓN</span>
     </button>
   </aside>

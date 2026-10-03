@@ -43,7 +43,7 @@ namespace Sistema3S.Web.Services.Implementations
 
             await using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
             {
-                await connection.OpenAsync();
+                await connection.AbrirAuditadaAsync();
 
                 await using var command = new SqlCommand("sp_LoginUsuario", connection);
                 command.CommandType = CommandType.StoredProcedure;
@@ -140,7 +140,7 @@ namespace Sistema3S.Web.Services.Implementations
             var hash = _passwordHashService.CrearHash(dto.NuevaContrasena);
 
             await using var connection = new SqlConnection(_context.Database.GetConnectionString());
-            await connection.OpenAsync();
+            await connection.AbrirAuditadaAsync();
 
             await using var command = new SqlCommand("sp_CambiarContrasenaUsuario", connection);
             command.CommandType = CommandType.StoredProcedure;
@@ -174,7 +174,7 @@ namespace Sistema3S.Web.Services.Implementations
             var permisos = new List<PermisoSesionDto>();
 
             await using var connection = new SqlConnection(_context.Database.GetConnectionString());
-            await connection.OpenAsync();
+            await connection.AbrirAuditadaAsync();
 
             await using var command = new SqlCommand("sp_ObtenerPermisosUsuario", connection);
             command.CommandType = CommandType.StoredProcedure;

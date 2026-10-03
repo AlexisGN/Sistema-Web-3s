@@ -1,96 +1,20 @@
-<section class="services-hero">
-  <div class="services-hero-content">
-    <span>Servicios técnicos 3S</span>
-
-    <h1>Servicios industriales para operación, mantenimiento y continuidad</h1>
-
-    <p>
-      Consulta nuestras soluciones técnicas para sistemas industriales, mantenimiento,
-      automatización, generación de vapor y soporte especializado. Cada servicio se
-      atiende de forma personalizada por WhatsApp.
-    </p>
-
-    <div class="hero-actions">
-      <a routerLink="/productos">
-        Ver productos industriales
-      </a>
-
-      <button type="button" (click)="limpiarFiltros()" *ngIf="busqueda || sectorSeleccionado">
-        Ver todos los servicios
-      </button>
-    </div>
-  </div>
-</section>
-
-<section class="services-toolbar">
-  <form class="search-card" (ngSubmit)="buscarServicios()">
-    <div class="search-input">
-      <label>Buscar servicio</label>
-
-      <input
-        type="text"
-        name="busqueda"
-        [(ngModel)]="busqueda"
-        placeholder="Busca por nombre, aplicación técnica o sector"
-      />
-    </div>
-
-    <button type="submit">
-      Buscar
-    </button>
-  </form>
-
-  <div class="sector-filter" *ngIf="sectores.length > 0">
-    <div class="section-head compact">
-      <span>Sectores</span>
-      <h2>Filtra por aplicación</h2>
-    </div>
-
-    <div class="sector-pills">
-      <button
-        type="button"
-        [class.active]="!sectorSeleccionado"
-        (click)="seleccionarSector('')"
-      >
-        Todos
-      </button>
-
-      <button
-        type="button"
-        *ngFor="let sector of sectores; trackBy: trackBySector"
-        [class.active]="sectorSeleccionado === sector"
-        (click)="seleccionarSector(sector)"
-      >
-        {{ sector }}
-      </button>
-    </div>
-  </div>
-</section>
-
+<header class="catalog-heading service-heading"><div><span class="eyebrow">Experiencia técnica 3S</span><h1>Servicios industriales</h1><p>Soluciones para mantenimiento, automatización y continuidad operativa.</p></div><a class="btn-secondary" routerLink="/productos">Ver productos <s3s-icon name="arrow" /></a></header>
+<div class="catalog-toolbar service-toolbar">
+  <form class="toolbar-search" (ngSubmit)="buscarServicios()"><label class="sr-only" for="service-query">Buscar servicios</label><input id="service-query" name="busqueda" [(ngModel)]="busqueda" placeholder="Nombre, aplicación técnica o sector" /><button type="submit" aria-label="Buscar servicios"><s3s-icon name="search" /><span>Buscar</span></button></form>
+  <div class="toolbar-field"><label for="service-sector">Sector de aplicación</label><select id="service-sector" [ngModel]="sectorSeleccionado" (ngModelChange)="seleccionarSector($event)"><option value="">Todos los sectores</option><option *ngFor="let sector of sectores; trackBy: trackBySector" [value]="sector">{{ sector }}</option></select></div>
+  <button type="button" class="btn-secondary toolbar-clear" (click)="limpiarFiltros()" *ngIf="busqueda || sectorSeleccionado">Limpiar</button>
+</div>
 <section class="services-results">
-  <div class="results-head">
-    <div>
-      <span>Servicios</span>
-      <h2>
-        {{ serviciosFiltrados.length }} servicio{{ serviciosFiltrados.length === 1 ? '' : 's' }} disponible{{ serviciosFiltrados.length === 1 ? '' : 's' }} para consulta
-      </h2>
-    </div>
-
-    <p>
-      Cada servicio se coordina individualmente por WhatsApp para revisar el alcance,
-      la necesidad técnica y el tipo de atención requerida.
-    </p>
-  </div>
-
-  <div class="public-status" *ngIf="cargando">
+  <div class="results-head compact-results"><h2>{{ serviciosFiltrados.length }} servicio{{ serviciosFiltrados.length === 1 ? '' : 's' }}</h2><span>Atención técnica especializada para tu empresa.</span></div>
+  <div class="public-status" *ngIf="cargando" role="status">
     Cargando servicios técnicos...
   </div>
 
-  <div class="public-status error" *ngIf="error">
-    {{ error }}
+  <div class="public-status error" *ngIf="error" role="status">
+    {{ error }} <button type="button" (click)="cargarServicios()">Reintentar</button>
   </div>
 
-  <div class="empty-state" *ngIf="!cargando && serviciosFiltrados.length === 0 && !error">
+  <div class="empty-state" *ngIf="!cargando && serviciosFiltrados.length === 0 && !error"><div class="empty-icon"><s3s-icon name="tool" /></div>
     <strong>No encontramos servicios con los filtros seleccionados.</strong>
     <p>
       Ajusta la búsqueda o revisa todos los servicios disponibles para encontrar la atención técnica que necesitas.
@@ -112,13 +36,7 @@
         (click)="verDetalle(servicio)"
         [attr.aria-label]="'Ver detalle de ' + servicio.nombre"
       >
-        <img
-          *ngIf="servicio.imagenUrl"
-          [src]="servicio.imagenUrl"
-          [alt]="servicio.nombre"
-          loading="lazy"
-          decoding="async"
-        />
+        <app-imagen-catalogo ajuste="cover" [ruta]="servicio.imagenUrl" [descripcion]="servicio.nombre" *ngIf="servicio.imagenUrl" />
 
         <div class="image-placeholder" *ngIf="!servicio.imagenUrl">
           <strong>3S</strong>

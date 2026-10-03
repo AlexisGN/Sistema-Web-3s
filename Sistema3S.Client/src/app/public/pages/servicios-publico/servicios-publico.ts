@@ -1,3 +1,5 @@
+import { ImagenCatalogoComponent } from '../../../shared/imagen-catalogo/imagen-catalogo';
+import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -16,7 +18,7 @@ import { PublicoService } from '../../../core/services/publico.service';
 @Component({
   selector: 'app-servicios-publico',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [UiIconComponent, ImagenCatalogoComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './servicios-publico.html',
   styleUrl: './servicios-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

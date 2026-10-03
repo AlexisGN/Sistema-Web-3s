@@ -203,9 +203,6 @@ namespace Sistema3S.Web.Controllers
             }
         }
 
-
-
-
         [HttpDelete("{idServicio:int}")]
         public async Task<IActionResult> Eliminar(int idServicio)
         {
@@ -235,5 +232,25 @@ namespace Sistema3S.Web.Controllers
             }
         }
 
+        [HttpGet("total-activos")]
+        public async Task<IActionResult> ContarActivos()
+        {
+            try
+            {
+                var total = await _servicioService.ContarActivosAsync();
+
+                return Ok(new
+                {
+                    total
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = "No se pudo obtener el total de servicios activos."
+                });
+            }
+        }
     }
 }

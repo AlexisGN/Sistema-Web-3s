@@ -1,18 +1,20 @@
+import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { ClienteWebService } from '../../../core/services/cliente-web.service';
 
 @Component({
   selector: 'app-cliente-login-publico',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './cliente-login-publico.html',
   styleUrl: './cliente-login-publico.scss'
 })
 export class ClienteLoginPublicoComponent {
+  mostrarClave = false;
   correo = '';
   contrasena = '';
 
@@ -21,6 +23,7 @@ export class ClienteLoginPublicoComponent {
 
   constructor(
     private clienteWebService: ClienteWebService,
+    private route: ActivatedRoute,
     private router: Router
   ) {}
 
@@ -43,7 +46,8 @@ export class ClienteLoginPublicoComponent {
     }).subscribe({
       next: () => {
         this.cargando = false;
-        this.router.navigate(['/productos']);
+        const volver = this.route.snapshot.queryParamMap.get('returnUrl') || '';
+        this.router.navigateByUrl(/^\/cliente\/(carrito|perfil|historial-cotizaciones(?:\/\d+)?)$/.test(volver) ? volver : '/productos');
       },
       error: error => {
         this.cargando = false;

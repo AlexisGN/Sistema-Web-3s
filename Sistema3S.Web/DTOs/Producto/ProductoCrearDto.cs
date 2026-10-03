@@ -16,7 +16,5 @@
         public string? FichaTecnicaPdf { get; set; }
         public IFormFile? FichaTecnicaArchivo { get; set; }
 
-        public int StockInicial { get; set; }
-        public int StockMinimo { get; set; }
     }
 }

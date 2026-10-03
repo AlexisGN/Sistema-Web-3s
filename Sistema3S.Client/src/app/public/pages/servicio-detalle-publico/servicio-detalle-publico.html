@@ -1,9 +1,9 @@
 <section class="detail-shell">
-  <div class="public-status" *ngIf="cargando">
+  <div class="public-status" *ngIf="cargando" role="status">
     Cargando información del servicio...
   </div>
 
-  <div class="public-status error" *ngIf="error">
+  <div class="public-status error" *ngIf="error" role="status">
     {{ error }}
 
     <button type="button" (click)="volverServicios()">
@@ -23,13 +23,7 @@
     <section class="service-detail">
       <div class="gallery-card">
         <div class="main-image">
-          <img
-            *ngIf="imagenSeleccionada"
-            [src]="imagenSeleccionada"
-            [alt]="servicio.nombre"
-            decoding="async"
-            fetchpriority="high"
-          />
+          <app-imagen-catalogo [ruta]="imagenSeleccionada" [descripcion]="servicio.nombre" *ngIf="imagenSeleccionada" />
 
           <div class="image-placeholder" *ngIf="!imagenSeleccionada">
             <strong>3S</strong>
@@ -44,7 +38,7 @@
             [class.active]="imagenSeleccionada === imagen.urlImagen"
             (click)="seleccionarImagen(imagen)"
           >
-            <img [src]="imagen.urlImagen" [alt]="imagen.textoAlternativo" loading="lazy" />
+            <app-imagen-catalogo [ruta]="imagen.urlImagen" [descripcion]="imagen.textoAlternativo" />
           </button>
         </div>
       </div>
@@ -100,13 +94,7 @@
           *ngFor="let item of relacionados; trackBy: trackByServicio"
         >
           <button type="button" class="related-image" (click)="verServicioRelacionado(item)">
-            <img
-              *ngIf="item.imagenUrl"
-              [src]="item.imagenUrl"
-              [alt]="item.nombre"
-              loading="lazy"
-              decoding="async"
-            />
+            <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombre" *ngIf="item.imagenUrl" />
 
             <div class="image-placeholder small" *ngIf="!item.imagenUrl">
               <strong>3S</strong>

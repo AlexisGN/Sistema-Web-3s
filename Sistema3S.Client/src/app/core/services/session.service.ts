@@ -167,6 +167,7 @@ export class SessionService {
       return true;
     }
 
+    if (/(?:ANULAR|CANCELAR)/.test(permisoNormalizado) || permisoNormalizado === 'AUDITORIA_VER') return false;
     const permisos = this.obtenerPermisos();
 
     if (permisos.includes(permisoNormalizado)) {
@@ -194,20 +195,45 @@ export class SessionService {
     }
 
     if (this.esAdministrador()) {
-      return '/admin/productos';
+      return '/admin/inicio';
     }
 
     const rol = this.normalizarTexto(this.obtenerRol());
 
+    if (rol.includes('compras')) {
+      return '/admin/compras';
+    }
+
+    if (rol.includes('encargado de almacen') || rol === 'almacen' || rol.includes('almacen')) {
+      return '/admin/inventario';
+    }
+
+    if (rol.includes('encargado de ventas')) {
+      return '/admin/ventas';
+    }
+
+    if (rol.includes('vendedor')) {
+      return '/admin/cotizaciones';
+    }
+
     const rutasPorPermiso: Array<{ permiso: string; ruta: string }> = [
-{ permiso: 'CLIENTES_VER', ruta: '/admin/clientes' },
-{ permiso: 'PRODUCTOS_VER', ruta: '/admin/productos' },
-{ permiso: 'SERVICIOS_VER', ruta: '/admin/servicios' }
-];
+      { permiso: 'COMPRAS_VER', ruta: '/admin/compras' },
+      { permiso: 'PROVEEDORES_VER', ruta: '/admin/proveedores' },
+      { permiso: 'INVENTARIO_VER', ruta: '/admin/inventario' },
+      { permiso: 'VENTAS_VER', ruta: '/admin/ventas' },
+      { permiso: 'COTIZACIONES_VER', ruta: '/admin/cotizaciones' },
+      { permiso: 'CLIENTES_VER', ruta: '/admin/clientes' },
+      { permiso: 'PRODUCTOS_VER', ruta: '/admin/productos' },
+      { permiso: 'SERVICIOS_VER', ruta: '/admin/servicios' },
+      { permiso: 'CAJA_VER', ruta: '/admin/caja' },
+      { permiso: 'USUARIOS_VER', ruta: '/admin/usuarios-roles' },
+      { permiso: 'ROLES_VER', ruta: '/admin/usuarios-roles' },
+      { permiso: 'INICIO_VER', ruta: '/admin/inicio' }
+    ];
 
     const rutaPermitida = rutasPorPermiso.find(item => this.tienePermiso(item.permiso));
 
-    return rutaPermitida?.ruta || '/';
+    return rutaPermitida?.ruta || '/admin/cotizaciones';
   }
 
   cerrarSesion(): void {
@@ -230,7 +256,6 @@ export class SessionService {
         'COMPRAS_VER',
         'COMPRAS_CREAR',
         'COMPRAS_EDITAR',
-        'COMPRAS_ANULAR',
         'PROVEEDORES_VER',
         'PROVEEDORES_CREAR',
         'PROVEEDORES_EDITAR',

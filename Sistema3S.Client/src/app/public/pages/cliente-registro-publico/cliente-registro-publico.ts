@@ -1,3 +1,4 @@
+import { TelefonoPeDirective, telefonoCompletoPeru } from '../../../shared/telefono-pe/telefono-pe';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +13,7 @@ import { ClienteWebService } from '../../../core/services/cliente-web.service';
 @Component({
   selector: 'app-cliente-registro-publico',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [TelefonoPeDirective, CommonModule, FormsModule, RouterLink],
   templateUrl: './cliente-registro-publico.html',
   styleUrl: './cliente-registro-publico.scss'
 })
@@ -196,7 +197,7 @@ export class ClienteRegistroPublicoComponent implements OnDestroy {
       ...this.data,
       numeroDocumento: this.data.numeroDocumento.trim(),
       correo: this.data.correo.trim().toLowerCase(),
-      telefono: this.data.telefono.trim(),
+      telefono: telefonoCompletoPeru(this.data.telefono),
       direccion: this.data.direccion?.trim() || null,
       nombres: this.data.nombres?.trim() || null,
       apellidoPaterno: this.data.apellidoPaterno?.trim() || null,
@@ -230,7 +231,7 @@ export class ClienteRegistroPublicoComponent implements OnDestroy {
   private validarFormulario(): string {
     const numeroDocumento = this.data.numeroDocumento.trim();
     const correo = this.data.correo.trim();
-    const telefono = this.data.telefono.trim();
+    const telefono = telefonoCompletoPeru(this.data.telefono);
 
     if (numeroDocumento.length !== this.longitudDocumento) {
       return this.esEmpresa
@@ -248,6 +249,10 @@ export class ClienteRegistroPublicoComponent implements OnDestroy {
 
     if (!telefono) {
       return 'Ingresa un número de contacto.';
+    }
+
+    if (!/^\+51\d{9}$/.test(telefono)) {
+      return 'Ingresa los 9 dígitos de tu teléfono. El prefijo +51 ya está incluido.';
     }
 
     if (!this.esEmpresa) {

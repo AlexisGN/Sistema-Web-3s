@@ -1,0 +1,463 @@
+<div class="proveedores-page">
+  <section class="page-hero">
+    <div class="page-hero__content s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="building"></s3s-icon></span>
+      <span class="hero-chip">Abastecimiento industrial</span>
+
+      <h1>Gestión de proveedores</h1>
+
+      <p>
+        Administra proveedores, datos SUNAT, contactos principales y ubicación
+        para compras internas y abastecimiento de productos industriales.
+      </p>
+    </div>
+
+    <div class="page-hero__stats">
+      <div class="hero-stat">
+        <span class="hero-stat__number">{{ totalRegistros }}</span>
+        <span class="hero-stat__label">Proveedores registrados</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="proveedores-grid">
+    <article class="panel panel-form">
+      <div class="panel-header">
+        <div>
+          <h2>{{ editando ? 'Editar proveedor' : 'Nuevo proveedor' }}</h2>
+
+          <p>
+            {{
+              editando
+                ? 'Actualiza la información del proveedor y su contacto principal.'
+                : 'Registra proveedores usando consulta SUNAT o ingreso manual.'
+            }}
+          </p>
+        </div>
+      </div>
+
+      <form class="proveedor-form" (ngSubmit)="guardarProveedor()" #proveedorForm="ngForm">
+        <div class="s3s-form-heading"><s3s-icon name="building"></s3s-icon><h3>Información empresarial</h3></div>
+<div class="field field-ruc">
+          <label for="s3s-proveedores-54">RUC</label>
+
+          <div class="document-row">
+            <input id="s3s-proveedores-54"
+              type="text"
+              [(ngModel)]="proveedor.ruc"
+              name="ruc"
+              placeholder="11 dígitos"
+              maxlength="11"
+              required
+              (input)="filtrarRucSoloNumeros()"
+            />
+
+            <button
+              type="button"
+              class="btn btn-dark"
+              [disabled]="consultandoRuc || proveedor.ruc.length !== 11"
+              (click)="consultarRuc()"
+            >
+              {{ consultandoRuc ? 'Consultando...' : 'SUNAT' }}
+            </button>
+          </div>
+
+          <small class="field-error" *ngIf="erroresCampo['ruc']">
+            {{ erroresCampo['ruc'] }}
+          </small>
+        </div>
+
+        <div class="field field-full">
+          <label for="s3s-proveedores-69">Razón social</label>
+
+          <input id="s3s-proveedores-69"
+            type="text"
+            [(ngModel)]="proveedor.razonSocial"
+            name="razonSocial"
+            placeholder="Razón social del proveedor"
+            required
+            (input)="limpiarErrorCampo('razonSocial')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['razonSocial']">
+            {{ erroresCampo['razonSocial'] }}
+          </small>
+        </div>
+
+        <div class="field field-full">
+          <label for="s3s-proveedores-80">Nombre comercial</label>
+
+          <input id="s3s-proveedores-80"
+            type="text"
+            [(ngModel)]="proveedor.nombreComercial"
+            name="nombreComercial"
+            placeholder="Nombre comercial opcional"
+          />
+        </div>
+
+        <div class="s3s-form-heading"><s3s-icon name="pin"></s3s-icon><h3>Contacto y ubicación</h3></div>
+<div class="field">
+          <label for="s3s-proveedores-88">Correo</label>
+
+          <input id="s3s-proveedores-88"
+            type="email"
+            [(ngModel)]="proveedor.correo"
+            name="correo"
+            placeholder="proveedor@empresa.com"
+            required
+            (input)="limpiarErrorCampo('correo')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['correo']">
+            {{ erroresCampo['correo'] }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="s3s-proveedores-99">Teléfono</label>
+
+          <div class="telefono-pe"><span aria-hidden="true">+51</span><input s3sTelefonoPe id="s3s-proveedores-99"
+            type="tel"
+            [(ngModel)]="proveedor.telefono"
+            name="telefono"
+            placeholder="999999999"
+            required
+            (input)="limpiarErrorCampo('telefono')"
+          /></div>
+
+          <small class="field-error" *ngIf="erroresCampo['telefono']">
+            {{ erroresCampo['telefono'] }}
+          </small>
+        </div>
+
+        <div class="field field-full">
+          <label for="s3s-proveedores-110">Dirección</label>
+
+          <input id="s3s-proveedores-110"
+            type="text"
+            [(ngModel)]="proveedor.direccion"
+            name="direccion"
+            placeholder="Dirección fiscal o comercial"
+            required
+            (input)="limpiarErrorCampo('direccion')"
+          />
+
+          <small class="field-error" *ngIf="erroresCampo['direccion']">
+            {{ erroresCampo['direccion'] }}
+          </small>
+        </div>
+
+        <div class="field field-full ubigeo-field">
+          <label for="s3s-proveedores-121">Ubicación</label>
+
+          <input id="s3s-proveedores-121"
+            type="text"
+            [(ngModel)]="ubigeoBuscar"
+            name="ubigeoBuscar"
+            placeholder="Busca departamento, provincia o distrito..."
+            autocomplete="off"
+            required
+            (input)="buscarUbigeo()"
+          />
+
+          <small class="ubigeo-seleccionado" *ngIf="proveedor.idUbigeo">
+            Seleccionado: {{ ubicacionSeleccionada || ubigeoBuscar }}
+          </small>
+
+          <small class="field-error" *ngIf="erroresCampo['idUbigeo']">
+            {{ erroresCampo['idUbigeo'] }}
+          </small>
+
+          <div class="ubigeo-results" *ngIf="ubigeos.length > 0">
+            <button
+              type="button"
+              *ngFor="let ubigeo of ubigeos"
+              (click)="seleccionarUbigeo(ubigeo)"
+            >
+              {{ ubigeo.ubicacion }}
+            </button>
+          </div>
+
+          <small class="helper" *ngIf="buscandoUbigeo">
+            Buscando ubicación...
+          </small>
+        </div>
+
+        <div class="field field-full check-field">
+          <label class="check-option">
+            <input
+              type="checkbox"
+              [(ngModel)]="proveedor.registrarContactoPrincipal"
+              name="registrarContactoPrincipal"
+              (change)="activarContactoPrincipal()"
+            />
+
+            <span>Registrar contacto principal del proveedor</span>
+          </label>
+        </div>
+
+        <ng-container *ngIf="proveedor.registrarContactoPrincipal">
+          <div class="field field-full section-title"><s3s-icon name="people"></s3s-icon>
+            <span>Datos del contacto principal</span>
+          </div>
+
+          <div class="field">
+            <label for="s3s-proveedores-163">Nombres</label>
+
+            <input id="s3s-proveedores-163"
+              type="text"
+              [(ngModel)]="proveedor.contactoPrincipal!.nombres"
+              name="contactoNombres"
+              placeholder="Nombres"
+              required
+              (input)="limpiarErrorCampo('contactoNombres')"
+            />
+
+            <small class="field-error" *ngIf="erroresCampo['contactoNombres']">
+              {{ erroresCampo['contactoNombres'] }}
+            </small>
+          </div>
+
+          <div class="field">
+            <label for="s3s-proveedores-174">Apellido paterno</label>
+
+            <input id="s3s-proveedores-174"
+              type="text"
+              [(ngModel)]="proveedor.contactoPrincipal!.apellidoPaterno"
+              name="contactoApellidoPaterno"
+              placeholder="Apellido paterno"
+              required
+              (input)="limpiarErrorCampo('contactoApellidoPaterno')"
+            />
+
+            <small class="field-error" *ngIf="erroresCampo['contactoApellidoPaterno']">
+              {{ erroresCampo['contactoApellidoPaterno'] }}
+            </small>
+          </div>
+
+          <div class="field">
+            <label for="s3s-proveedores-185">Apellido materno</label>
+
+            <input id="s3s-proveedores-185"
+              type="text"
+              [(ngModel)]="proveedor.contactoPrincipal!.apellidoMaterno"
+              name="contactoApellidoMaterno"
+              placeholder="Apellido materno"
+              (input)="limpiarErrorCampo('contactoApellidoMaterno')"
+            />
+
+            <small class="field-error" *ngIf="erroresCampo['contactoApellidoMaterno']">
+              {{ erroresCampo['contactoApellidoMaterno'] }}
+            </small>
+          </div>
+
+          <div class="field">
+            <label for="s3s-proveedores-196">Cargo</label>
+
+            <input id="s3s-proveedores-196"
+              type="text"
+              [(ngModel)]="proveedor.contactoPrincipal!.cargo"
+              name="contactoCargo"
+              placeholder="Ej. Compras, logística..."
+            />
+          </div>
+
+          <div class="field">
+            <label for="s3s-proveedores-204">Correo contacto</label>
+
+            <input id="s3s-proveedores-204"
+              type="email"
+              [(ngModel)]="proveedor.contactoPrincipal!.correo"
+              name="contactoCorreo"
+              placeholder="contacto@empresa.com"
+              (input)="limpiarErrorCampo('contactoCorreo')"
+            />
+
+            <small class="field-error" *ngIf="erroresCampo['contactoCorreo']">
+              {{ erroresCampo['contactoCorreo'] }}
+            </small>
+          </div>
+
+          <div class="field">
+            <label for="s3s-proveedores-215">Teléfono contacto</label>
+
+            <div class="telefono-pe"><span aria-hidden="true">+51</span><input s3sTelefonoPe id="s3s-proveedores-215"
+              type="tel"
+              [(ngModel)]="proveedor.contactoPrincipal!.telefono"
+              name="contactoTelefono"
+              placeholder="999999999"
+              (input)="limpiarErrorCampo('contactoTelefono')"
+            /></div>
+
+            <small class="field-error" *ngIf="erroresCampo['contactoTelefono']">
+              {{ erroresCampo['contactoTelefono'] }}
+            </small>
+          </div>
+        </ng-container>
+
+        <div class="field field-full form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="guardando || consultandoRuc"
+          ><s3s-icon name="check"></s3s-icon>
+            {{
+              guardando
+                ? 'Guardando...'
+                : (editando ? 'Actualizar proveedor' : 'Registrar proveedor')
+            }}
+          </button>
+
+          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()"><s3s-icon name="refresh"></s3s-icon>
+            {{ editando ? 'Cancelar edición' : 'Limpiar' }}
+          </button>
+        </div>
+      </form>
+
+      <div *ngIf="mensaje" class="alert success">
+        {{ mensaje }}
+      </div>
+
+      <div *ngIf="error" class="alert error">
+        {{ error }}
+      </div>
+    </article>
+
+    <article class="panel panel-list">
+      <div class="panel-header">
+        <div>
+          <h2>Proveedores registrados</h2>
+
+          <p>
+            Proveedores disponibles para compras internas y abastecimiento.
+          </p>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <input aria-label="Buscar por RUC, razón social, correo o teléfono..."
+          type="text"
+          [(ngModel)]="buscar"
+          name="buscar"
+          placeholder="Buscar por RUC, razón social, correo o teléfono..."
+          (keyup.enter)="buscarProveedores()"
+        />
+
+        <button type="button" class="btn btn-dark" (click)="buscarProveedores()"><s3s-icon name="search"></s3s-icon>
+          Buscar
+        </button>
+      </div>
+
+      <div *ngIf="cargando" class="estado-box">
+        Cargando proveedores...
+      </div>
+
+      <div *ngIf="!cargando && proveedores.length === 0" class="estado-box">
+        No hay proveedores registrados.
+      </div>
+
+      <div class="proveedores-list" *ngIf="!cargando && proveedores.length > 0">
+        <div class="proveedor-card" *ngFor="let item of proveedores">
+          <div class="proveedor-card__icon"><s3s-icon name="building"></s3s-icon></div>
+
+          <div class="proveedor-card__body">
+            <div class="proveedor-card__top">
+              <div>
+                <h3>{{ item.razonSocial }}</h3>
+
+                <p>
+                  {{ item.nombreComercial || 'Sin nombre comercial registrado.' }}
+                </p>
+              </div>
+
+              <span class="estado-badge" [class.inactivo]="!item.estado">
+                {{ item.estado ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+
+            <div class="proveedor-tags">
+              <span>RUC: {{ item.ruc }}</span>
+              <span *ngIf="item.ubicacion">{{ item.ubicacion }}</span>
+            </div>
+
+            <div class="proveedor-meta">
+              <div>
+                <small>Correo</small>
+                <strong>{{ item.correo || '-' }}</strong>
+              </div>
+
+              <div>
+                <small>Teléfono</small>
+                <strong>{{ item.telefono || '-' }}</strong>
+              </div>
+
+              <div>
+                <small>Contacto</small>
+                <strong>
+                  {{
+                    item.contactoPrincipal
+                      ? (item.contactoPrincipal.nombres + ' ' + item.contactoPrincipal.apellidoPaterno)
+                      : 'Sin contacto'
+                  }}
+                </strong>
+              </div>
+            </div>
+
+            <p class="proveedor-direccion">
+              {{ item.direccion || 'Sin dirección registrada.' }}
+            </p>
+          </div>
+
+          <div class="proveedor-card__actions">
+            <button type="button" class="btn btn-edit" (click)="editarProveedor(item)"><s3s-icon name="edit"></s3s-icon>
+              Editar
+            </button>
+
+            <button type="button" class="btn btn-delete" (click)="eliminarProveedor(item.idProveedor)"><s3s-icon name="trash"></s3s-icon>
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!cargando && totalRegistros > 0">
+        <div class="pagination-info">
+          Mostrando {{ proveedores.length }} de {{ totalRegistros }} proveedores
+        </div>
+
+        <div class="pagination-controls">
+          <select
+            [(ngModel)]="tamanioPagina"
+            name="tamanioPagina"
+            (change)="cambiarTamanioPagina()"
+          >
+            <option *ngFor="let opcion of opcionesTamanioPagina" [ngValue]="opcion">
+              {{ opcion }} por página
+            </option>
+          </select>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaAnterior()"
+            [disabled]="pagina <= 1"
+          >
+            Anterior
+          </button>
+
+          <span>
+            Página {{ pagina }} de {{ totalPaginas }}
+          </span>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaSiguiente()"
+            [disabled]="pagina >= totalPaginas"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+</div>

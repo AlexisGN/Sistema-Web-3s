@@ -1,0 +1,754 @@
+<div class="caja-page">
+  <section class="page-hero">
+    <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="wallet"></s3s-icon></span>
+      <span class="hero-chip">Control financiero</span>
+
+      <h1>Caja</h1>
+
+      <p>
+        Administra la apertura, movimientos automáticos de ventas y compras,
+        ingresos o egresos manuales y cierre de caja.
+      </p>
+    </div>
+
+    <div class="hero-status" [ngClass]="cajaActiva ? 'hero-open' : 'hero-closed'">
+      <span>{{ cajaActiva ? 'Caja activa' : 'Sin caja abierta' }}</span>
+
+      <strong>
+        {{ cajaActiva ? ('S/ ' + ((resumen?.saldoSistema ?? cajaActiva.saldoSistema) | number:'1.2-2')) : 'S/ 0.00' }}
+      </strong>
+
+      <small>{{ cajaActiva ? 'Saldo esperado' : 'Debe abrir caja' }}</small>
+    </div>
+  </section>
+
+  <div class="access-box" *ngIf="!esAdministrador">
+    <strong>Acceso restringido</strong>
+    <p>Solo el administrador puede ingresar al módulo Caja.</p>
+  </div>
+
+  <ng-container *ngIf="esAdministrador">
+    <div class="alert success" *ngIf="mensaje">
+      {{ mensaje }}
+    </div>
+
+    <div class="alert error" *ngIf="error">
+      {{ error }}
+    </div>
+
+    <section class="quick-actions">
+      <button
+        type="button"
+        class="action-card action-open"
+        (click)="abrirModalApertura()"
+        [disabled]="!!cajaActiva || cargando"
+      ><s3s-icon name="wallet"></s3s-icon>
+        <span>Abrir caja</span>
+        <strong>Iniciar jornada</strong>
+      </button>
+
+      <button
+        type="button"
+        class="action-card action-income"
+        (click)="abrirModalMovimiento('Ingreso manual')"
+        [disabled]="!cajaActiva || cargando"
+      ><s3s-icon name="plus"></s3s-icon>
+        <span>Ingreso manual</span>
+        <strong>Registrar entrada</strong>
+      </button>
+
+      <button
+        type="button"
+        class="action-card action-expense"
+        (click)="abrirModalMovimiento('Egreso manual')"
+        [disabled]="!cajaActiva || cargando"
+      ><s3s-icon name="minus"></s3s-icon>
+        <span>Egreso manual</span>
+        <strong>Registrar salida</strong>
+      </button>
+
+      <button
+        type="button"
+        class="action-card action-close"
+        (click)="abrirModalCierre()"
+        [disabled]="!cajaActiva || cargando"
+      ><s3s-icon name="check"></s3s-icon>
+        <span>Cerrar caja</span>
+        <strong>Finalizar jornada</strong>
+      </button>
+
+      <button
+        type="button"
+        class="action-card action-report"
+        (click)="abrirModalReporte()"
+        [disabled]="cargando"
+      ><s3s-icon name="activity"></s3s-icon>
+        <span>Historial</span>
+        <strong>Ver cajas</strong>
+      </button>
+    </section>
+
+    <section class="main-grid">
+      <article class="panel status-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Estado de caja</h2>
+            <p>Información actual de la caja operativa.</p>
+          </div>
+
+          <span
+            class="estado-badge"
+            [ngClass]="claseEstadoCaja(cajaActiva?.estadoCaja || 'Cerrada')"
+          >
+            {{ cajaActiva?.estadoCaja || 'Cerrada' }}
+          </span>
+        </div>
+
+        <ng-container *ngIf="cajaActiva; else sinCaja">
+          <div class="status-list">
+            <div>
+              <span>Caja N°</span>
+              <strong>{{ cajaActiva.idCaja }}</strong>
+            </div>
+
+            <div>
+              <span>Usuario apertura</span>
+              <strong>{{ cajaActiva.usuarioApertura || usuarioActual }}</strong>
+            </div>
+
+            <div>
+              <span>Fecha apertura</span>
+              <strong>{{ formatearFecha(cajaActiva.fechaApertura) }}</strong>
+            </div>
+
+            <div>
+              <span>Saldo inicial</span>
+              <strong>S/ {{ cajaActiva.saldoInicial | number:'1.2-2' }}</strong>
+            </div>
+          </div>
+
+          <div class="note-box" *ngIf="cajaActiva.observacionApertura">
+            {{ cajaActiva.observacionApertura }}
+          </div>
+        </ng-container>
+
+        <ng-template #sinCaja>
+          <div class="empty-state">
+            <strong>No hay caja abierta</strong>
+            <p>
+              Para registrar cobros, pagos o movimientos manuales, el administrador
+              debe abrir caja primero.
+            </p>
+
+            <button type="button" class="btn btn-primary" (click)="abrirModalApertura()">
+              Abrir caja
+            </button>
+          </div>
+        </ng-template>
+      </article>
+
+      <article class="panel summary-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Resumen financiero</h2>
+            <p>Totales calculados automáticamente por ventas, compras y movimientos manuales.</p>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-light"
+            (click)="cargarTodo()"
+            [disabled]="cargando"
+          ><s3s-icon name="refresh"></s3s-icon>
+            Actualizar
+          </button>
+        </div>
+
+        <div class="summary-grid" *ngIf="resumen; else resumenVacio">
+          <div class="summary-card">
+            <span>Saldo inicial</span>
+            <strong>S/ {{ resumen.saldoInicial | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="summary-card ingreso">
+            <span>Ingresos por venta</span>
+            <strong>S/ {{ resumen.ingresosPorVenta | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="summary-card ingreso">
+            <span>Ingresos manuales</span>
+            <strong>S/ {{ resumen.ingresosManuales | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="summary-card egreso">
+            <span>Egresos por compra</span>
+            <strong>S/ {{ resumen.egresosPorCompra | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="summary-card egreso">
+            <span>Egresos manuales</span>
+            <strong>S/ {{ resumen.egresosManuales | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>Ajustes</span>
+            <strong>
+              S/
+              {{
+                ((resumen.ajustesIngreso || 0) - (resumen.ajustesEgreso || 0))
+                  | number:'1.2-2'
+              }}
+            </strong>
+          </div>
+
+          <div class="summary-card total-ingreso">
+            <span>Total ingresos</span>
+            <strong>S/ {{ resumen.totalIngresos | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="summary-card total-egreso">
+            <span>Total egresos</span>
+            <strong>S/ {{ resumen.totalEgresos | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="summary-card saldo-final">
+            <span>Saldo esperado</span>
+            <strong>S/ {{ resumen.saldoSistema | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <ng-template #resumenVacio>
+          <div class="empty-state compact">
+            <strong>Sin resumen disponible</strong>
+            <p>Abre una caja para visualizar los totales del día.</p>
+          </div>
+        </ng-template>
+      </article>
+    </section>
+
+    <section class="panel method-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Resumen por método de pago</h2>
+          <p>
+            Verifica cuánto se recibió o salió por efectivo, Yape, Plin,
+            transferencia, tarjeta y otros medios.
+          </p>
+        </div>
+
+        <div class="method-total-box">
+          <span>Neto por métodos</span>
+          <strong>S/ {{ totalMetodosNeto() | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <ng-container *ngIf="tieneMovimientosPorMetodo(); else sinMetodos">
+        <div class="method-summary-grid">
+          <article
+            class="method-card"
+            *ngFor="let item of resumenPorMetodoPago()"
+            [ngClass]="[claseMetodoPago(item.metodoPago), claseNetoMetodo(item.neto)]"
+          >
+            <div class="method-card-head">
+              <div class="method-icon">
+                {{ obtenerIconoMetodoPago(item.metodoPago) }}
+              </div>
+
+              <div>
+                <span>Método</span>
+                <strong>{{ item.metodoPago }}</strong>
+              </div>
+            </div>
+
+            <div class="method-main">
+              <span>Neto esperado</span>
+              <strong>S/ {{ item.neto | number:'1.2-2' }}</strong>
+            </div>
+
+            <div class="method-breakdown">
+              <div>
+                <span>Ingresos</span>
+                <strong>S/ {{ item.ingresos | number:'1.2-2' }}</strong>
+              </div>
+
+              <div>
+                <span>Egresos</span>
+                <strong>S/ {{ item.egresos | number:'1.2-2' }}</strong>
+              </div>
+
+              <div>
+                <span>Mov.</span>
+                <strong>{{ item.cantidadMovimientos }}</strong>
+              </div>
+            </div>
+
+            <p class="method-help">
+              {{ textoVerificacionMetodoPago(item) }}
+            </p>
+          </article>
+        </div>
+
+        <div class="method-footer">
+          <div>
+            <span>Total ingresos por métodos</span>
+            <strong>S/ {{ totalMetodosIngreso() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Total egresos por métodos</span>
+            <strong>S/ {{ totalMetodosEgreso() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Efectivo esperado con saldo inicial</span>
+            <strong>S/ {{ efectivoEsperado() | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #sinMetodos>
+        <div class="empty-state compact">
+          <strong>Sin movimientos por método</strong>
+          <p>
+            Cuando se registren cobros o pagos, aquí aparecerá el resumen por
+            efectivo, Yape, Plin, transferencia, tarjeta u otros medios.
+          </p>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="panel movements-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Movimientos de caja</h2>
+          <p>Ingresos y egresos generados por ventas, compras y registros manuales.</p>
+        </div>
+
+        <div class="movement-totals">
+          <div>
+            <span>Ingresos</span>
+            <strong>S/ {{ totalMovimientosIngreso() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Egresos</span>
+            <strong>S/ {{ totalMovimientosEgreso() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Neto</span>
+            <strong>S/ {{ totalNetoMovimientos() | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="filters-card">
+        <div class="field">
+          <label for="s3s-caja-472">Fecha inicio</label>
+          <input id="s3s-caja-472" type="date" [(ngModel)]="filtroFechaInicio" name="filtroFechaInicio" />
+        </div>
+
+        <div class="field">
+          <label for="s3s-caja-480">Fecha fin</label>
+          <input id="s3s-caja-480" type="date" [(ngModel)]="filtroFechaFin" name="filtroFechaFin" />
+        </div>
+
+        <button type="button" class="btn btn-dark" (click)="aplicarFiltrosMovimientos()">
+          Filtrar
+        </button>
+
+        <button type="button" class="btn btn-light" (click)="limpiarFiltrosMovimientos()"><s3s-icon name="refresh"></s3s-icon>
+          Limpiar
+        </button>
+      </div>
+
+      <div class="table-wrap" *ngIf="movimientos.length > 0; else sinMovimientos">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Origen</th>
+              <th>Método</th>
+              <th>Descripción</th>
+              <th class="text-right">Ingreso</th>
+              <th class="text-right">Egreso</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let item of movimientos">
+              <td>{{ formatearFecha(item.fechaMovimiento) }}</td>
+
+              <td>
+                <span class="tipo-badge" [ngClass]="claseTipoMovimiento(item.tipoMovimiento)">
+                  {{ item.tipoMovimiento }}
+                </span>
+              </td>
+
+              <td>
+                <strong>{{ item.origenMovimiento }}</strong>
+                <small>{{ obtenerReferencia(item) }}</small>
+              </td>
+
+              <td>
+                <span class="payment-pill" [ngClass]="claseMetodoPago(item.metodoPago || 'Otro')">
+                  {{ item.metodoPago || 'Otro' }}
+                </span>
+              </td>
+
+              <td class="description-cell">
+                {{ item.descripcion || '-' }}
+              </td>
+
+              <td class="text-right income-cell">
+                {{ item.ingreso > 0 ? ('S/ ' + (item.ingreso | number:'1.2-2')) : '-' }}
+              </td>
+
+              <td class="text-right expense-cell">
+                {{ item.egreso > 0 ? ('S/ ' + (item.egreso | number:'1.2-2')) : '-' }}
+              </td>
+
+              <td>{{ item.usuarioRegistro }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #sinMovimientos>
+        <div class="empty-state compact">
+          <strong>No hay movimientos registrados</strong>
+          <p>Los cobros de ventas y pagos de compras aparecerán automáticamente aquí.</p>
+        </div>
+      </ng-template>
+    </section>
+  </ng-container>
+</div>
+
+<!-- MODAL ABRIR CAJA -->
+<div class="modal-backdrop" *ngIf="accionModal === 'abrir'">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h2>Abrir caja</h2>
+        <p>Registra el saldo inicial para iniciar la jornada.</p>
+      </div>
+
+      <button type="button" class="modal-close" (click)="cerrarModal()" aria-label="Cerrar ventana"><s3s-icon name="close"></s3s-icon></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="field">
+        <label for="s3s-caja-611">Saldo inicial</label>
+        <input id="s3s-caja-611"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="abrirForm.saldoInicial"
+          name="saldoInicial"
+        />
+      </div>
+
+      <div class="field">
+        <label for="s3s-caja-619">Observación de apertura</label>
+        <textarea id="s3s-caja-619"
+          rows="4"
+          [(ngModel)]="abrirForm.observacionApertura"
+          name="observacionApertura"
+          placeholder="Ej. Apertura de caja del día..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-light" (click)="cerrarModal()" [disabled]="procesando">
+        Cancelar
+      </button>
+
+      <button type="button" class="btn btn-primary" (click)="abrirCaja()" [disabled]="procesando">
+        {{ procesando ? 'Abriendo...' : 'Abrir caja' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOVIMIENTO MANUAL -->
+<div class="modal-backdrop" *ngIf="accionModal === 'movimiento'">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h2>Movimiento manual</h2>
+        <p>Registra ingresos o egresos que no provienen de ventas o compras.</p>
+      </div>
+
+      <button type="button" class="modal-close" (click)="cerrarModal()" aria-label="Cerrar ventana"><s3s-icon name="close"></s3s-icon></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-grid two">
+        <div class="field">
+          <label for="s3s-caja-664">Tipo de movimiento</label>
+          <select id="s3s-caja-664" [(ngModel)]="movimientoForm.tipoMovimiento" name="tipoMovimiento">
+            <option *ngFor="let tipo of tiposMovimientoManual" [value]="tipo">
+              {{ tipo }}
+            </option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="s3s-caja-676">Método de pago</label>
+          <select id="s3s-caja-676" [(ngModel)]="movimientoForm.metodoPago" name="metodoPagoMovimiento">
+            <option *ngFor="let metodo of metodosPago" [value]="metodo">
+              {{ metodo }}
+            </option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="s3s-caja-688">Monto</label>
+          <input id="s3s-caja-688"
+            type="number"
+            min="0.01"
+            step="0.01"
+            [(ngModel)]="movimientoForm.monto"
+            name="montoMovimiento"
+          />
+        </div>
+
+        <div class="field">
+          <label for="s3s-caja-696">Usuario</label>
+          <input id="s3s-caja-696" type="text" [value]="usuarioActual" readonly />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="s3s-caja-705">Descripción</label>
+        <textarea id="s3s-caja-705"
+          rows="4"
+          [(ngModel)]="movimientoForm.descripcion"
+          name="descripcionMovimiento"
+          placeholder="Describe el motivo del movimiento..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-light" (click)="cerrarModal()" [disabled]="procesando">
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="registrarMovimientoManual()"
+        [disabled]="procesando"
+      >
+        {{ procesando ? 'Registrando...' : 'Registrar movimiento' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CERRAR CAJA -->
+<div class="modal-backdrop" *ngIf="accionModal === 'cerrar'">
+  <div class="modal-card modal-large">
+    <div class="modal-header">
+      <div>
+        <h2>Cerrar caja</h2>
+        <p>Confirma el saldo contado físicamente o en medios de pago.</p>
+      </div>
+
+      <button type="button" class="modal-close" (click)="cerrarModal()" aria-label="Cerrar ventana"><s3s-icon name="close"></s3s-icon></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="closing-summary">
+        <div>
+          <span>Saldo esperado</span>
+          <strong>S/ {{ (resumen?.saldoSistema || 0) | number:'1.2-2' }}</strong>
+        </div>
+
+        <div>
+          <span>Saldo contado</span>
+          <strong>S/ {{ (cerrarForm.saldoContado || 0) | number:'1.2-2' }}</strong>
+        </div>
+
+        <div [ngClass]="diferenciaCierre() === 0 ? 'ok' : 'warn'">
+          <span>Diferencia</span>
+          <strong>S/ {{ diferenciaCierre() | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <div class="closing-methods" *ngIf="tieneMovimientosPorMetodo()">
+        <div class="closing-methods-title">
+          <h3>Verificación por método de pago</h3>
+          <p>
+            Revisa estos montos antes de cerrar caja. El efectivo esperado incluye
+            el saldo inicial.
+          </p>
+        </div>
+
+        <div class="closing-method-grid">
+          <div
+            class="closing-method-card"
+            *ngFor="let item of resumenPorMetodoPago()"
+            [ngClass]="[claseMetodoPago(item.metodoPago), claseNetoMetodo(item.neto)]"
+          >
+            <span>{{ item.metodoPago }}</span>
+
+            <strong>
+              S/
+              {{
+                item.metodoPago === 'Efectivo'
+                  ? (efectivoEsperado() | number:'1.2-2')
+                  : (item.neto | number:'1.2-2')
+              }}
+            </strong>
+
+            <small>
+              {{
+                item.metodoPago === 'Efectivo'
+                  ? 'Efectivo esperado'
+                  : 'Neto esperado'
+              }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="s3s-caja-805">Saldo contado total</label>
+        <input id="s3s-caja-805"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="cerrarForm.saldoContado"
+          name="saldoContado"
+        />
+      </div>
+
+      <div class="field">
+        <label for="s3s-caja-813">Observación de cierre</label>
+        <textarea id="s3s-caja-813"
+          rows="4"
+          [(ngModel)]="cerrarForm.observacionCierre"
+          name="observacionCierre"
+          placeholder="Ej. Cierre conforme, diferencia por redondeo, etc."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-light" (click)="cerrarModal()" [disabled]="procesando">
+        Cancelar
+      </button>
+
+      <button type="button" class="btn btn-danger" (click)="cerrarCaja()" [disabled]="procesando">
+        {{ procesando ? 'Cerrando...' : 'Cerrar caja' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPORTE -->
+<div class="modal-backdrop" *ngIf="accionModal === 'reporte'">
+  <div class="modal-card modal-large">
+    <div class="modal-header">
+      <div>
+        <h2>Historial de cajas</h2>
+        <p>Consulta cajas abiertas, cerradas y sus saldos finales.</p>
+      </div>
+
+      <button type="button" class="modal-close" (click)="cerrarModal()" aria-label="Cerrar ventana"><s3s-icon name="close"></s3s-icon></button>
+    </div>
+
+    <div class="modal-body">
+      <div class="filters-card modal-filters">
+        <div class="field">
+          <label for="s3s-caja-858">Fecha inicio</label>
+          <input id="s3s-caja-858" type="date" [(ngModel)]="reporteFechaInicio" name="reporteFechaInicio" />
+        </div>
+
+        <div class="field">
+          <label for="s3s-caja-866">Fecha fin</label>
+          <input id="s3s-caja-866" type="date" [(ngModel)]="reporteFechaFin" name="reporteFechaFin" />
+        </div>
+
+        <button type="button" class="btn btn-dark" (click)="aplicarFiltrosReporte()"><s3s-icon name="download"></s3s-icon>
+          Filtrar
+        </button>
+
+        <button type="button" class="btn btn-light" (click)="limpiarFiltrosReporte()"><s3s-icon name="download"></s3s-icon>
+          Limpiar
+        </button>
+      </div>
+
+      <div class="report-list" *ngIf="reporte.length > 0; else sinReporte">
+        <article class="report-card" *ngFor="let item of reporte">
+          <div>
+            <span
+              class="estado-badge"
+              [ngClass]="claseEstadoCaja(item.estadoCaja)"
+            >
+              {{ item.estadoCaja }}
+            </span>
+
+            <h3>Caja N° {{ item.idCaja }}</h3>
+
+            <p>
+              Apertura: {{ formatearFecha(item.fechaApertura) }}
+              <br />
+              Cierre: {{ formatearFecha(item.fechaCierre) }}
+            </p>
+          </div>
+
+          <div class="report-values">
+            <div>
+              <span>Inicial</span>
+              <strong>S/ {{ item.saldoInicial | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Ingresos</span>
+              <strong>S/ {{ item.totalIngresos | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Egresos</span>
+              <strong>S/ {{ item.totalEgresos | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Sistema</span>
+              <strong>S/ {{ item.saldoSistema | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Contado</span>
+              <strong>S/ {{ (item.saldoContado || 0) | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Diferencia</span>
+              <strong>S/ {{ (item.diferencia || 0) | number:'1.2-2' }}</strong>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <ng-template #sinReporte>
+        <div class="empty-state compact">
+          <strong>No hay cajas registradas</strong>
+          <p>Cuando abras o cierres caja, aparecerá el historial aquí.</p>
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-light" (click)="cerrarModal()">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
