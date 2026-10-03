@@ -1,3 +1,4 @@
+import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [UiIconComponent, CommonModule, FormsModule],
   templateUrl: './productos.html',
   styleUrl: './productos.scss'
 })
@@ -229,8 +230,6 @@ export class ProductosComponent implements OnInit {
     this.producto.fichaTecnicaPdf = this.normalizarTexto(this.producto.fichaTecnicaPdf);
 
     this.producto.precioReferencial = this.obtenerNumero(this.producto.precioReferencial);
-    this.producto.stockInicial = this.obtenerNumero(this.producto.stockInicial) ?? 0;
-    this.producto.stockMinimo = this.obtenerNumero(this.producto.stockMinimo) ?? 0;
 
     const errorValidacion = this.validarFormulario();
 
@@ -290,7 +289,6 @@ export class ProductosComponent implements OnInit {
       idUnidadMedida: this.producto.idUnidadMedida,
       codigoProducto: (this.producto.codigoProducto ?? '').trim().toUpperCase(),
       fichaTecnicaPdf: this.normalizarTexto(this.producto.fichaTecnicaPdf),
-      stockMinimo: this.obtenerNumero(this.producto.stockMinimo) ?? 0,
       estado: this.estadoProductoEditando
     };
 
@@ -344,8 +342,6 @@ export class ProductosComponent implements OnInit {
       idUnidadMedida: item.idUnidadMedida ?? null,
       codigoProducto: item.codigoProducto,
       fichaTecnicaPdf: item.fichaTecnicaPdf ?? null,
-      stockInicial: item.stockActual,
-      stockMinimo: item.stockMinimo
     };
 
     window.scrollTo({
@@ -449,16 +445,7 @@ export class ProductosComponent implements OnInit {
 
   formularioProductoValido(): boolean {
     const precio = this.obtenerNumero(this.producto.precioReferencial);
-    const stockInicial = this.obtenerNumero(this.producto.stockInicial);
-    const stockMinimo = this.obtenerNumero(this.producto.stockMinimo);
 
-    const stockValido = this.editando
-      ? stockMinimo !== null && stockMinimo >= 0
-      : stockInicial !== null &&
-        stockMinimo !== null &&
-        stockInicial >= 0 &&
-        stockMinimo >= 0 &&
-        stockInicial > stockMinimo;
 
     return (
       this.campoTextoLleno(this.producto.nombre) &&
@@ -470,8 +457,7 @@ export class ProductosComponent implements OnInit {
       this.producto.idCategoria > 0 &&
       !!this.producto.idUnidadMedida &&
       this.producto.idUnidadMedida > 0 &&
-      (this.imagenArchivo !== null || this.campoTextoLleno(this.producto.imagenUrl)) &&
-      stockValido
+      (this.imagenArchivo !== null || this.campoTextoLleno(this.producto.imagenUrl))
     );
   }
 
@@ -492,8 +478,6 @@ export class ProductosComponent implements OnInit {
 
   private validarFormulario(): string | null {
     const precio = this.obtenerNumero(this.producto.precioReferencial);
-    const stockInicial = this.obtenerNumero(this.producto.stockInicial);
-    const stockMinimo = this.obtenerNumero(this.producto.stockMinimo);
 
     if (!this.campoTextoLleno(this.producto.nombre)) {
       return this.marcarErrorCampo('nombre', 'Ingresa el nombre del producto.');
@@ -527,38 +511,11 @@ export class ProductosComponent implements OnInit {
       return this.marcarErrorCampo('imagenUrl', 'Selecciona una imagen desde tu equipo.');
     }
 
-    if (!this.editando) {
-      if (stockInicial === null) {
-        return this.marcarErrorCampo('stockInicial', 'Ingresa el stock inicial.');
-      }
-
-      if (stockInicial < 0) {
-        return this.marcarErrorCampo('stockInicial', 'El stock inicial no puede ser negativo.');
-      }
-    }
-
-    if (stockMinimo === null) {
-      return this.marcarErrorCampo('stockMinimo', 'Ingresa el stock mínimo.');
-    }
-
-    if (stockMinimo < 0) {
-      return this.marcarErrorCampo('stockMinimo', 'El stock mínimo no puede ser negativo.');
-    }
-
-    if (!this.editando && stockInicial !== null && stockInicial <= stockMinimo) {
-      return this.marcarErrorCampo(
-        'stockInicial',
-        'El stock inicial debe ser mayor que el stock mínimo.'
-      );
-    }
-
     return null;
   }
 
   private obtenerMensajeErrorCampo(campo: string): string | null {
     const precio = this.obtenerNumero(this.producto.precioReferencial);
-    const stockInicial = this.obtenerNumero(this.producto.stockInicial);
-    const stockMinimo = this.obtenerNumero(this.producto.stockMinimo);
 
     switch (campo) {
       case 'nombre':
@@ -610,38 +567,6 @@ export class ProductosComponent implements OnInit {
       case 'imagenUrl':
         if (this.imagenArchivo === null && !this.campoTextoLleno(this.producto.imagenUrl)) {
           return 'Selecciona una imagen desde tu equipo.';
-        }
-
-        return null;
-
-      case 'stockInicial':
-        if (!this.editando) {
-          if (stockInicial === null) {
-            return 'Ingresa el stock inicial.';
-          }
-
-          if (stockInicial < 0) {
-            return 'El stock inicial no puede ser negativo.';
-          }
-
-          if (stockMinimo !== null && stockInicial <= stockMinimo) {
-            return 'El stock inicial debe ser mayor que el stock mínimo.';
-          }
-        }
-
-        return null;
-
-      case 'stockMinimo':
-        if (stockMinimo === null) {
-          return 'Ingresa el stock mínimo.';
-        }
-
-        if (stockMinimo < 0) {
-          return 'El stock mínimo no puede ser negativo.';
-        }
-
-        if (!this.editando && stockInicial !== null && stockInicial <= stockMinimo) {
-          return 'El stock inicial debe ser mayor que el stock mínimo.';
         }
 
         return null;
@@ -705,8 +630,6 @@ export class ProductosComponent implements OnInit {
       idUnidadMedida: null,
       codigoProducto: '',
       fichaTecnicaPdf: null,
-      stockInicial: 0,
-      stockMinimo: 0
     };
   }
 

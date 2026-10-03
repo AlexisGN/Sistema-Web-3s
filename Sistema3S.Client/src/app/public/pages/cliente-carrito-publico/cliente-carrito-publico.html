@@ -1,0 +1,157 @@
+<s3s-account-nav />
+<section class="cart-page">
+  <section class="cart-hero">
+    <div>
+      <span>Carrito de cotización</span>
+      <h1>Carrito de cotización</h1>
+      <p>
+        Agrega productos industriales, ajusta cantidades y envía una solicitud conjunta al equipo comercial 3S.
+      </p>
+    </div>
+
+    <div class="client-card" *ngIf="sesion">
+      <small>Cliente</small>
+      <strong>{{ nombreCliente }}</strong>
+      <p>
+        {{ sesion.tipoDocumento }}: {{ sesion.numeroDocumento }}
+      </p>
+    </div>
+  </section>
+
+  <div class="cart-empty" *ngIf="items.length === 0 && !cotizacionRegistrada">
+    <div class="empty-icon"><s3s-icon name="cart" /></div>
+    <h2>Tu carrito de cotización está vacío</h2>
+    <p>
+      Explora el catálogo industrial y agrega los productos que deseas cotizar.
+    </p>
+
+    <div class="empty-actions">
+      <a routerLink="/productos">Ver productos</a>
+      <a routerLink="/cliente/historial-cotizaciones" class="secondary">Ver historial</a>
+    </div>
+  </div>
+
+  <section class="cart-layout" *ngIf="items.length > 0">
+    <div class="cart-list">
+      <div class="cart-list-head">
+        <div>
+          <span>Productos seleccionados</span>
+          <h2>{{ items.length }} producto{{ items.length === 1 ? '' : 's' }}</h2>
+        </div>
+
+        <button type="button" (click)="vaciarCarrito()">
+          Vaciar carrito
+        </button>
+      </div>
+
+      <article class="cart-item" *ngFor="let item of items; trackBy: trackByItem">
+        <a class="item-image" [routerLink]="['/productos', item.idProducto]">
+          <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombre"></app-imagen-catalogo>
+        </a>
+
+        <div class="item-info">
+          <div class="item-meta">
+            <span>{{ item.codigo }}</span>
+            <span>{{ item.marca || '3S' }}</span>
+          </div>
+
+          <h3>
+            <a [routerLink]="['/productos', item.idProducto]">
+              {{ item.nombre }}
+            </a>
+          </h3>
+
+          <p>{{ item.categoria }}</p>
+
+          <label>Observación para este producto</label>
+          <textarea aria-label="Observación del producto" rows="2" [(ngModel)]="item.observacion" (change)="actualizarObservacion()"
+            placeholder="Ej. Indicar aplicación, modelo requerido o condición técnica."></textarea>
+        </div>
+
+        <div class="item-actions">
+          <label>Cantidad</label>
+
+          <div class="qty-box">
+            <button type="button" (click)="disminuirCantidad(item)" aria-label="Disminuir cantidad">−</button>
+
+            <input aria-label="Cantidad a cotizar" type="number" min="1" [(ngModel)]="item.cantidad" (change)="normalizarCantidad(item)" />
+
+            <button type="button" (click)="aumentarCantidad(item)" aria-label="Aumentar cantidad">+</button>
+          </div>
+
+          <button type="button" class="remove-btn" (click)="eliminarItem(item)">
+            Eliminar
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <aside class="cart-summary">
+      <span>Resumen</span>
+      <h2>Solicitud web</h2>
+
+      <div class="summary-row">
+        <small>Productos</small>
+        <strong>{{ items.length }}</strong>
+      </div>
+
+      <div class="summary-row">
+        <small>Cantidad total</small>
+        <strong>{{ cantidadTotal }}</strong>
+      </div>
+
+      <div class="summary-note">
+        <strong>Importante</strong>
+        <p>
+          Recibirás una propuesta personalizada con precios y condiciones revisados por nuestro equipo comercial.
+        </p>
+      </div>
+
+      <label>Observación general</label>
+      <textarea aria-label="Observación general" rows="4" [(ngModel)]="observacionGeneral"
+        placeholder="Describe tu requerimiento general, urgencia, aplicación o datos adicionales."></textarea>
+
+      <div class="auth-error" *ngIf="error" role="status">
+        {{ error }}
+      </div>
+
+      <button type="button" class="send-btn" (click)="enviarCotizacion()" [disabled]="enviando">
+        {{ enviando ? 'Enviando solicitud...' : 'Enviar solicitud de cotización' }}
+      </button>
+
+      <button type="button" class="history-btn" (click)="irHistorial()">
+        Ver historial de cotizaciones
+      </button>
+    </aside>
+  </section>
+
+  <section class="success-overlay" *ngIf="cotizacionRegistrada">
+    <div class="success-card" s3sDialogFocus aria-labelledby="solicitud-confirmacion" (dialogEscape)="cerrarResultado()">
+      <button type="button" class="close-success" aria-label="Cerrar confirmación" (click)="cerrarResultado()">×</button>
+
+      <div class="success-icon"><s3s-icon name="check" /></div>
+
+      <span class="success-label">
+        Solicitud recibida
+      </span>
+
+      <h2 id="solicitud-confirmacion">
+        {{ cotizacionRegistrada.esEmpresa ? 'Solicitud empresarial enviada' : 'Solicitud enviada correctamente' }}
+      </h2>
+
+      <p>
+        {{ cotizacionRegistrada.mensaje }}
+      </p>
+
+      <div class="success-actions">
+        <button type="button" (click)="verCotizacionRegistrada()">
+          Ver solicitud
+        </button>
+
+        <button type="button" class="secondary" (click)="seguirCotizando()">
+          Seguir cotizando
+        </button>
+      </div>
+    </div>
+  </section>
+</section>

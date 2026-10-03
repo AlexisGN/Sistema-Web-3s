@@ -80,16 +80,12 @@ export class ProductoService {
     formulario.append('nombre', producto.nombre);
     formulario.append('codigoProducto', producto.codigoProducto);
     formulario.append('idCategoria', String(producto.idCategoria));
-    formulario.append('stockMinimo', String(producto.stockMinimo));
 
     this.agregarCampoOpcional(formulario, 'descripcion', producto.descripcion);
     this.agregarCampoOpcional(formulario, 'precioReferencial', producto.precioReferencial);
     this.agregarCampoOpcional(formulario, 'idMarca', producto.idMarca);
     this.agregarCampoOpcional(formulario, 'idUnidadMedida', producto.idUnidadMedida);
 
-    if ('stockInicial' in producto) {
-      formulario.append('stockInicial', String(producto.stockInicial));
-    }
 
     if ('estado' in producto) {
       formulario.append('estado', String(producto.estado));

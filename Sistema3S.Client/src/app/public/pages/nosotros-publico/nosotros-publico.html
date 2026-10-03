@@ -114,7 +114,7 @@
             *ngFor="let compromiso of nosotros.compromisos"
           >
             <div class="commitment-icon">
-              {{ compromiso.icono }}
+              <s3s-icon name="shield" />
             </div>
 
             <div>
@@ -151,7 +151,7 @@
             *ngFor="let industria of nosotros.industrias; trackBy: trackByIndustria"
           >
             <div class="industry-icon">
-              {{ iconoIndustria(industria.nombre) }}
+              <s3s-icon name="building" />
             </div>
 
             <span>{{ industria.nombre }}</span>
@@ -186,7 +186,7 @@
             *ngFor="let valor of nosotros.valores; trackBy: trackByValor"
           >
             <div class="value-check">
-              ✓
+              <s3s-icon name="check" />
             </div>
 
             <span>{{ valor.nombre }}</span>

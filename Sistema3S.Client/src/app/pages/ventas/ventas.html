@@ -1,0 +1,872 @@
+<section class="ventas-page">
+  <div class="page-hero">
+    <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="receipt"></s3s-icon></span>
+      <span class="hero-chip">Operaciones</span>
+
+      <h1>Ventas internas</h1>
+
+      <p>
+        Registra ventas directas o desde cotización, controla cobros,
+        descuenta stock y genera comprobantes internos con reportes PDF y Excel.
+      </p>
+    </div>
+
+    <div class="hero-card">
+      <span>Control de ventas</span>
+      <strong>{{ totalRegistros }}</strong>
+      <small>Ventas registradas</small>
+    </div>
+  </div>
+
+  <div *ngIf="mensaje" class="alert success">
+    {{ mensaje }}
+  </div>
+
+  <div *ngIf="error" class="alert error">
+    {{ error }}
+  </div>
+
+  <div *ngIf="cargandoCotizacion" class="alert info">
+    Cargando cotización para venta...
+  </div>
+
+  <section class="ventas-grid">
+    <article class="panel form-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Registrar venta</h2>
+          <p>Completa cliente, comprobante, productos, servicios y cobro.</p>
+        </div>
+      </div>
+
+      <form class="venta-form" (ngSubmit)="guardarVenta()">
+        <div class="form-section form-section-wide s3s-origin" *ngIf="idCotizacionOrigen">
+          <div class="section-title section-title-info"><s3s-icon name="receipt"></s3s-icon>
+            Venta desde cotización
+          </div>
+
+          <div class="quote-box">
+            <strong>{{ cotizacionOrigenTexto }}</strong>
+
+            <p>
+              Los datos de la cotización se cargaron automáticamente. Puedes editar cantidades
+              y precios antes de registrar la venta. Antes de guardar, el sistema validará
+              el stock actualizado.
+            </p>
+          </div>
+
+          <small class="field-error" *ngIf="erroresCampo['cotizacion']">
+            {{ erroresCampo['cotizacion'] }}
+          </small>
+        </div>
+
+        <div class="form-section s3s-party">
+          <div class="section-title"><s3s-icon name="people"></s3s-icon>1. Cliente</div>
+
+          <div class="field">
+            <label for="s3s-ventas-86">Buscar cliente</label>
+
+            <div class="search-control">
+              <input id="s3s-ventas-86" type="text" [(ngModel)]="buscarCliente" name="buscarCliente"
+                placeholder="Buscar por documento o nombre..."
+                (input)="cargarClientes(); limpiarErrorCampo('cliente')" />
+
+              <button type="button" class="btn btn-dark" (click)="cargarClientes()"><s3s-icon name="search"></s3s-icon>
+                Buscar
+              </button>
+            </div>
+
+            <small class="field-error" *ngIf="erroresCampo['cliente']">
+              {{ erroresCampo['cliente'] }}
+            </small>
+          </div>
+
+          <div class="result-list" *ngIf="clientes.length > 0">
+            <button type="button" class="result-item" *ngFor="let cliente of clientes"
+              [class.selected]="clienteSeleccionado?.idCliente === cliente.idCliente"
+              (click)="seleccionarCliente(cliente)">
+              <strong>{{ obtenerNombreCliente(cliente) }}</strong>
+              <span>{{ obtenerDocumentoCliente(cliente) }} · {{ cliente.telefono || 'Sin teléfono' }}</span>
+            </button>
+          </div>
+
+          <div class="selected-box" *ngIf="clienteSeleccionado">
+            <span>Cliente seleccionado</span>
+
+            <strong>{{ obtenerNombreCliente(clienteSeleccionado) }}</strong>
+
+            <p>
+              {{ obtenerDocumentoCliente(clienteSeleccionado) }} ·
+              {{ clienteSeleccionado.direccion || 'Sin dirección' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="form-section s3s-document">
+          <div class="section-title"><s3s-icon name="file"></s3s-icon>2. Comprobante interno</div>
+
+          <div class="form-grid two">
+            <div class="field">
+              <label for="s3s-ventas-133">Tipo de comprobante</label>
+
+              <select id="s3s-ventas-133" [(ngModel)]="venta.tipoComprobante" name="tipoComprobante" (change)="cambiarTipoComprobante()">
+                <option value="">Seleccionar</option>
+
+                <option *ngFor="let tipo of tiposComprobanteDisponibles()" [value]="tipo">
+                  {{ tipo }}
+                </option>
+              </select>
+
+              <small class="field-error" *ngIf="erroresCampo['tipoComprobante']">
+                {{ erroresCampo['tipoComprobante'] }}
+              </small>
+
+              <!-- <small class="field-help" *ngIf="clienteSeleccionado">
+                Persona natural con DNI: Boleta o Nota de venta. Empresa con RUC: Factura, Boleta o Nota de venta.
+              </small> -->
+            </div>
+
+            <div class="field">
+              <label for="s3s-ventas-153">Fecha de emisión</label>
+
+              <input id="s3s-ventas-153" type="date" [(ngModel)]="venta.fechaEmision" name="fechaEmision"
+                (input)="limpiarErrorCampo('fechaEmision')" />
+
+              <small class="field-error" *ngIf="erroresCampo['fechaEmision']">
+                {{ erroresCampo['fechaEmision'] }}
+              </small>
+            </div>
+          </div>
+
+          <div class="form-grid two">
+            <div class="field readonly-field">
+              <label for="s3s-ventas-167">Serie automática</label>
+
+              <input id="s3s-ventas-167" type="text" [(ngModel)]="venta.serie" name="serie" placeholder="Automático" readonly />
+            </div>
+
+            <div class="field readonly-field">
+              <label for="s3s-ventas-175">Número automático</label>
+
+              <input id="s3s-ventas-175" type="text" [(ngModel)]="venta.numero" name="numero" placeholder="Automático" readonly />
+            </div>
+          </div>
+
+          <div *ngIf="cargandoSiguienteComprobante" class="auto-number-help">
+            Generando número automático...
+          </div>
+
+          <div class="field">
+            <label for="s3s-ventas-187">Observación de venta</label>
+
+            <textarea id="s3s-ventas-187" [(ngModel)]="venta.observacion" name="observacion" rows="2"
+              placeholder="Observación opcional..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-section s3s-items">
+          <div class="section-title"><s3s-icon name="box"></s3s-icon>3. Productos y servicios</div>
+
+          <div class="tabs">
+            <button type="button" class="tab-btn" [class.active]="tipoElementoFormulario === 'Producto'"
+              (click)="seleccionarTipoElemento('Producto')">
+              Productos
+            </button>
+
+            <button type="button" class="tab-btn" [class.active]="tipoElementoFormulario === 'Servicio'"
+              (click)="seleccionarTipoElemento('Servicio')">
+              Servicios
+            </button>
+          </div>
+
+          <div class="field" *ngIf="tipoElementoFormulario === 'Producto'">
+            <label for="s3s-ventas-212">Buscar producto</label>
+
+            <div class="search-control">
+              <input id="s3s-ventas-212" type="text" [(ngModel)]="buscarProducto" name="buscarProducto"
+                placeholder="Buscar producto por código o nombre..."
+                (input)="cargarProductos(); limpiarErrorCampo('elementoDetalle')" />
+
+              <button type="button" class="btn btn-dark" (click)="cargarProductos()"><s3s-icon name="search"></s3s-icon>
+                Buscar
+              </button>
+            </div>
+          </div>
+
+          <div class="field" *ngIf="tipoElementoFormulario === 'Servicio'">
+            <label for="s3s-ventas-226">Buscar servicio</label>
+
+            <div class="search-control">
+              <input id="s3s-ventas-226" type="text" [(ngModel)]="buscarServicio" name="buscarServicio" placeholder="Buscar servicio..."
+                (input)="cargarServicios(); limpiarErrorCampo('elementoDetalle')" />
+
+              <button type="button" class="btn btn-dark" (click)="cargarServicios()"><s3s-icon name="search"></s3s-icon>
+                Buscar
+              </button>
+            </div>
+          </div>
+
+          <small class="field-error" *ngIf="erroresCampo['elementoDetalle']">
+            {{ erroresCampo['elementoDetalle'] }}
+          </small>
+
+          <div class="result-list" *ngIf="tipoElementoFormulario === 'Producto' && productos.length > 0">
+            <button type="button" class="result-item" *ngFor="let producto of productos"
+              [class.selected]="elementoSeleccionado === producto" (click)="seleccionarElemento(producto)">
+              <strong>{{ obtenerNombreElemento(producto) }}</strong>
+
+              <span>
+                {{ obtenerCodigoElemento(producto) }}
+                · Stock: {{ producto.stockActual ?? 'N/D' }}
+                · Precio c/IGV: S/ {{ obtenerPrecioElemento(producto) | number:'1.2-2' }}
+              </span>
+            </button>
+          </div>
+
+          <div class="result-list" *ngIf="tipoElementoFormulario === 'Servicio' && servicios.length > 0">
+            <button type="button" class="result-item" *ngFor="let servicio of servicios"
+              [class.selected]="elementoSeleccionado === servicio" (click)="seleccionarElemento(servicio)">
+              <strong>{{ obtenerNombreElemento(servicio) }}</strong>
+
+              <span>
+                {{ obtenerCodigoElemento(servicio) }}
+                · Precio c/IGV: S/ {{ obtenerPrecioElemento(servicio) | number:'1.2-2' }}
+              </span>
+            </button>
+          </div>
+
+          <div class="selected-box product-selected" *ngIf="elementoSeleccionado">
+            <span>{{ tipoElementoFormulario }} seleccionado</span>
+
+            <strong>{{ obtenerNombreElemento(elementoSeleccionado) }}</strong>
+
+            <p>
+              {{ obtenerCodigoElemento(elementoSeleccionado) }}
+
+              <ng-container *ngIf="tipoElementoFormulario === 'Producto'">
+                · Stock actual: {{ obtenerStockElemento(elementoSeleccionado) ?? 'N/D' }}
+              </ng-container>
+            </p>
+          </div>
+
+          <div class="form-grid two product-inputs">
+            <div class="field">
+              <label for="s3s-ventas-282">Cantidad</label>
+
+              <input id="s3s-ventas-282" type="number" [(ngModel)]="detalleFormulario.cantidad" name="cantidadDetalle" min="1" step="1"
+                placeholder="Cantidad" (input)="limpiarErrorCampo('cantidadDetalle')" />
+
+              <small class="field-error" *ngIf="erroresCampo['cantidadDetalle']">
+                {{ erroresCampo['cantidadDetalle'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-ventas-293">Precio unitario con IGV</label>
+
+              <input id="s3s-ventas-293" type="number" [(ngModel)]="detalleFormulario.precioUnitario" name="precioDetalle" min="0"
+                step="0.01" placeholder="S/ 0.00" (input)="limpiarErrorCampo('precioDetalle')" />
+
+              <small class="field-error" *ngIf="erroresCampo['precioDetalle']">
+                {{ erroresCampo['precioDetalle'] }}
+              </small>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-secondary add-product-btn" (click)="agregarDetalle()"><s3s-icon name="plus"></s3s-icon>
+            Agregar a venta
+          </button>
+
+          <small class="field-error" *ngIf="erroresCampo['detalles']">
+            {{ erroresCampo['detalles'] }}
+          </small>
+          <div class="detail-list" *ngIf="venta.detalles.length > 0">
+            <article class="detail-card detail-card-editable" *ngFor="let detalle of venta.detalles; let i = index">
+              <div class="detail-product">
+                <span class="detail-code">{{ detalle.codigo || '-' }}</span>
+
+                <strong>{{ detalle.elemento }}</strong>
+
+                <small>
+                  {{ detalle.tipoElemento }}
+
+                  <ng-container *ngIf="detalle.aplicaInventario">
+                    · Stock: {{ detalle.stockActual ?? 'N/D' }}
+                  </ng-container>
+                </small>
+              </div>
+
+              <div class="detail-values detail-values-editable">
+                <div class="detail-edit-field">
+                  <span>Cantidad</span>
+
+                  <input aria-label="Cantidad" type="number" min="1" step="1" [(ngModel)]="detalle.cantidad"
+                    [name]="'cantidadVentaDetalle' + i" (ngModelChange)="cambiarCantidadDetalleVenta(i)" />
+                </div>
+
+                <div class="detail-edit-field">
+                  <span>P. Unit. c/IGV</span>
+
+                  <input aria-label="P. Unit. c/IGV" type="number" min="0.01" step="0.01" [(ngModel)]="detalle.precioUnitario"
+                    [name]="'precioVentaDetalle' + i" (ngModelChange)="cambiarPrecioDetalleVenta(i)" />
+                </div>
+
+                <div class="detail-total-box">
+                  <span>Importe</span>
+                  <strong>S/ {{ calcularSubtotalDetalle(detalle) | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+
+              <button type="button" class="remove-btn" (click)="eliminarDetalle(i)" aria-label="Quitar elemento"><s3s-icon name="close"></s3s-icon></button>
+            </article>
+          </div>
+
+        </div>
+
+        <div class="form-section s3s-payment">
+          <div class="section-title"><s3s-icon name="wallet"></s3s-icon>4. Cobro de venta</div>
+
+          <div class="form-grid two">
+            <div class="field">
+              <label for="s3s-ventas-371">Tipo de cobro</label>
+
+              <select id="s3s-ventas-371" [(ngModel)]="venta.tipoPago" name="tipoPago" (change)="cambiarTipoPago()">
+                <option *ngFor="let tipo of tiposPago" [value]="tipo">
+                  {{ tipo }}
+                </option>
+              </select>
+
+              <small class="field-error" *ngIf="erroresCampo['tipoPago']">
+                {{ erroresCampo['tipoPago'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-ventas-386">Método de cobro</label>
+
+              <select id="s3s-ventas-386" [(ngModel)]="venta.metodoPago" name="metodoPago" (change)="limpiarErrorCampo('metodoPago')">
+                <option value="">Seleccionar</option>
+
+                <option *ngFor="let metodo of metodosPago" [value]="metodo">
+                  {{ metodo }}
+                </option>
+              </select>
+
+              <small class="field-error" *ngIf="erroresCampo['metodoPago']">
+                {{ erroresCampo['metodoPago'] }}
+              </small>
+            </div>
+          </div>
+
+          <div class="form-grid two">
+            <div class="field">
+              <label for="s3s-ventas-407">{{ venta.tipoPago === 'Cuotas' ? 'Cobro inicial' : 'Monto cobrado' }}</label>
+
+              <input id="s3s-ventas-407" type="number" [(ngModel)]="venta.montoPagado" name="montoPagado" min="0" step="0.01"
+                [readonly]="venta.tipoPago === 'Total'" (input)="cambiarMontoPagado()" />
+
+              <small class="field-error" *ngIf="erroresCampo['montoPagado']">
+                {{ erroresCampo['montoPagado'] }}
+              </small>
+            </div>
+
+            <div class="field readonly-field">
+              <label for="s3s-ventas-418">Saldo por cobrar</label>
+
+              <input id="s3s-ventas-418" type="text" [value]="'S/ ' + (calcularSaldo() | number:'1.2-2')" readonly />
+            </div>
+          </div>
+
+          <div class="form-grid two" *ngIf="venta.tipoPago === 'Cuotas'">
+            <div class="field">
+              <label for="s3s-ventas-429">Número de cuotas</label>
+
+              <input id="s3s-ventas-429" type="number" [(ngModel)]="venta.numeroCuotas" name="numeroCuotas" min="1" max="24" step="1"
+                placeholder="Ej. 4" (input)="cambiarNumeroCuotas()" />
+
+              <small class="field-error" *ngIf="erroresCampo['numeroCuotas']">
+                {{ erroresCampo['numeroCuotas'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-ventas-440">Primer vencimiento</label>
+
+              <input id="s3s-ventas-440" type="date" [(ngModel)]="venta.fechaPrimerVencimiento" name="fechaPrimerVencimiento"
+                (input)="cambiarFechaPrimerVencimiento()" />
+
+              <small class="field-error" *ngIf="erroresCampo['fechaPrimerVencimiento']">
+                {{ erroresCampo['fechaPrimerVencimiento'] }}
+              </small>
+            </div>
+          </div>
+
+          <div class="cuotas-card" *ngIf="venta.tipoPago === 'Cuotas'">
+            <div class="cuotas-header">
+              <div>
+                <strong>Cronograma de cuotas</strong>
+                <span>
+                  Se calcula sobre el saldo por cobrar. Puedes editar la fecha de cada cuota antes de registrar.
+                </span>
+              </div>
+
+              <div class="cuotas-resumen">
+                <span>Saldo a financiar</span>
+                <strong>S/ {{ obtenerSaldoFinanciar() | number:'1.2-2' }}</strong>
+              </div>
+            </div>
+
+            <small class="field-error" *ngIf="erroresCampo['cronogramaCuotas']">
+              {{ erroresCampo['cronogramaCuotas'] }}
+            </small>
+
+            <div class="empty-box" *ngIf="!venta.numeroCuotas || !venta.fechaPrimerVencimiento">
+              Ingresa el número de cuotas y el primer vencimiento para generar el cronograma.
+            </div>
+
+            <div class="empty-box"
+              *ngIf="venta.numeroCuotas && venta.fechaPrimerVencimiento && venta.cuotas.length === 0">
+              No se pudo generar el cronograma. Revisa que exista saldo por cobrar y que el número de cuotas sea válido.
+            </div>
+
+            <div class="cuotas-table" *ngIf="venta.cuotas.length > 0">
+              <div class="cuotas-row cuotas-row-head">
+                <span>Cuota</span>
+                <span>Fecha de vencimiento</span>
+                <span>Monto</span>
+              </div>
+
+              <div class="cuotas-row" *ngFor="let cuota of venta.cuotas; let i = index">
+                <div>
+                  <span class="cuota-badge">Cuota {{ cuota.numeroCuota }}</span>
+                </div>
+
+                <div class="field cuota-date-field">
+                  <input type="date" [(ngModel)]="cuota.fechaVencimiento" [name]="'fechaCuota' + i"
+                    (input)="cambiarFechaCuota(i)" />
+
+                  <small class="field-error" *ngIf="erroresCampo['fechaCuota' + i]">
+                    {{ erroresCampo['fechaCuota' + i] }}
+                  </small>
+                </div>
+
+                <div class="cuota-monto">
+                  <strong>S/ {{ cuota.montoCuota | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="cuotas-total" *ngIf="venta.cuotas.length > 0">
+              <span>Total cuotas</span>
+              <strong>S/ {{ calcularTotalCuotas() | number:'1.2-2' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="totals-card"><div class="s3s-form-heading"><s3s-icon name="receipt"></s3s-icon><h3>Resumen de venta</h3></div>
+          <div>
+            <span>Subtotal sin IGV</span>
+            <strong>S/ {{ calcularSubtotal() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>IGV 18%</span>
+            <strong>S/ {{ calcularIgv() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="total">
+            <span>Total</span>
+            <strong>S/ {{ calcularTotal() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Cobrado</span>
+            <strong>S/ {{ (venta.montoPagado || 0) | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Saldo por cobrar</span>
+            <strong>S/ {{ calcularSaldo() | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-light" (click)="limpiarFormulario()"><s3s-icon name="refresh"></s3s-icon>
+            Limpiar
+          </button>
+
+          <button type="submit" class="btn btn-primary" [disabled]="guardando || cargandoSiguienteComprobante"><s3s-icon name="check"></s3s-icon>
+            {{ guardando ? 'Registrando...' : 'Registrar venta' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="panel list-panel">
+      <div class="panel-header list-header">
+        <div>
+          <h2>Ventas registradas</h2>
+          <p>Consulta ventas, cobros, reportes y comprobantes internos.</p>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="btn btn-light" [disabled]="generandoReportePdf" (click)="exportarReportePdf()"><s3s-icon name="download"></s3s-icon>
+            {{ generandoReportePdf ? 'Generando...' : 'Reporte PDF' }}
+          </button>
+
+          <button type="button" class="btn btn-excel" [disabled]="generandoReporteExcel"
+            (click)="exportarReporteExcel()"><s3s-icon name="download"></s3s-icon>
+            {{ generandoReporteExcel ? 'Generando...' : 'Reporte Excel' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-card">
+        <div class="filter-row-main">
+          <div class="field">
+            <label for="s3s-ventas-619">Buscar venta</label>
+
+            <input id="s3s-ventas-619" type="text" [(ngModel)]="buscarVenta" name="buscarVenta"
+              placeholder="Cliente, documento, serie o número..." (keyup.enter)="buscarVentas()" />
+          </div>
+
+          <div class="field">
+            <label for="s3s-ventas-627">Estado de cobro</label>
+
+            <select id="s3s-ventas-627" [(ngModel)]="estadoPagoFiltro" name="estadoPagoFiltro" (change)="buscarVentas()">
+              <option value="">Todos</option>
+
+              <option *ngFor="let estado of estadosPago" [value]="estado">
+                {{ estado }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-row-dates">
+          <div class="field">
+            <label for="s3s-ventas-645">Tipo comprobante</label>
+
+            <select id="s3s-ventas-645" [(ngModel)]="tipoComprobanteFiltro" name="tipoComprobanteFiltro" (change)="buscarVentas()">
+              <option value="">Todos</option>
+
+              <option *ngFor="let tipo of tiposComprobante" [value]="tipo">
+                {{ tipo }}
+              </option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="s3s-ventas-660">Origen</label>
+
+            <select id="s3s-ventas-660" [(ngModel)]="origenVentaFiltro" name="origenVentaFiltro" (change)="buscarVentas()">
+              <option value="">Todos</option>
+
+              <option *ngFor="let origen of origenesVenta" [value]="origen">
+                {{ origen }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-row-dates">
+          <div class="field">
+            <label for="s3s-ventas-678">Fecha inicio</label>
+
+            <input id="s3s-ventas-678" type="date" [(ngModel)]="fechaInicioFiltro" name="fechaInicioFiltro" />
+          </div>
+
+          <div class="field">
+            <label for="s3s-ventas-686">Fecha fin</label>
+
+            <input id="s3s-ventas-686" type="date" [(ngModel)]="fechaFinFiltro" name="fechaFinFiltro" />
+          </div>
+
+          <div class="filter-actions">
+            <button type="button" class="btn btn-dark" (click)="buscarVentas()"><s3s-icon name="search"></s3s-icon>
+              Buscar
+            </button>
+
+            <button type="button" class="btn btn-light" (click)="limpiarFiltros()"><s3s-icon name="refresh"></s3s-icon>
+              Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="cargando" class="empty-box">
+        Cargando ventas...
+      </div>
+
+      <div *ngIf="!cargando && ventas.length === 0" class="empty-box">
+        No hay ventas registradas.
+      </div>
+
+      <div class="sale-list" *ngIf="!cargando && ventas.length > 0">
+        <article class="sale-card" *ngFor="let item of ventas">
+          <div class="sale-top">
+            <div>
+              <span class="doc-label">{{ item.tipoComprobante }}</span>
+              <h3>{{ item.documentoCompleto }}</h3>
+              <p>{{ item.cliente }}</p>
+
+              <small>
+                {{ item.documentoCliente }} · {{ item.fechaVenta | date:'dd/MM/yyyy HH:mm' }} ·
+                {{ item.origenVenta }}
+              </small>
+            </div>
+
+            <span class="status-badge" [ngClass]="obtenerClaseEstadoPago(item.estadoPago)">
+              {{ item.estadoPago }}
+            </span>
+          </div>
+
+          <div class="sale-metrics">
+            <div>
+              <span>Total</span>
+              <strong>S/ {{ item.total | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Cobrado</span>
+              <strong>S/ {{ item.totalPagado | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Saldo por cobrar</span>
+              <strong>S/ {{ item.saldoPendiente | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Origen</span>
+              <strong>{{ item.origenVenta }}</strong>
+            </div>
+          </div>
+
+          <div class="sale-actions">
+            <button type="button" class="btn btn-light" (click)="verPdfVenta(item)"
+              [disabled]="generandoPdfVentaId === item.idVenta">
+              {{ generandoPdfVentaId === item.idVenta ? 'Generando...' : 'Ver PDF' }}
+            </button>
+
+            <button *ngIf="puedePagar(item)" type="button" class="btn btn-secondary" (click)="abrirPago(item)">
+              Registrar cobro
+            </button>
+
+            <button *ngIf="puedeAnular(item)" type="button" class="btn btn-danger" (click)="abrirAnular(item)"><s3s-icon name="trash"></s3s-icon>
+              Anular
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!cargando && totalRegistros > 0">
+        <div>
+          Mostrando {{ ventas.length }} de {{ totalRegistros }}
+        </div>
+
+        <div class="pagination-controls">
+          <select [(ngModel)]="tamanioPagina" name="tamanioPagina" (change)="cambiarTamanioPagina()">
+            <option *ngFor="let opcion of opcionesTamanioPagina" [ngValue]="opcion">
+              {{ opcion }} por página
+            </option>
+          </select>
+
+          <button type="button" class="btn btn-page" [disabled]="pagina <= 1" (click)="paginaAnterior()">
+            Anterior
+          </button>
+
+          <span>Página {{ pagina }} de {{ totalPaginas }}</span>
+
+          <button type="button" class="btn btn-page" [disabled]="pagina >= totalPaginas" (click)="paginaSiguiente()">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="ventaPagoSeleccionada">
+    <article class="modal-card payment-modal">
+      <h2>Registrar cobro</h2>
+
+      <p>
+        Venta {{ ventaPagoSeleccionada.documentoCompleto }} ·
+        Saldo por cobrar:
+        <strong>S/ {{ ventaPagoSeleccionada.saldoPendiente | number:'1.2-2' }}</strong>
+      </p>
+
+      <div class="payment-summary">
+        <div>
+          <span>Saldo actual</span>
+          <strong>S/ {{ ventaPagoSeleccionada.saldoPendiente | number:'1.2-2' }}</strong>
+        </div>
+
+        <div>
+          <span>Monto a cobrar</span>
+          <strong>S/ {{ (pago.montoPagado || 0) | number:'1.2-2' }}</strong>
+        </div>
+
+        <div>
+          <span>Saldo después del cobro</span>
+          <strong>S/ {{ calcularSaldoDespuesCobro() | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="s3s-ventas-858">Método de cobro</label>
+
+        <select id="s3s-ventas-858" [(ngModel)]="pago.metodoPago" name="metodoPagoModal" (change)="limpiarErrorCampo('metodoPagoPago')">
+          <option value="">Seleccionar</option>
+
+          <option *ngFor="let metodo of metodosPago" [value]="metodo">
+            {{ metodo }}
+          </option>
+        </select>
+
+        <small class="field-error" *ngIf="erroresCampo['metodoPagoPago']">
+          {{ erroresCampo['metodoPagoPago'] }}
+        </small>
+      </div>
+
+      <div class="payment-info-box" *ngIf="!esCobroEnCuotas()">
+        <strong>Cobro restante completo</strong>
+
+        <p>
+          Esta venta no tiene cronograma de cuotas. Por regla del sistema,
+          el cobro debe cancelar el saldo pendiente completo.
+        </p>
+
+        <div class="readonly-payment">
+          <span>Monto a cobrar</span>
+          <strong>S/ {{ pago.montoPagado | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <div class="payment-installments" *ngIf="esCobroEnCuotas()">
+        <div class="installments-title">
+          <div>
+            <strong>Cuotas pendientes</strong>
+            <span>Selecciona una o más cuotas para cobrar.</span>
+          </div>
+
+          <div class="installment-actions">
+            <button type="button" class="btn btn-light"
+              [disabled]="cargandoDetallePago || cuotasPendientesCobro().length === 0"
+              (click)="seleccionarTodasCuotasCobro()">
+              Seleccionar todas
+            </button>
+
+            <button type="button" class="btn btn-light"
+              [disabled]="cargandoDetallePago || cuotasSeleccionadasCobro.length === 0" (click)="limpiarCuotasCobro()"><s3s-icon name="refresh"></s3s-icon>
+              Limpiar selección
+            </button>
+          </div>
+        </div>
+
+        <div class="empty-box" *ngIf="cargandoDetallePago">
+          Cargando cuotas pendientes...
+        </div>
+
+        <small class="field-error" *ngIf="erroresCampo['cuotasCobro']">
+          {{ erroresCampo['cuotasCobro'] }}
+        </small>
+
+        <div class="empty-box" *ngIf="!cargandoDetallePago && cuotasPendientesCobro().length === 0">
+          No hay cuotas pendientes para esta venta.
+        </div>
+
+        <div class="installment-payment-list" *ngIf="!cargandoDetallePago && cuotasPendientesCobro().length > 0">
+          <button type="button" class="installment-payment-item" *ngFor="let cuota of cuotasPendientesCobro()"
+            [class.selected]="estaCuotaCobroSeleccionada(cuota.idCuotaVenta)" (click)="seleccionarCuotaCobro(cuota)">
+            <div class="installment-check">
+              <input type="checkbox" [checked]="estaCuotaCobroSeleccionada(cuota.idCuotaVenta)" readonly />
+            </div>
+
+            <div class="installment-info">
+              <strong>Cuota {{ cuota.numeroCuota }}</strong>
+              <span>Vence: {{ cuota.fechaVencimiento | date:'dd/MM/yyyy' }}</span>
+            </div>
+
+            <div class="installment-amounts">
+              <span>
+                Monto:
+                <strong>S/ {{ cuota.montoCuota | number:'1.2-2' }}</strong>
+              </span>
+
+              <span>
+                Cobrado:
+                <strong>S/ {{ cuota.montoPagado | number:'1.2-2' }}</strong>
+              </span>
+
+              <span class="pending">
+                Pendiente:
+                <strong>S/ {{ calcularSaldoCuota(cuota) | number:'1.2-2' }}</strong>
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="s3s-ventas-968">Monto cobrado</label>
+
+        <input id="s3s-ventas-968" type="number" [(ngModel)]="pago.montoPagado" name="montoPagoModal" min="0" step="0.01" readonly />
+
+        <small class="field-error" *ngIf="erroresCampo['montoPago']">
+          {{ erroresCampo['montoPago'] }}
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="s3s-ventas-979">Observación</label>
+
+        <textarea id="s3s-ventas-979" [(ngModel)]="pago.observacion" name="observacionPagoModal" rows="3"
+          placeholder="Observación opcional..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-light" (click)="cerrarPago()">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-primary" [disabled]="guardando || cargandoDetallePago"
+          (click)="registrarPago()">
+          {{ guardando ? 'Guardando...' : 'Registrar cobro' }}
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="ventaAnularSeleccionada">
+    <article class="modal-card">
+      <h2>Anular venta</h2>
+
+      <p>
+        Se revertirá el stock descontado de la venta
+        <strong>{{ ventaAnularSeleccionada.documentoCompleto }}</strong>.
+      </p>
+
+      <div class="field">
+        <label for="s3s-ventas-1011">Motivo de anulación</label>
+
+        <textarea id="s3s-ventas-1011" [(ngModel)]="anularDto.motivo" name="motivoAnulacion" rows="4" placeholder="Ingresa el motivo..."
+          (input)="limpiarErrorCampo('motivoAnulacion')"></textarea>
+
+        <small class="field-error" *ngIf="erroresCampo['motivoAnulacion']">
+          {{ erroresCampo['motivoAnulacion'] }}
+        </small>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-light" (click)="cerrarAnular()"><s3s-icon name="trash"></s3s-icon>
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-danger" [disabled]="guardando" (click)="anularVenta()"><s3s-icon name="trash"></s3s-icon>
+          {{ guardando ? 'Anulando...' : 'Confirmar anulación' }}
+        </button>
+      </div>
+    </article>
+  </div>
+</section>

@@ -1,12 +1,12 @@
 <div class="productos-page">
   <section class="page-hero">
-    <div class="page-hero__content">
+    <div class="page-hero__content s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="box"></s3s-icon></span>
       <span class="hero-chip">Catálogo industrial</span>
 
       <h1>Gestión de productos</h1>
 
       <p>
-        Administra productos industriales, categorías, stock inicial y contenido
+        Administra productos industriales, categorías y contenido
         del catálogo para cotizaciones, ventas internas e inventario.
       </p>
     </div>
@@ -36,10 +36,11 @@
       </div>
 
       <form class="producto-form" (ngSubmit)="guardarProducto()" #productoForm="ngForm">
-        <div class="field field-full field-name">
-          <label>Nombre del producto</label>
+        <div class="s3s-form-heading"><s3s-icon name="box"></s3s-icon><h3>Información básica</h3></div>
+<div class="field field-full field-name">
+          <label for="s3s-productos-52">Nombre del producto</label>
 
-          <input
+          <input id="s3s-productos-52"
             type="text"
             [(ngModel)]="producto.nombre"
             name="nombre"
@@ -54,9 +55,9 @@
         </div>
 
         <div class="field">
-          <label>Código</label>
+          <label for="s3s-productos-63">Código</label>
 
-          <input
+          <input id="s3s-productos-63"
             type="text"
             [(ngModel)]="producto.codigoProducto"
             name="codigoProducto"
@@ -71,9 +72,9 @@
         </div>
 
         <div class="field">
-          <label>Precio referencial</label>
+          <label for="s3s-productos-74">Precio referencial</label>
 
-          <input
+          <input id="s3s-productos-74"
             type="number"
             [(ngModel)]="producto.precioReferencial"
             name="precioReferencial"
@@ -90,9 +91,9 @@
         </div>
 
         <div class="field field-full field-description">
-          <label>Descripción</label>
+          <label for="s3s-productos-85">Descripción</label>
 
-          <textarea
+          <textarea id="s3s-productos-85"
             [(ngModel)]="producto.descripcion"
             name="descripcion"
             rows="2"
@@ -107,9 +108,9 @@
         </div>
 
         <div class="field field-third">
-          <label>Categoría</label>
+          <label for="s3s-productos-96">Categoría</label>
 
-          <select
+          <select id="s3s-productos-96"
             [(ngModel)]="producto.idCategoria"
             name="idCategoria"
             required
@@ -128,9 +129,9 @@
         </div>
 
         <div class="field field-third">
-          <label>Marca</label>
+          <label for="s3s-productos-114">Marca</label>
 
-          <select [(ngModel)]="producto.idMarca" name="idMarca">
+          <select id="s3s-productos-114" [(ngModel)]="producto.idMarca" name="idMarca">
             <option [ngValue]="null">Sin marca</option>
 
             <option *ngFor="let marca of marcas" [ngValue]="marca.id">
@@ -139,10 +140,11 @@
           </select>
         </div>
 
-        <div class="field field-third">
-          <label>Unidad de medida</label>
+        <div class="s3s-form-heading"><s3s-icon name="upload"></s3s-icon><h3>Especificaciones y archivos</h3></div>
+<div class="field field-third">
+          <label for="s3s-productos-129">Unidad de medida</label>
 
-          <select
+          <select id="s3s-productos-129"
             [(ngModel)]="producto.idUnidadMedida"
             name="idUnidadMedida"
             required
@@ -161,10 +163,10 @@
         </div>
 
         <div class="field field-media">
-          <label>Imagen del producto</label>
+          <label for="s3s-productos-149">Imagen del producto</label>
 
           <div class="file-picker">
-            <input
+            <input id="s3s-productos-149"
               #imagenProducto
               type="file"
               accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
@@ -198,10 +200,10 @@
         </div>
 
         <div class="field field-media">
-          <label>Ficha técnica del producto</label>
+          <label for="s3s-productos-183">Ficha técnica del producto</label>
 
           <div class="file-picker">
-            <input
+            <input id="s3s-productos-183"
               #fichaProducto
               type="file"
               accept="application/pdf,.pdf"
@@ -241,44 +243,9 @@
           </small>
         </div>
 
-        <div class="field">
-          <label>Stock inicial</label>
-
-          <input
-            type="number"
-            [(ngModel)]="producto.stockInicial"
-            name="stockInicial"
-            min="0"
-            required
-            [disabled]="editando"
-            (input)="limpiarErrorCampo('stockInicial')"
-          />
-
-          <small class="field-error" *ngIf="erroresCampo['stockInicial']">
-            {{ erroresCampo['stockInicial'] }}
-          </small>
-        </div>
-
-        <div class="field">
-          <label>Stock mínimo</label>
-
-          <input
-            type="number"
-            [(ngModel)]="producto.stockMinimo"
-            name="stockMinimo"
-            min="0"
-            required
-            (input)="limpiarErrorCampo('stockMinimo')"
-          />
-
-          <small class="field-error" *ngIf="erroresCampo['stockMinimo']">
-            {{ erroresCampo['stockMinimo'] }}
-          </small>
-        </div>
-
         <div class="field field-full stock-note">
           <span>
-            El stock inicial se guardará como stock actual y debe ser mayor que el stock mínimo.
+            El stock ingresa mediante compras. El stock mínimo se configura en Inventario.
           </span>
         </div>
 
@@ -287,7 +254,7 @@
             type="submit"
             class="btn btn-primary"
             [disabled]="guardando || cargandoCombos || !formularioProductoValido()"
-          >
+          ><s3s-icon name="check"></s3s-icon>
             {{
               guardando
                 ? 'Guardando...'
@@ -295,7 +262,7 @@
             }}
           </button>
 
-          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
+          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()"><s3s-icon name="refresh"></s3s-icon>
             {{ editando ? 'Cancelar edición' : 'Limpiar' }}
           </button>
         </div>
@@ -322,7 +289,7 @@
       </div>
 
       <div class="search-bar">
-        <input
+        <input aria-label="Buscar por nombre, código o categoría..."
           type="text"
           [(ngModel)]="buscar"
           name="buscar"
@@ -330,7 +297,7 @@
           (keyup.enter)="buscarProductos()"
         />
 
-        <button type="button" class="btn btn-dark" (click)="buscarProductos()">
+        <button type="button" class="btn btn-dark" (click)="buscarProductos()"><s3s-icon name="search"></s3s-icon>
           Buscar
         </button>
       </div>
@@ -408,11 +375,11 @@
           </div>
 
           <div class="producto-card__actions">
-            <button type="button" class="btn btn-edit" (click)="editarProducto(item)">
+            <button type="button" class="btn btn-edit" (click)="editarProducto(item)"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
-            <button type="button" class="btn btn-delete" (click)="eliminarProducto(item.idProducto)">
+            <button type="button" class="btn btn-delete" (click)="eliminarProducto(item.idProducto)"><s3s-icon name="trash"></s3s-icon>
               Eliminar
             </button>
           </div>

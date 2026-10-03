@@ -234,8 +234,8 @@ namespace Sistema3S.Web.Services.Implementations
             var inventario = new Inventario
             {
                 IdProducto = producto.IdProducto,
-                StockActual = dto.StockInicial,
-                StockMinimo = dto.StockMinimo,
+                StockActual = 0,
+                StockMinimo = 0,
                 FechaActualizacion = DateTime.Now
             };
 
@@ -284,17 +284,7 @@ namespace Sistema3S.Web.Services.Implementations
             producto.IdElementoCatalogoNavigation.ImagenUrl = NormalizarTexto(dto.ImagenUrl);
             producto.IdElementoCatalogoNavigation.Estado = dto.Estado;
 
-            if (producto.Inventario != null)
-            {
-                if (producto.Inventario.StockActual <= dto.StockMinimo)
-                {
-                    throw new InvalidOperationException("El stock actual debe ser mayor que el stock mínimo.");
-                }
-
-                producto.Inventario.StockMinimo = dto.StockMinimo;
-                producto.Inventario.FechaActualizacion = DateTime.Now;
-            }
-
+            // El inventario se gestiona desde compras y el módulo de inventario.
             await _context.SaveChangesAsync();
 
             return true;
@@ -367,20 +357,8 @@ namespace Sistema3S.Web.Services.Implementations
                 throw new InvalidOperationException("La URL de la imagen es obligatoria.");
             }
 
-            if (dto.StockInicial < 0)
-            {
-                throw new InvalidOperationException("El stock inicial no puede ser negativo.");
-            }
 
-            if (dto.StockMinimo < 0)
-            {
-                throw new InvalidOperationException("El stock mínimo no puede ser negativo.");
-            }
 
-            if (dto.StockInicial <= dto.StockMinimo)
-            {
-                throw new InvalidOperationException("El stock inicial debe ser mayor que el stock mínimo.");
-            }
         }
 
         private static void ValidarActualizar(ProductoActualizarDto dto)
@@ -425,10 +403,6 @@ namespace Sistema3S.Web.Services.Implementations
                 throw new InvalidOperationException("La URL de la imagen es obligatoria.");
             }
 
-            if (dto.StockMinimo < 0)
-            {
-                throw new InvalidOperationException("El stock mínimo no puede ser negativo.");
-            }
         }
 
         private async Task ValidarCodigoUnicoParaCrearAsync(string codigoLimpio)

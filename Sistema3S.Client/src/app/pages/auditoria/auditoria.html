@@ -1,0 +1,31 @@
+<section class="audit-page">
+  <header class="audit-heading page-hero">
+    <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="activity"></s3s-icon></span><span class="eyebrow hero-chip">Control del personal interno</span><h1>Actividad del personal interno</h1><p>Consulta los accesos y las operaciones del personal en el panel administrativo.</p></div>
+    <button type="button" class="secondary" (click)="cargar(); cargarOpciones()" [disabled]="cargando"><s3s-icon name="refresh"></s3s-icon>Actualizar</button>
+  </header>
+  <form class="audit-filters" (ngSubmit)="buscar()">
+    <label>Módulo<select name="modulo" [(ngModel)]="modulo"><option value="">Todos los módulos</option><option *ngFor="let m of opciones.modulos" [value]="m">{{ m }}</option></select></label>
+    <label>Responsable<select name="usuario" [(ngModel)]="usuario"><option [ngValue]="null">Todo el personal interno</option><option *ngFor="let u of opciones.responsables" [ngValue]="u.id">{{ u.nombre }}{{ u.nombre !== u.correo ? ' · ' + u.correo : '' }}</option></select></label>
+    <label>Resultado<select name="resultado" [(ngModel)]="resultado"><option value="">Todos los resultados</option><option value="completado">Completado</option><option value="error">No se completó</option><option value="denegado">Acceso denegado</option></select></label>
+    <label>Desde<input type="date" name="desde" [(ngModel)]="desde" [max]="hasta || ''" /></label>
+    <label>Hasta<input type="date" name="hasta" [(ngModel)]="hasta" [min]="desde || ''" /></label>
+    <div class="filter-actions"><button type="submit" [disabled]="cargando"><s3s-icon name="search"></s3s-icon>Buscar</button><button type="button" class="secondary" (click)="limpiar()" [disabled]="cargando"><s3s-icon name="refresh"></s3s-icon>Limpiar</button></div>
+    <p class="option-error" role="alert" *ngIf="errorOpciones">{{ errorOpciones }} <button type="button" class="text-button" (click)="cargarOpciones()">Reintentar</button></p>
+  </form>
+  <div class="notice" role="alert" *ngIf="error">{{ error }} <button class="text-button" type="button" (click)="cargar()">Reintentar</button></div>
+  <div class="activity-summary" aria-live="polite"><strong>{{ cargando ? 'Cargando actividad…' : total + (total === 1 ? ' operación encontrada' : ' operaciones encontradas') }}</strong><span>Más recientes primero</span></div>
+  <div class="empty" *ngIf="!cargando && !error && !items.length"><h2>No hay actividad con estos filtros</h2><p>Prueba otro período o consulta todos los módulos.</p><button type="button" class="secondary" (click)="limpiar()"><s3s-icon name="refresh"></s3s-icon>Limpiar filtros</button></div>
+  <article class="activity" *ngFor="let item of items">
+    <div class="activity-top"><span class="module">{{ item.modulo }}</span><time>{{ item.fecha | date:'dd/MM/yyyy · HH:mm:ss' }}</time><span class="outcome" [class.failed]="item.resultado === 'error'" [class.denied]="item.resultado === 'denegado'">{{ item.resultado === 'completado' ? 'Completado' : item.resultado === 'error' ? 'No se completó' : 'Acceso denegado' }}</span></div>
+    <h2>{{ item.titulo }}</h2><p class="actor"><span>Responsable:</span> <strong>{{ item.responsable }}</strong></p><p class="summary">{{ item.resumen }}</p>
+    <button *ngIf="item.detalles.length" type="button" class="text-button" [attr.aria-expanded]="abiertos.has(item.id)" [attr.aria-controls]="'cambios-' + item.id" (click)="alternar(item.id)">{{ abiertos.has(item.id) ? 'Ocultar cambios' : 'Ver cambios' }} <span aria-hidden="true">{{ abiertos.has(item.id) ? '−' : '+' }}</span></button>
+    <div class="activity-details" *ngIf="abiertos.has(item.id)" [id]="'cambios-' + item.id">
+      <section class="record" *ngFor="let detalle of item.detalles"><h3>{{ detalle.registro }} <span>{{ detalle.accion }}</span></h3>
+        <div class="changes-heading" *ngIf="detalle.cambios.length"><span>Dato</span><span>Antes</span><span>Después</span></div>
+        <div class="change" *ngFor="let cambio of detalle.cambios"><strong>{{ cambio.campo }}</strong><div><small>Antes</small>{{ cambio.antes }}</div><div class="after"><small>Después</small>{{ cambio.despues }}</div></div>
+        <p *ngIf="!detalle.cambios.length">El registro fue {{ detalle.accion.toLowerCase() }}. No hay más información de campos para mostrar.</p>
+      </section>
+    </div>
+  </article>
+  <nav class="pagination" aria-label="Páginas de actividad" *ngIf="!cargando && total"><span>Página {{ pagina }} de {{ paginas }} · Hasta {{ tamanoPagina }} operaciones por página</span><div><button type="button" class="secondary" [disabled]="pagina<=1" (click)="cambiarPagina(pagina-1)">Anterior</button><button type="button" class="secondary" [disabled]="pagina>=paginas" (click)="cambiarPagina(pagina+1)">Siguiente</button></div></nav>
+</section>

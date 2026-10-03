@@ -1,0 +1,25 @@
+// Tokens limitados a .admin-shell: no modifican el catálogo público.
+@mixin tokens {
+  --admin-primary: #cf1827;
+  --admin-primary-hover: #ac1421;
+  --admin-dark: #152235;
+  --admin-sidebar: #0d1726;
+  --admin-background: #f4f6f9;
+  --admin-surface: #fff;
+  --admin-border: #e1e7ef;
+  --admin-muted: #64748b;
+  --admin-text: #172235;
+  --admin-success: #157347;
+  --admin-success-bg: #e6f6ed;
+  --admin-danger: #b42332;
+  --admin-danger-bg: #fff0f1;
+  --admin-radius-sm: 6px;
+  --admin-radius: 12px;
+  --admin-shadow: 0 2px 6px rgb(23 34 53 / 3%);
+  --admin-space-1: 4px;
+  --admin-space-2: 8px;
+  --admin-space-3: 12px;
+  --admin-space-4: 16px;
+  --admin-space-5: 20px;
+  --admin-space-6: 24px;
+}

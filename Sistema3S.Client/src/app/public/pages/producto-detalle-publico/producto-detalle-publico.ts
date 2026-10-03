@@ -1,3 +1,4 @@
+import { ImagenCatalogoComponent } from '../../../shared/imagen-catalogo/imagen-catalogo';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -10,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ClienteWebService } from '../../../core/services/cliente-web.service';
+import { CarritoCotizacionService } from '../../../core/services/carrito-cotizacion.service';
 
 import {
   ImagenPublica,
@@ -18,10 +20,22 @@ import {
 } from '../../../core/models/publico.model';
 import { PublicoService } from '../../../core/services/publico.service';
 
+interface ProductoCarritoCotizacion {
+  idProducto: number;
+  idElementoCatalogo: number;
+  codigo: string;
+  nombre: string;
+  categoria: string;
+  marca: string | null;
+  imagenUrl: string;
+  cantidad: number;
+  observacion: string;
+}
+
 @Component({
   selector: 'app-producto-detalle-publico',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [ImagenCatalogoComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './producto-detalle-publico.html',
   styleUrl: './producto-detalle-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -46,6 +60,7 @@ export class ProductoDetallePublicoComponent implements OnInit, OnDestroy {
     private router: Router,
     private publicoService: PublicoService,
     private clienteWebService: ClienteWebService,
+    private carritoCotizacionService: CarritoCotizacionService,
     private cd: ChangeDetectorRef
   ) { }
 
@@ -160,6 +175,50 @@ export class ProductoDetallePublicoComponent implements OnInit, OnDestroy {
     producto.cantidad = Math.floor(producto.cantidad);
   }
 
+  accionCotizar(producto: ProductoPublico): void {
+    if (this.clienteLogueado) {
+      this.agregarAlCarrito(producto);
+      return;
+    }
+
+    this.abrirWhatsAppProducto(producto);
+  }
+
+  agregarAlCarrito(producto: ProductoPublico): void {
+    this.normalizarCantidad(producto);
+
+    const carritoActual = this.obtenerCarrito();
+    const idProducto = producto.idProducto || producto.id;
+
+    const itemExistente = carritoActual.find(item => item.idProducto === idProducto);
+
+    if (itemExistente) {
+      itemExistente.cantidad += producto.cantidad;
+    } else {
+      carritoActual.push({
+        idProducto,
+        idElementoCatalogo: producto.idElementoCatalogo,
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        categoria: producto.categoria,
+        marca: producto.marca,
+        imagenUrl: producto.imagenUrl,
+        cantidad: producto.cantidad,
+        observacion: ''
+      });
+    }
+
+    this.carritoCotizacionService.guardarItems(carritoActual, producto.nombre);
+
+    this.mensajeOperacion = 'Producto agregado al carrito de cotización.';
+    this.cd.markForCheck();
+
+    window.setTimeout(() => {
+      this.mensajeOperacion = '';
+      this.cd.markForCheck();
+    }, 2600);
+  }
+
   abrirWhatsAppProducto(producto: ProductoPublico): void {
     this.normalizarCantidad(producto);
 
@@ -196,6 +255,10 @@ export class ProductoDetallePublicoComponent implements OnInit, OnDestroy {
 
   volverCatalogo(): void {
     this.router.navigate(['/productos']);
+  }
+
+  private obtenerCarrito(): ProductoCarritoCotizacion[] {
+    return this.carritoCotizacionService.obtenerItems<ProductoCarritoCotizacion>();
   }
 
   private verificarSesionCliente(): void {

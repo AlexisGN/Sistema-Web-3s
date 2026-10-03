@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -147,7 +147,7 @@ namespace Sistema3S.Web.Services.Implementations
             var contrasenaHash = _passwordHashService.CrearHash(dto.Contrasena);
 
             await using var connection = CrearConexionClienteWeb();
-            await connection.OpenAsync();
+            await connection.AbrirAuditadaAsync();
 
             await using var command = new SqlCommand("dbo.sp_RegistrarClienteWeb", connection)
             {
@@ -176,7 +176,7 @@ namespace Sistema3S.Web.Services.Implementations
             }
 
             var sesion = LeerSesionDesdeReader(reader);
-            CompletarToken(sesion);
+            CompletarToken(sesion, contrasenaHash);
 
             return sesion;
         }
@@ -252,7 +252,7 @@ namespace Sistema3S.Web.Services.Implementations
                 Mensaje = "Inicio de sesión correcto."
             };
 
-            CompletarToken(sesion);
+            CompletarToken(sesion, usuario.ContrasenaHash);
 
             return sesion;
         }
@@ -284,7 +284,7 @@ namespace Sistema3S.Web.Services.Implementations
             }
 
             await using var connection = CrearConexionClienteWeb();
-            await connection.OpenAsync();
+            await connection.AbrirAuditadaAsync();
 
             await using var command = new SqlCommand("dbo.sp_RegistrarCotizacionWeb", connection)
             {
@@ -626,7 +626,7 @@ namespace Sistema3S.Web.Services.Implementations
             };
         }
 
-        private void CompletarToken(ClienteWebSesionDto sesion)
+        private void CompletarToken(ClienteWebSesionDto sesion, string contrasenaHash)
         {
             var jwtKey = _configuration["Jwt:Key"];
 
@@ -649,6 +649,7 @@ namespace Sistema3S.Web.Services.Implementations
             {
                 new("idUsuario", sesion.IdUsuario.ToString()),
                 new("idCliente", sesion.IdCliente.ToString()),
+                new("clienteVersion", ClienteVersionSesion.Crear(contrasenaHash, _configuration)),
                 new("correo", sesion.Correo),
                 new("rol", sesion.Rol),
                 new("tipoDocumento", sesion.TipoDocumento),

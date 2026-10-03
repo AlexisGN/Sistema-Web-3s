@@ -1,0 +1,135 @@
+<s3s-account-nav />
+<section class="detail-page">
+  <nav class="breadcrumb">
+    <a routerLink="/">Inicio</a>
+    <span>/</span>
+    <a routerLink="/cliente/historial-cotizaciones">Historial</a>
+    <span>/</span>
+    <strong>Solicitud</strong>
+  </nav>
+
+  <div class="public-status" *ngIf="cargando" role="status">
+    Cargando detalle de solicitud...
+  </div>
+
+  <div class="public-status error" *ngIf="error" role="status">
+    {{ error }}
+  </div>
+
+  <ng-container *ngIf="cotizacion && !cargando">
+    <section class="detail-hero">
+      <div>
+        <span
+          class="status-pill"
+          [class]="obtenerClaseEstado(cotizacion.estadoCotizacion)"
+        >
+          {{ obtenerEstadoCliente(cotizacion.estadoCotizacion) }}
+        </span>
+
+        <h1>{{ cotizacion.codigoCotizacion }}</h1>
+
+        <p>
+          Solicitud enviada el {{ cotizacion.fechaCotizacion | date: 'dd/MM/yyyy, h:mm a' }}.
+          Nuestro equipo comercial revisa la información y responde por el canal registrado.
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <button type="button" (click)="volverHistorial()">
+          Volver al historial
+        </button>
+
+        <button type="button" class="secondary" (click)="seguirCotizando()">
+          Seguir cotizando
+        </button>
+      </div>
+    </section>
+
+    <section class="detail-layout">
+      <div class="products-panel">
+        <div class="panel-head">
+          <div>
+            <span>Productos solicitados</span>
+
+            <h2>
+              {{ cotizacion.detalles.length }}
+              producto{{ cotizacion.detalles.length === 1 ? '' : 's' }}
+            </h2>
+          </div>
+
+          <button type="button" (click)="contactarWhatsApp()">
+            Consultar por WhatsApp
+          </button>
+        </div>
+
+        <article
+          class="detail-item"
+          *ngFor="let item of cotizacion.detalles; trackBy: trackByDetalle"
+        >
+          <a
+            class="item-image"
+            *ngIf="item.idProducto"
+            [routerLink]="['/productos', item.idProducto]"
+          >
+            <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombreProducto"></app-imagen-catalogo>
+          </a>
+
+          <div class="item-image" *ngIf="!item.idProducto">
+            <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombreProducto"></app-imagen-catalogo>
+          </div>
+
+          <div class="item-info">
+            <div class="item-meta">
+              <span *ngIf="item.codigoProducto">{{ item.codigoProducto }}</span>
+              <span>Cantidad: {{ item.cantidad }}</span>
+            </div>
+
+            <h3>{{ item.nombreProducto }}</h3>
+
+            <p *ngIf="item.observacion">
+              {{ item.observacion }}
+            </p>
+
+            <p *ngIf="!item.observacion">
+              Producto incluido en la solicitud enviada al equipo comercial.
+            </p>
+          </div>
+        </article>
+      </div>
+
+      <aside class="request-panel">
+        <span>Resumen de solicitud</span>
+
+        <h2>Información enviada</h2>
+
+        <div class="summary-row">
+          <small>Fecha de envío</small>
+          <strong>{{ cotizacion.fechaCotizacion | date: 'dd/MM/yyyy' }}</strong>
+        </div>
+
+        <div class="summary-row">
+          <small>Tipo</small>
+          <strong>Solicitud web</strong>
+        </div>
+
+        <div class="summary-row">
+          <small>Seguimiento</small>
+          <strong>{{ obtenerEstadoCliente(cotizacion.estadoCotizacion) }}</strong>
+        </div>
+
+        <div class="request-note" *ngIf="cotizacion.observacion">
+          <strong>Observación general</strong>
+          <p>{{ cotizacion.observacion }}</p>
+        </div>
+
+        <div class="request-note">
+          <strong>Atención comercial</strong>
+          <p>
+            Los precios y condiciones serán revisados internamente por el equipo 3S.
+            La web no muestra información administrativa.
+          </p>
+        </div>
+      </aside>
+    </section>
+  </ng-container>
+</section>

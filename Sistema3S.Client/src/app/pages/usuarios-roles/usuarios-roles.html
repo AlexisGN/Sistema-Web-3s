@@ -1,0 +1,269 @@
+<div class="usuarios-page">
+  <section class="page-hero">
+    <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="shield"></s3s-icon></span>
+      <span class="hero-chip">Seguridad del sistema</span>
+
+      <h1>Usuarios y roles</h1>
+
+      <p>
+        Administra usuarios internos, roles de acceso y permisos del panel
+        administrador de Sistema 3S.
+      </p>
+    </div>
+
+    <div class="hero-card" *ngIf="tabActiva === 'usuarios' || tabActiva === 'clientes'">
+      <span>{{ tabActiva === 'clientes' ? 'Cuentas de clientes' : 'Personal encontrado' }}</span>
+      <strong>{{ cargando ? '…' : usuarios.length }}</strong>
+      <small>{{ tabActiva === 'clientes' ? 'Acceso al portal de clientes' : 'Según los filtros aplicados' }}</small>
+    </div>
+  </section>
+
+  <div class="alert success" *ngIf="mensaje">
+    {{ mensaje }}
+  </div>
+
+  <div class="alert error" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <section class="tabs-card" aria-label="Secciones de usuarios y roles">
+    <button
+      type="button"
+      [class.active]="tabActiva === 'usuarios'"
+      (click)="cambiarTab('usuarios')"
+    >
+      Personal interno
+    </button>
+
+    <button
+      type="button"
+      [class.active]="tabActiva === 'roles'"
+      (click)="cambiarTab('roles')"
+    >
+      Roles
+    </button>
+
+    <button
+      type="button"
+      [class.active]="tabActiva === 'permisos'"
+      (click)="cambiarTab('permisos')"
+    >
+      Permisos por rol
+    </button>
+    <button type="button" class="clients-tab" [class.active]="tabActiva === 'clientes'" [attr.aria-pressed]="tabActiva === 'clientes'" (click)="cambiarTab('clientes')">Ver clientes</button>
+  </section>
+
+  <section class="content-grid accounts-grid" *ngIf="tabActiva === 'usuarios' || tabActiva === 'clientes'">
+    <article class="panel form-panel" *ngIf="tabActiva === 'usuarios' && mostrarFormulario">
+      <div class="panel-header"><div><h2>{{ usuarioForm.editando ? 'Editar usuario' : 'Nuevo usuario interno' }}</h2><p>Define el correo y el acceso del personal al panel administrativo.</p></div></div>
+      <form (ngSubmit)="guardarUsuario()" autocomplete="off">
+        <div class="form-grid account-form">
+          <div class="field"><label for="personal-correo">Correo</label><input id="personal-correo" type="email" [(ngModel)]="usuarioForm.correo" name="usuarioCorreo" placeholder="usuario@3s.com" autocomplete="off" required /></div>
+          <div class="field"><label for="personal-rol">Rol</label><select id="personal-rol" [(ngModel)]="usuarioForm.idRol" name="usuarioRol" required><option [ngValue]="0">Seleccionar rol</option><option *ngFor="let rol of rolesDisponibles" [ngValue]="rol.idRol">{{ rol.nombre }}</option></select></div>
+          <div class="field" *ngIf="!usuarioForm.editando"><label for="personal-clave">Contraseña inicial</label><input id="personal-clave" type="password" [(ngModel)]="usuarioForm.contrasena" name="usuarioContrasena" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required minlength="8" /></div>
+          <div class="field" *ngIf="usuarioForm.editando"><label for="personal-estado">Acceso al sistema</label><select id="personal-estado" [(ngModel)]="usuarioForm.estado" name="usuarioEstado" [disabled]="usuarioForm.idUsuario === 1"><option [ngValue]="true">Activo</option><option [ngValue]="false">Inactivo</option></select></div>
+        </div>
+        <p class="hint-box" *ngIf="!usuarioForm.editando">La contraseña debe incluir mayúscula, minúscula, número y carácter especial.</p>
+        <div class="actions-row"><button type="submit" class="btn btn-primary" [disabled]="procesando"><s3s-icon name="check"></s3s-icon>{{ procesando ? 'Guardando…' : (usuarioForm.editando ? 'Guardar cambios' : 'Crear usuario') }}</button><button type="button" class="btn btn-light" (click)="cerrarFormulario()" [disabled]="procesando">Cancelar</button></div>
+      </form>
+    </article>
+    <article class="panel" *ngIf="tabActiva === 'usuarios' && contrasenaForm.idUsuario">
+      <h2>Cambiar contraseña</h2><p>{{ contrasenaForm.correo }}</p>
+      <form (ngSubmit)="cambiarContrasena()"><div class="field"><label for="personal-nueva-clave">Nueva contraseña</label><input id="personal-nueva-clave" type="password" [(ngModel)]="contrasenaForm.nuevaContrasena" name="nuevaContrasena" autocomplete="new-password" required minlength="8" /></div>
+      <div class="actions-row"><button type="submit" class="btn btn-primary" [disabled]="procesando"><s3s-icon name="check"></s3s-icon>Guardar contraseña</button><button type="button" class="btn btn-light" (click)="cancelarCambioContrasena()" [disabled]="procesando">Cancelar</button></div></form>
+    </article>
+    <article class="panel list-panel">
+      <div class="panel-header"><div><h2>{{ tabActiva === 'clientes' ? 'Cuentas de clientes' : 'Personal interno' }}</h2><p>{{ tabActiva === 'clientes' ? 'Clientes registrados en el portal web para solicitar y consultar sus cotizaciones.' : 'Personal con acceso al panel administrativo. Los clientes se consultan por separado.' }}</p></div>
+        <button *ngIf="tabActiva === 'usuarios'" type="button" class="btn btn-primary" (click)="nuevoUsuario()" [disabled]="procesando || cargando">+ Nuevo usuario</button>
+        <a *ngIf="tabActiva === 'clientes' && puedeVerClientes()" class="btn btn-light" routerLink="/admin/clientes">Ir al módulo de clientes</a>
+      </div>
+      <form class="filters-card" (ngSubmit)="aplicarBusquedaUsuarios()">
+        <input type="search" [(ngModel)]="buscarUsuario" name="buscarUsuario" [placeholder]="tabActiva === 'clientes' ? 'Buscar por nombre, documento o correo…' : 'Buscar por correo o rol…'" aria-label="Buscar cuentas" />
+        <select [(ngModel)]="filtroSoloActivos" name="filtroSoloActivos" aria-label="Estado del acceso"><option [ngValue]="null">Todos los accesos</option><option [ngValue]="true">Activos</option><option [ngValue]="false">Inactivos</option></select>
+        <button type="submit" class="btn btn-dark" [disabled]="cargando"><s3s-icon name="search"></s3s-icon>Buscar</button><button type="button" class="btn btn-light" (click)="limpiarBusquedaUsuarios()" [disabled]="cargando"><s3s-icon name="refresh"></s3s-icon>Limpiar</button>
+      </form>
+      <p role="status" *ngIf="cargando">Cargando cuentas…</p>
+      <div class="user-list" *ngIf="!cargando">
+        <article class="user-card account-card" *ngFor="let usuario of usuariosVisibles">
+          <div class="user-main"><div class="avatar" aria-hidden="true">{{ (usuario.nombreCliente || usuario.correo).charAt(0).toUpperCase() }}</div><div>
+            <h3>{{ tabActiva === 'clientes' ? (usuario.nombreCliente || usuario.correo) : usuario.correo }}</h3>
+            <p *ngIf="tabActiva === 'clientes' && usuario.nombreCliente">{{ usuario.correo }}</p>
+            <p *ngIf="tabActiva === 'clientes' && usuario.numeroDocumento">Documento: {{ usuario.numeroDocumento }}</p>
+            <p *ngIf="tabActiva === 'usuarios'">{{ usuario.rol }} · {{ ['administrador', 'admin'].includes(usuario.rol.trim().toLowerCase()) ? 'Acceso completo' : usuario.totalPermisos + ' permisos' }}</p>
+            <small>Registro: {{ formatearFecha(usuario.fechaRegistro) }}</small>
+          </div></div>
+          <div class="status-pill" [class.inactive]="!usuario.estado">{{ usuario.estado ? 'Acceso activo' : 'Acceso inactivo' }}</div>
+          <div class="card-actions" *ngIf="tabActiva === 'usuarios'">
+            <button type="button" class="btn btn-light" (click)="editarUsuario(usuario)" [disabled]="procesando"><s3s-icon name="edit"></s3s-icon>Editar</button>
+            <button type="button" class="btn btn-dark" (click)="prepararCambioContrasena(usuario)" [disabled]="procesando">Contraseña</button>
+            <button type="button" class="btn btn-danger" (click)="desactivarUsuario(usuario)" [disabled]="!usuario.estado || usuario.idUsuario === 1 || procesando"><s3s-icon name="trash"></s3s-icon>Desactivar</button>
+          </div>
+        </article>
+        <div class="empty-state" *ngIf="!usuarios.length && !error">No se encontraron cuentas. Prueba otro nombre o limpia los filtros.</div>
+      </div>
+      <nav class="account-pagination" aria-label="Páginas de cuentas" *ngIf="!cargando && usuarios.length"><span>{{ usuarios.length }} cuentas · Página {{ paginaUsuarios }} de {{ paginasUsuarios }}</span><div><button type="button" class="btn btn-light" [disabled]="paginaUsuarios <= 1" (click)="paginaUsuarios=paginaUsuarios-1">Anterior</button><button type="button" class="btn btn-light" [disabled]="paginaUsuarios >= paginasUsuarios" (click)="paginaUsuarios=paginaUsuarios+1">Siguiente</button></div></nav>
+    </article>
+  </section>
+
+  <section class="content-grid" *ngIf="tabActiva === 'roles'">
+    <article class="panel form-panel">
+      <div class="panel-header">
+        <div>
+          <h2>{{ rolForm.editando ? 'Editar rol' : 'Nuevo rol' }}</h2>
+          <p>Define perfiles de acceso para los usuarios internos.</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="s3s-usuarios-roles-239">Nombre del rol</label>
+        <input id="s3s-usuarios-roles-239"
+          type="text"
+          [(ngModel)]="rolForm.nombre"
+          name="rolNombre"
+          placeholder="Ej. Supervisor"
+        />
+      </div>
+
+      <div class="field">
+        <label for="s3s-usuarios-roles-247">Descripción</label>
+        <textarea id="s3s-usuarios-roles-247"
+          rows="4"
+          [(ngModel)]="rolForm.descripcion"
+          name="rolDescripcion"
+          placeholder="Describe el alcance del rol..."
+        ></textarea>
+      </div>
+
+      <div class="field">
+        <label for="s3s-usuarios-roles-255">Estado</label>
+        <select id="s3s-usuarios-roles-255" [(ngModel)]="rolForm.estado" name="rolEstado">
+          <option [ngValue]="true">Activo</option>
+          <option [ngValue]="false">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="actions-row">
+        <button type="button" class="btn btn-light" (click)="nuevoRol()" [disabled]="procesando">
+          Limpiar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="guardarRol()"
+          [disabled]="procesando"
+        >
+          {{ rolForm.editando ? 'Actualizar rol' : 'Crear rol' }}
+        </button>
+      </div>
+    </article>
+
+    <article class="panel list-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Roles del sistema</h2>
+          <p>El rol Administrador está protegido y siempre mantiene todos los permisos.</p>
+        </div>
+      </div>
+
+      <div class="role-grid">
+        <article class="role-card" *ngFor="let rol of roles">
+          <div class="role-head">
+            <div>
+              <h3>{{ rol.nombre }}</h3>
+              <p>{{ rol.descripcion || 'Sin descripción.' }}</p>
+            </div>
+
+            <span class="status-pill" [class.inactive]="!rol.estado">
+              {{ rol.estado ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+
+          <div class="role-stats">
+            <div>
+              <span>Permisos</span>
+              <strong>{{ rol.totalPermisos }}</strong>
+            </div>
+
+            <div>
+              <span>Usuarios</span>
+              <strong>{{ rol.totalUsuarios }}</strong>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button type="button" class="btn btn-light" (click)="editarRol(rol)"><s3s-icon name="edit"></s3s-icon>
+              Editar
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-danger"
+              (click)="desactivarRol(rol)"
+              [disabled]="!rol.estado || esRolAdministrador(rol) || procesando"
+            ><s3s-icon name="trash"></s3s-icon>
+              Desactivar
+            </button>
+          </div>
+        </article>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel permissions-panel" *ngIf="tabActiva === 'permisos'">
+    <div class="panel-header">
+      <div>
+        <h2>Permisos por rol</h2>
+        <p>
+          Selecciona un rol y define qué módulos o acciones podrá utilizar.
+        </p>
+      </div>
+
+      <div class="role-select">
+        <label>Rol</label>
+        <select
+          [(ngModel)]="idRolPermisosSeleccionado"
+          name="idRolPermisosSeleccionado"
+          (ngModelChange)="cargarPermisosRol($event)"
+        >
+          <option *ngFor="let rol of roles" [ngValue]="rol.idRol">
+            {{ rol.nombre }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="admin-warning" *ngIf="rolSeleccionadoEsAdministrador()">
+      El rol Administrador mantiene todos los permisos activos y no puede quedar limitado.
+    </div>
+
+    <div class="permissions-grid">
+      <article class="permission-group" *ngFor="let grupo of gruposPermisos()">
+        <h3>{{ grupo.titulo }}</h3>
+
+        <button
+          type="button"
+          class="permission-item"
+          *ngFor="let permiso of grupo.permisos"
+          [class.active]="permiso.asignado"
+          [disabled]="rolSeleccionadoEsAdministrador()"
+          (click)="togglePermiso(permiso)"
+        >
+          <span>{{ permiso.nombre }}</span>
+          <small>{{ permiso.descripcion || 'Sin descripción.' }}</small>
+        </button>
+      </article>
+    </div>
+
+    <div class="actions-row permissions-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="guardarPermisosRol()"
+        [disabled]="procesando || rolSeleccionadoEsAdministrador()"
+      >
+        {{ procesando ? 'Guardando...' : 'Guardar permisos' }}
+      </button>
+    </div>
+  </section>
+</div>

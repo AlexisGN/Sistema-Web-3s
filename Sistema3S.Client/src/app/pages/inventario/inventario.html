@@ -1,0 +1,422 @@
+<div class="inventario-page">
+  <section class="page-hero">
+    <div class="page-hero__content s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="layers"></s3s-icon></span>
+      <span class="hero-chip">Control operativo</span>
+
+      <h1>Inventario / Stock</h1>
+
+      <p>
+        Controla stock actual, stock mínimo, movimientos manuales,
+        alertas operativas y disponibilidad de productos industriales.
+      </p>
+    </div>
+
+    <div class="page-hero__stats">
+      <div class="hero-stat">
+        <span class="hero-stat__number">{{ resumen.totalProductosInventario }}</span>
+        <span class="hero-stat__label">Productos con inventario</span>
+      </div>
+
+      <div class="hero-stat danger">
+        <span class="hero-stat__number">{{ resumen.totalStockBajo + resumen.totalSinStock }}</span>
+        <span class="hero-stat__label">Requieren atención</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <article class="summary-card normal">
+      <span>Normal</span>
+      <strong>{{ resumen.totalStockNormal }}</strong>
+      <small>Productos con stock suficiente</small>
+    </article>
+
+    <article class="summary-card warning">
+      <span>Stock bajo</span>
+      <strong>{{ resumen.totalStockBajo }}</strong>
+      <small>Productos por debajo del mínimo</small>
+    </article>
+
+    <article class="summary-card danger">
+      <span>Sin stock</span>
+      <strong>{{ resumen.totalSinStock }}</strong>
+      <small>Productos agotados</small>
+    </article>
+
+    <article class="summary-card movement">
+      <span>Movimientos</span>
+      <strong>{{ resumen.totalMovimientos }}</strong>
+      <small>Entradas, salidas y ajustes</small>
+    </article>
+  </section>
+
+  <section class="inventario-grid">
+    <article class="panel panel-list">
+      <div class="panel-header">
+        <div>
+          <h2>Productos en inventario</h2>
+          <p>Selecciona un producto para actualizar stock mínimo o registrar movimientos.</p>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <input aria-label="Buscar por código, producto, categoría o marca..."
+          type="text"
+          [(ngModel)]="buscar"
+          name="buscar"
+          placeholder="Buscar por código, producto, categoría o marca..."
+          (keyup.enter)="buscarInventario()"
+        />
+
+        <button type="button" class="btn btn-dark" (click)="buscarInventario()"><s3s-icon name="search"></s3s-icon>
+          Buscar
+        </button>
+      </div>
+
+      <div class="stock-tabs">
+        <button
+          type="button"
+          [class.active]="estadoStock === 'todos'"
+          (click)="filtrarPorEstado('todos')"
+        >
+          Todos
+        </button>
+
+        <button
+          type="button"
+          [class.active]="estadoStock === 'normal'"
+          (click)="filtrarPorEstado('normal')"
+        >
+          Normal
+        </button>
+
+        <button
+          type="button"
+          [class.active]="estadoStock === 'bajo'"
+          (click)="filtrarPorEstado('bajo')"
+        >
+          Stock bajo
+        </button>
+
+        <button
+          type="button"
+          [class.active]="estadoStock === 'sin-stock'"
+          (click)="filtrarPorEstado('sin-stock')"
+        >
+          Sin stock
+        </button>
+      </div>
+
+      <div *ngIf="cargando" class="estado-box">
+        Cargando inventario...
+      </div>
+
+      <div *ngIf="!cargando && inventarios.length === 0" class="estado-box">
+        No hay productos en inventario.
+      </div>
+
+      <div class="stock-list" *ngIf="!cargando && inventarios.length > 0">
+        <button
+          type="button"
+          class="stock-card"
+          *ngFor="let item of inventarios"
+          [class.selected]="productoSeleccionado?.idProducto === item.idProducto"
+          (click)="seleccionarProducto(item)"
+        >
+          <div class="stock-card__icon stock-card__image"><app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.producto"></app-imagen-catalogo></div>
+
+          <div class="stock-card__body">
+            <div class="stock-card__top">
+              <div>
+                <h3>{{ item.producto }}</h3>
+                <p>{{ item.codigoProducto }} · {{ item.categoria || 'Sin categoría' }}</p>
+              </div>
+
+              <span class="stock-badge" [ngClass]="obtenerClaseEstado(item)">
+                {{ item.estadoStock }}
+              </span>
+            </div>
+
+            <div class="stock-metrics">
+              <div>
+                <small>Actual</small>
+                <strong>{{ item.stockActual }}</strong>
+              </div>
+
+              <div>
+                <small>Mínimo</small>
+                <strong>{{ item.stockMinimo }}</strong>
+              </div>
+
+              <div>
+                <small>Marca</small>
+                <strong>{{ item.marca || '-' }}</strong>
+              </div>
+
+              <div>
+                <small>Unidad</small>
+                <strong>{{ item.unidadMedida || '-' }}</strong>
+              </div>
+            </div>
+
+            <p class="alert-message" *ngIf="item.tieneAlertaPendiente">
+              {{ item.mensajeAlerta }}
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!cargando && totalRegistros > 0">
+        <div class="pagination-info">
+          Mostrando {{ inventarios.length }} de {{ totalRegistros }} productos
+        </div>
+
+        <div class="pagination-controls">
+          <select
+            [(ngModel)]="tamanioPagina"
+            name="tamanioPagina"
+            (change)="cambiarTamanioPagina()"
+          >
+            <option *ngFor="let opcion of opcionesTamanioPagina" [ngValue]="opcion">
+              {{ opcion }} por página
+            </option>
+          </select>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaAnterior()"
+            [disabled]="pagina <= 1"
+          >
+            Anterior
+          </button>
+
+          <span>Página {{ pagina }} de {{ totalPaginas }}</span>
+
+          <button
+            type="button"
+            class="btn btn-page"
+            (click)="paginaSiguiente()"
+            [disabled]="pagina >= totalPaginas"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel panel-actions">
+      <div class="panel-header">
+        <div>
+          <h2>Gestión de stock</h2>
+          <p>Actualiza mínimos y registra entradas, salidas o ajustes manuales.</p>
+        </div>
+      </div>
+
+      <div *ngIf="!productoSeleccionado" class="estado-box">
+        Selecciona un producto del listado para gestionar su stock.
+      </div>
+
+      <ng-container *ngIf="productoSeleccionado">
+        <div class="selected-product">
+          <span>{{ productoSeleccionado.codigoProducto }}</span>
+          <h3>{{ productoSeleccionado.producto }}</h3>
+          <p>
+            Stock actual:
+            <strong>{{ productoSeleccionado.stockActual }}</strong>
+            · Stock mínimo:
+            <strong>{{ productoSeleccionado.stockMinimo }}</strong>
+          </p>
+        </div>
+
+        <small class="field-error" *ngIf="erroresCampo['producto']">
+          {{ erroresCampo['producto'] }}
+        </small>
+
+        <form class="action-form" (ngSubmit)="guardarStockMinimo()">
+          <div class="section-title"><s3s-icon name="layers"></s3s-icon>
+            Actualizar stock mínimo
+          </div>
+
+          <div class="field">
+            <label for="s3s-inventario-278">Stock mínimo</label>
+
+            <input id="s3s-inventario-278"
+              type="number"
+              [(ngModel)]="stockMinimoFormulario"
+              name="stockMinimo"
+              min="0"
+              step="1"
+              placeholder="Ej. 5"
+              (input)="limpiarErrorCampo('stockMinimo')"
+            />
+
+            <small class="field-error" *ngIf="erroresCampo['stockMinimo']">
+              {{ erroresCampo['stockMinimo'] }}
+            </small>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="guardandoStockMinimo"
+          ><s3s-icon name="check"></s3s-icon>
+            {{ guardandoStockMinimo ? 'Guardando...' : 'Guardar stock mínimo' }}
+          </button>
+        </form>
+
+        <form class="action-form" (ngSubmit)="registrarMovimiento()">
+          <div class="section-title"><s3s-icon name="layers"></s3s-icon>
+            Registrar movimiento manual
+          </div>
+
+          <div class="field">
+            <label for="s3s-inventario-298">Tipo de movimiento</label>
+
+            <select id="s3s-inventario-298"
+              [(ngModel)]="movimiento.tipoMovimiento"
+              name="tipoMovimiento"
+              (change)="cambiarTipoMovimiento()"
+            >
+              <option value="Entrada">Entrada</option>
+              <option value="Salida">Salida</option>
+              <option value="Ajuste">Ajuste</option>
+            </select>
+
+            <small class="field-error" *ngIf="erroresCampo['tipoMovimiento']">
+              {{ erroresCampo['tipoMovimiento'] }}
+            </small>
+          </div>
+
+          <div
+            class="field"
+            *ngIf="movimiento.tipoMovimiento === 'Entrada' || movimiento.tipoMovimiento === 'Salida'"
+          >
+            <label for="s3s-inventario-319">Cantidad</label>
+
+            <input id="s3s-inventario-319"
+              type="number"
+              [(ngModel)]="movimiento.cantidad"
+              name="cantidad"
+              min="1"
+              step="1"
+              placeholder="Cantidad"
+              (input)="limpiarErrorCampo('cantidad')"
+            />
+
+            <small class="field-error" *ngIf="erroresCampo['cantidad']">
+              {{ erroresCampo['cantidad'] }}
+            </small>
+          </div>
+
+          <div class="field" *ngIf="movimiento.tipoMovimiento === 'Ajuste'">
+            <label for="s3s-inventario-330">Nuevo stock real</label>
+
+            <input id="s3s-inventario-330"
+              type="number"
+              [(ngModel)]="movimiento.nuevoStock"
+              name="nuevoStock"
+              min="0"
+              step="1"
+              placeholder="Stock contado físicamente"
+              (input)="limpiarErrorCampo('nuevoStock')"
+            />
+
+            <small class="field-error" *ngIf="erroresCampo['nuevoStock']">
+              {{ erroresCampo['nuevoStock'] }}
+            </small>
+          </div>
+
+          <div class="field">
+            <label for="s3s-inventario-341">Motivo</label>
+
+            <textarea id="s3s-inventario-341"
+              [(ngModel)]="movimiento.motivo"
+              name="motivo"
+              placeholder="Ej. Ajuste por conteo físico, salida por prueba técnica..."
+              rows="3"
+              (input)="limpiarErrorCampo('motivo')"
+            ></textarea>
+
+            <small class="field-error" *ngIf="erroresCampo['motivo']">
+              {{ erroresCampo['motivo'] }}
+            </small>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="registrandoMovimiento"
+          ><s3s-icon name="check"></s3s-icon>
+            {{ registrandoMovimiento ? 'Registrando...' : 'Registrar movimiento' }}
+          </button>
+        </form>
+
+        <div *ngIf="mensaje" class="alert success">
+          {{ mensaje }}
+        </div>
+
+        <div *ngIf="error" class="alert error">
+          {{ error }}
+        </div>
+
+        <div class="history-box">
+          <h3>Historial del producto</h3>
+
+          <div *ngIf="cargandoMovimientos" class="estado-box small">
+            Cargando movimientos...
+          </div>
+
+          <div *ngIf="!cargandoMovimientos && movimientosProducto.length === 0" class="estado-box small">
+            Este producto aún no tiene movimientos.
+          </div>
+
+          <div
+            class="movement-item"
+            *ngFor="let mov of movimientosProducto"
+          >
+            <span class="movement-type" [class]="mov.tipoMovimiento.toLowerCase()">
+              {{ obtenerSignoMovimiento(mov.tipoMovimiento) }}
+            </span>
+
+            <div>
+              <strong>{{ mov.tipoMovimiento }} · {{ mov.cantidad }}</strong>
+              <p>{{ mov.motivo || 'Sin motivo registrado.' }}</p>
+              <small>
+                {{ mov.fechaMovimiento | date:'dd/MM/yyyy HH:mm' }}
+                · {{ obtenerOrigenMovimiento(mov) }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </article>
+  </section>
+
+  <section class="panel recent-panel">
+    <div class="panel-header">
+      <div>
+        <h2>Movimientos recientes</h2>
+        <p>Últimas entradas, salidas y ajustes registrados en inventario.</p>
+      </div>
+    </div>
+
+    <div *ngIf="movimientosRecientes.length === 0" class="estado-box">
+      Aún no hay movimientos registrados.
+    </div>
+
+    <div class="recent-list" *ngIf="movimientosRecientes.length > 0">
+      <div class="movement-item" *ngFor="let mov of movimientosRecientes">
+        <span class="movement-type" [class]="mov.tipoMovimiento.toLowerCase()">
+          {{ obtenerSignoMovimiento(mov.tipoMovimiento) }}
+        </span>
+
+        <div>
+          <strong>{{ mov.tipoMovimiento }} · {{ mov.producto }}</strong>
+          <p>{{ mov.codigoProducto }} · Cantidad: {{ mov.cantidad }}</p>
+          <small>{{ mov.fechaMovimiento | date:'dd/MM/yyyy HH:mm' }} · {{ obtenerOrigenMovimiento(mov) }}</small>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

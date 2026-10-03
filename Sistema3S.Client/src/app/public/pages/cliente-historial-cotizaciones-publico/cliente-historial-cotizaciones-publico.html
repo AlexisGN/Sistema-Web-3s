@@ -1,0 +1,101 @@
+<s3s-account-nav />
+<section class="history-page">
+  <section class="history-hero">
+    <div>
+      <span>Historial cliente</span>
+
+      <h1>Mis solicitudes de cotización</h1>
+
+      <p>
+        Revisa las solicitudes enviadas desde tu cuenta web y el seguimiento
+        realizado por el equipo comercial 3S.
+      </p>
+    </div>
+
+    <div class="client-box" *ngIf="sesion">
+      <small>Cuenta cliente</small>
+      <strong>{{ sesion.nombreCliente }}</strong>
+      <p>{{ sesion.tipoDocumento }}: {{ sesion.numeroDocumento }}</p>
+    </div>
+  </section>
+
+  <div class="section-heading"><p>{{ totalRegistros }} solicitudes registradas</p><button type="button" (click)="seguirCotizando()">Nueva cotización</button></div>
+  <section class="history-filters" aria-label="Filtros del historial" *ngIf="cotizaciones.length">
+    <div><label for="history-search">Buscar solicitud</label><input id="history-search" type="search" [(ngModel)]="busqueda" placeholder="Código u observación" /></div>
+    <div><label for="history-state">Estado</label><select id="history-state" [(ngModel)]="estadoFiltro"><option value="">Todos</option><option *ngFor="let estado of estadosDisponibles" [value]="estado">{{ estado }}</option></select></div>
+    <div><label for="history-date">Fecha de envío</label><input id="history-date" type="date" [(ngModel)]="fechaFiltro" /></div>
+    <div><label for="history-order">Ordenar</label><select id="history-order" [(ngModel)]="orden"><option value="recientes">Más recientes</option><option value="antiguas">Más antiguas</option></select></div>
+  </section>
+  <p class="field-help" *ngIf="hayMas">Los filtros se aplican a las {{ cotizaciones.length }} solicitudes cargadas. Usa «Ver más solicitudes» para incluir las anteriores.</p>
+  <div class="empty-state" *ngIf="cotizaciones.length && !cotizacionesFiltradas.length"><s3s-icon name="search" /><h2>Sin coincidencias</h2><p>Prueba otra fecha o código de solicitud.</p><button type="button" (click)="limpiarFiltros()">Limpiar filtros</button></div>
+
+
+  <div class="public-status" *ngIf="cargando" role="status">
+    Cargando historial de solicitudes...
+  </div>
+
+  <div class="public-status error" *ngIf="error" role="status">
+    {{ error }} <button type="button" (click)="cargarHistorial(true)">Reintentar</button>
+  </div>
+
+  <section class="empty-state" *ngIf="!cargando && cotizaciones.length === 0 && !error">
+    <div class="empty-icon"><s3s-icon name="file" /></div>
+
+    <h2>Aún no tienes solicitudes enviadas</h2>
+
+    <p>
+      Agrega productos al carrito de cotización y envía tu primera solicitud web.
+    </p>
+
+    <a routerLink="/productos">
+      Ver productos
+    </a>
+  </section>
+
+  <section class="history-list" *ngIf="cotizaciones.length > 0">
+    <article
+      class="history-card"
+      *ngFor="let cotizacion of cotizacionesFiltradas; trackBy: trackByCotizacion"
+    >
+      <div class="card-date">
+        <strong>{{ cotizacion.fechaCotizacion | date: 'dd' }}</strong>
+        <span>{{ cotizacion.fechaCotizacion | date: 'MMM yyyy' }}</span>
+      </div>
+
+      <div class="card-main">
+        <div class="status-line">
+          <span
+            class="status-pill"
+            [class]="obtenerClaseEstado(cotizacion.estadoCotizacion)"
+          >
+            {{ obtenerEstadoCliente(cotizacion.estadoCotizacion) }}
+          </span>
+
+          <small>Solicitud web</small>
+        </div>
+
+        <h2>{{ cotizacion.codigoCotizacion }}</h2>
+
+        <p>
+          {{ obtenerTextoProductos(cotizacion.cantidadProductos) }}
+        </p>
+
+        <p class="observation" *ngIf="cotizacion.observacion">
+          {{ cotizacion.observacion }}
+        </p>
+      </div>
+
+      <div class="card-actions">
+        <button type="button" (click)="verDetalle(cotizacion)">
+          Ver solicitud
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <div class="load-more" *ngIf="hayMas && cotizaciones.length > 0">
+    <button type="button" (click)="cargarMas()" [disabled]="cargandoMas">
+      {{ cargandoMas ? 'Cargando más solicitudes...' : 'Ver más solicitudes' }}
+    </button>
+  </div>
+</section>

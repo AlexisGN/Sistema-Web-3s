@@ -12,7 +12,7 @@
     </p>
 
     <form class="search-box" (ngSubmit)="buscarDesdePagina()">
-      <input
+      <input id="busquedaLocal"
         type="text"
         name="busquedaLocal"
         [(ngModel)]="busquedaLocal"
@@ -26,22 +26,22 @@
     </form>
   </section>
 
-  <div class="status-box" *ngIf="cargando">
+  <div class="status-box" *ngIf="cargando" role="status">
     Buscando resultados...
   </div>
 
-  <div class="status-box error" *ngIf="error">
-    {{ error }}
+  <div class="status-box error" *ngIf="error" role="status">
+    {{ error }} <button type="button" (click)="buscar()">Reintentar</button>
   </div>
 
-  <section class="empty-state" *ngIf="!cargando && !error && !q">
+  <section class="empty-state" *ngIf="!cargando && !error && !q"><div class="empty-icon"><s3s-icon name="search" /></div>
     <h2>Escribe una palabra para buscar</h2>
     <p>
       Puedes buscar por producto, código, servicio, categoría o marca.
     </p>
   </section>
 
-  <section class="empty-state" *ngIf="!cargando && !error && q && resultado && !hayResultados">
+  <section class="empty-state" *ngIf="!cargando && !error && q && resultado && !hayResultados"><div class="empty-icon"><s3s-icon name="search" /></div>
     <h2>No encontramos resultados para “{{ q }}”</h2>
     <p>
       Intenta con otro nombre, código, marca o categoría.
@@ -71,36 +71,7 @@
       </div>
 
       <div class="product-grid">
-        <article
-          class="product-card"
-          *ngFor="let producto of resultado.productos; trackBy: trackByProducto"
-        >
-          <a class="product-image" [routerLink]="['/productos', producto.idProducto || producto.id]">
-            <img
-              *ngIf="producto.imagenUrl"
-              [src]="producto.imagenUrl"
-              [alt]="producto.nombre"
-              loading="lazy"
-              decoding="async"
-            />
-
-            <div class="image-placeholder" *ngIf="!producto.imagenUrl">
-              <strong>3S</strong>
-              <small>Producto industrial</small>
-            </div>
-          </a>
-
-          <div class="product-info">
-            <span>{{ producto.categoria }}</span>
-            <h4>{{ producto.nombre }}</h4>
-            <p>{{ producto.codigo }}</p>
-            <small>{{ producto.marca || '3S' }}</small>
-
-            <a class="primary-link" [routerLink]="['/productos', producto.idProducto || producto.id]">
-              Ver producto
-            </a>
-          </div>
-        </article>
+<s3s-product-card *ngFor="let producto of resultado.productos; trackBy: trackByProducto" [producto]="producto" [cotizable]="false" />
       </div>
     </section>
 
@@ -118,7 +89,7 @@
           *ngFor="let servicio of resultado.servicios; trackBy: trackByServicio"
           [routerLink]="['/servicios', servicio.idServicio || servicio.id]"
         >
-          <div class="simple-icon">⚙</div>
+          <div class="simple-icon"><s3s-icon name="tool" /></div>
           <div>
             <h4>{{ servicio.nombre }}</h4>
             <p>{{ servicio.descripcion }}</p>
@@ -141,7 +112,7 @@
           *ngFor="let categoria of resultado.categorias; trackBy: trackByCategoria"
           [routerLink]="['/categorias', categoria.idCategoria || categoria.id]"
         >
-          <div class="simple-icon">{{ categoria.icono || '🏭' }}</div>
+          <div class="simple-icon"><s3s-icon name="layers" /></div>
           <div>
             <h4>{{ categoria.nombre }}</h4>
             <p>{{ categoria.cantidadProductos }} productos disponibles</p>

@@ -1,3 +1,4 @@
+import { UiIconComponent } from '../ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -22,7 +23,7 @@ interface MenuGroup {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [UiIconComponent, CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './admin-layout.html',
   styleUrl: './admin-layout.scss'
 })
@@ -41,30 +42,104 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   private intervaloEstado?: ReturnType<typeof setInterval>;
 
   private readonly menuGroups: MenuGroup[] = [
-{
+    {
+      title: 'Principal',
+      items: [
+        {
+          label: 'Inicio',
+          icon: 'IN',
+          route: '/admin/inicio',
+          permisos: ['INICIO_VER']
+        }
+      ]
+    },
+    {
       title: 'Comercial',
       items: [
-{
+        {
           label: 'Productos',
           icon: 'PR',
           route: '/admin/productos',
           permisos: ['PRODUCTOS_VER']
         },
-{
+        {
           label: 'Servicios',
           icon: 'SV',
           route: '/admin/servicios',
           permisos: ['SERVICIOS_VER']
         },
-{
+        {
+          label: 'Cotizaciones',
+          icon: 'CT',
+          route: '/admin/cotizaciones',
+          permisos: ['COTIZACIONES_VER']
+        },
+        {
           label: 'Clientes',
           icon: 'CL',
           route: '/admin/clientes',
           permisos: ['CLIENTES_VER']
         }
-]
+      ]
+    },
+    {
+      title: 'Operaciones',
+      items: [
+        {
+          label: 'Ventas internas',
+          icon: 'VT',
+          route: '/admin/ventas',
+          permisos: ['VENTAS_VER']
+        },
+        {
+          label: 'Proveedores',
+          icon: 'PV',
+          route: '/admin/proveedores',
+          permisos: ['PROVEEDORES_VER']
+        },
+        {
+          label: 'Compras',
+          icon: 'CP',
+          route: '/admin/compras',
+          permisos: ['COMPRAS_VER']
+        },
+        {
+          label: 'Inventario / Stock',
+          icon: 'ST',
+          route: '/admin/inventario',
+          permisos: ['INVENTARIO_VER']
+        }
+      ]
+    },
+    {
+      title: 'Finanzas',
+      items: [
+        {
+          label: 'Caja',
+          icon: 'CJ',
+          route: '/admin/caja',
+          permisos: ['CAJA_VER']
+        }
+      ]
+    },
+    {
+      title: 'Sistema',
+      items: [
+        {
+          label: 'Usuarios y roles',
+          icon: 'UR',
+          route: '/admin/usuarios-roles',
+          permisos: ['USUARIOS_VER', 'ROLES_VER']
+        },
+        {
+          label: 'Auditoría',
+          icon: 'AU',
+          route: '/admin/auditoria',
+          permisos: ['AUDITORIA_VER']
+        }
+      ]
     }
-];
+  ];
 
   constructor(
     private http: HttpClient,

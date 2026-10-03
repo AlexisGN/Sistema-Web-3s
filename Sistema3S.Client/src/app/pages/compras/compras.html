@@ -1,0 +1,898 @@
+<section class="compras-page">
+  <div class="page-hero">
+    <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="cart"></s3s-icon></span>
+      <span class="hero-chip">Operaciones</span>
+
+      <h1>Gestión de compras</h1>
+
+      <p>
+        Registra compras realizadas a proveedores, comprobantes recibidos,
+        guías de remisión, pagos y entradas automáticas a inventario.
+      </p>
+    </div>
+
+    <div class="hero-card">
+      <span>Control de compras</span>
+      <strong>{{ totalRegistros }}</strong>
+      <small>Compras registradas</small>
+    </div>
+  </div>
+
+  <div *ngIf="mensaje" class="alert success">
+    {{ mensaje }}
+  </div>
+
+  <div *ngIf="error" class="alert error">
+    {{ error }}
+  </div>
+
+  <section class="compras-grid">
+    <article class="panel form-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Registrar compra</h2>
+          <p>Completa los datos del proveedor, comprobante, guía y pago.</p>
+        </div>
+      </div>
+
+      <form class="compra-form s3s-transaction-form" (ngSubmit)="guardarCompra()">
+        <div class="form-section s3s-party">
+          <div class="section-title"><s3s-icon name="cart"></s3s-icon>1. Proveedor</div>
+
+          <div class="field">
+            <label for="s3s-compras-65">Buscar proveedor</label>
+
+            <div class="search-control">
+              <input id="s3s-compras-65" type="text" [(ngModel)]="buscarProveedor" name="buscarProveedor"
+                placeholder="Buscar por RUC o razón social..."
+                (input)="cargarProveedores(); limpiarErrorCampo('proveedor')" />
+
+              <button type="button" class="btn btn-dark" (click)="cargarProveedores()"><s3s-icon name="search"></s3s-icon>
+                Buscar
+              </button>
+            </div>
+
+            <small class="field-error" *ngIf="erroresCampo['proveedor']">
+              {{ erroresCampo['proveedor'] }}
+            </small>
+          </div>
+
+          <div class="result-list" *ngIf="proveedores.length > 0">
+            <button type="button" class="result-item" *ngFor="let proveedor of proveedores"
+              [class.selected]="proveedorSeleccionado?.idProveedor === proveedor.idProveedor"
+              (click)="seleccionarProveedor(proveedor)">
+              <strong>{{ proveedor.razonSocial }}</strong>
+              <span>{{ proveedor.ruc }} · {{ proveedor.telefono || 'Sin teléfono' }}</span>
+            </button>
+          </div>
+
+          <div class="selected-box" *ngIf="proveedorSeleccionado">
+            <span>Proveedor seleccionado</span>
+            <strong>{{ proveedorSeleccionado.razonSocial }}</strong>
+            <p>
+              {{ proveedorSeleccionado.ruc }} ·
+              {{ proveedorSeleccionado.direccion || 'Sin dirección' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="form-section s3s-document">
+          <div class="section-title"><s3s-icon name="file"></s3s-icon>2. Comprobante recibido del proveedor</div>
+
+          <div class="form-grid two">
+            <div class="field">
+              <label for="s3s-compras-112">Tipo de comprobante</label>
+
+              <select id="s3s-compras-112" [(ngModel)]="compra.tipoComprobanteProveedor" name="tipoComprobanteProveedor"
+                (change)="limpiarErrorCampo('tipoComprobanteProveedor')">
+                <option value="">Seleccionar</option>
+
+                <option *ngFor="let tipo of tiposComprobante" [value]="tipo">
+                  {{ tipo }}
+                </option>
+              </select>
+
+              <small class="field-error" *ngIf="erroresCampo['tipoComprobanteProveedor']">
+                {{ erroresCampo['tipoComprobanteProveedor'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-compras-130">Fecha de emisión</label>
+
+              <input id="s3s-compras-130" type="date" [(ngModel)]="compra.fechaEmisionComprobante" name="fechaEmisionComprobante"
+                (input)="limpiarErrorCampo('fechaEmisionComprobante')" />
+
+              <small class="field-error" *ngIf="erroresCampo['fechaEmisionComprobante']">
+                {{ erroresCampo['fechaEmisionComprobante'] }}
+              </small>
+            </div>
+          </div>
+
+          <div class="form-grid two">
+            <div class="field">
+              <label for="s3s-compras-144">Serie</label>
+
+              <input id="s3s-compras-144" type="text" [(ngModel)]="compra.serieComprobante" name="serieComprobante" placeholder="Ej. F001"
+                maxlength="20" (input)="limpiarErrorCampo('serieComprobante')" />
+
+              <small class="field-error" *ngIf="erroresCampo['serieComprobante']">
+                {{ erroresCampo['serieComprobante'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-compras-155">Número</label>
+
+              <input id="s3s-compras-155" type="text" [(ngModel)]="compra.numeroComprobante" name="numeroComprobante"
+                placeholder="Ej. 000123" maxlength="30" (input)="limpiarErrorCampo('numeroComprobante')" />
+
+              <small class="field-error" *ngIf="erroresCampo['numeroComprobante']">
+                {{ erroresCampo['numeroComprobante'] }}
+              </small>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="s3s-compras-167">Observación de compra</label>
+
+            <textarea id="s3s-compras-167" [(ngModel)]="compra.observacionCompra" name="observacionCompra" rows="2"
+              placeholder="Observación opcional..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-section s3s-guide">
+          <div class="section-title"><s3s-icon name="truck"></s3s-icon>3. Guía de remisión recibida</div>
+
+          <label class="check-row">
+            <input type="checkbox" [(ngModel)]="compra.guiaRemision.tieneGuia" name="tieneGuia"
+              (change)="cambiarTieneGuia()" />
+
+            <span>La compra tiene guía de remisión</span>
+          </label>
+
+          <div *ngIf="compra.guiaRemision.tieneGuia" class="guide-box">
+            <div class="form-grid two">
+              <div class="field">
+                <label for="s3s-compras-193">Número de guía</label>
+
+                <input id="s3s-compras-193" type="text" [(ngModel)]="compra.guiaRemision.numeroGuia" name="numeroGuia"
+                  placeholder="Ej. T001-000456" (input)="limpiarErrorCampo('numeroGuia')" />
+
+                <small class="field-error" *ngIf="erroresCampo['numeroGuia']">
+                  {{ erroresCampo['numeroGuia'] }}
+                </small>
+              </div>
+
+              <div class="field">
+                <label for="s3s-compras-204">Fecha de emisión</label>
+
+                <input id="s3s-compras-204" type="date" [(ngModel)]="compra.guiaRemision.fechaEmision" name="fechaEmisionGuia"
+                  (input)="limpiarErrorCampo('fechaEmisionGuia')" />
+
+                <small class="field-error" *ngIf="erroresCampo['fechaEmisionGuia']">
+                  {{ erroresCampo['fechaEmisionGuia'] }}
+                </small>
+              </div>
+            </div>
+
+            <div class="form-grid two">
+              <div class="field">
+                <label for="s3s-compras-218">Fecha de traslado</label>
+
+                <input id="s3s-compras-218" type="date" [(ngModel)]="compra.guiaRemision.fechaTraslado" name="fechaTrasladoGuia"
+                  (input)="limpiarErrorCampo('fechaTrasladoGuia')" />
+
+                <small class="field-error" *ngIf="erroresCampo['fechaTrasladoGuia']">
+                  {{ erroresCampo['fechaTrasladoGuia'] }}
+                </small>
+              </div>
+
+              <div class="field">
+                <label for="s3s-compras-229">Transportista</label>
+
+                <input id="s3s-compras-229" type="text" [(ngModel)]="compra.guiaRemision.transportista" name="transportista"
+                  placeholder="Nombre o razón social" />
+              </div>
+            </div>
+
+            <div class="form-grid two">
+              <div class="field">
+                <label for="s3s-compras-240">Punto de partida</label>
+
+                <input id="s3s-compras-240" type="text" [(ngModel)]="compra.guiaRemision.puntoPartida" name="puntoPartida"
+                  placeholder="Dirección de origen" (input)="limpiarErrorCampo('puntoPartida')" />
+
+                <small class="field-error" *ngIf="erroresCampo['puntoPartida']">
+                  {{ erroresCampo['puntoPartida'] }}
+                </small>
+              </div>
+
+              <div class="field">
+                <label for="s3s-compras-251">Punto de llegada</label>
+
+                <input id="s3s-compras-251" type="text" [(ngModel)]="compra.guiaRemision.puntoLlegada" name="puntoLlegada"
+                  placeholder="Dirección de destino" (input)="limpiarErrorCampo('puntoLlegada')" />
+
+                <small class="field-error" *ngIf="erroresCampo['puntoLlegada']">
+                  {{ erroresCampo['puntoLlegada'] }}
+                </small>
+              </div>
+            </div>
+
+            <div class="form-grid two">
+              <div class="field">
+                <label for="s3s-compras-265">RUC transportista</label>
+
+                <input id="s3s-compras-265" type="text" [(ngModel)]="compra.guiaRemision.rucTransportista" name="rucTransportista"
+                  maxlength="11" placeholder="Opcional" />
+              </div>
+
+              <div class="field">
+                <label for="s3s-compras-273">Placa del vehículo</label>
+
+                <input id="s3s-compras-273" type="text" [(ngModel)]="compra.guiaRemision.placaVehiculo" name="placaVehiculo" maxlength="20"
+                  placeholder="Opcional" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="s3s-compras-282">Observación de traslado</label>
+
+              <textarea id="s3s-compras-282" [(ngModel)]="compra.guiaRemision.observacion" name="observacionGuia" rows="2"
+                placeholder="Observación opcional..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section s3s-items">
+          <div class="section-title section-title-flex"><s3s-icon name="box"></s3s-icon>
+            <span>4. Productos comprados</span>
+
+            <button type="button" class="mini-link" (click)="abrirProductosEnNuevaPestana()">
+              + Registrar producto nuevo
+            </button>
+          </div>
+
+          <div class="field">
+            <label for="s3s-compras-305">Buscar producto</label>
+
+            <div class="search-control">
+              <input id="s3s-compras-305" type="text" [(ngModel)]="buscarProducto" name="buscarProducto"
+                placeholder="Buscar por código o nombre..."
+                (input)="cargarProductos(); limpiarErrorCampo('productoDetalle')" />
+
+              <button type="button" class="btn btn-dark" (click)="cargarProductos()"><s3s-icon name="search"></s3s-icon>
+                Buscar
+              </button>
+            </div>
+
+            <small class="field-error" *ngIf="erroresCampo['productoDetalle']">
+              {{ erroresCampo['productoDetalle'] }}
+            </small>
+          </div>
+
+          <div class="result-list" *ngIf="productos.length > 0">
+            <button type="button" class="result-item" *ngFor="let producto of productos"
+              [class.selected]="productoSeleccionado?.idProducto === producto.idProducto"
+              (click)="seleccionarProducto(producto)">
+              <strong>{{ obtenerNombreProducto(producto) }}</strong>
+              <span>
+                {{ producto.codigoProducto }} ·
+                {{ producto.categoria || 'Sin categoría' }}
+              </span>
+            </button>
+          </div>
+
+          <div class="selected-box product-selected" *ngIf="productoSeleccionado">
+            <span>Producto seleccionado</span>
+
+            <strong>{{ obtenerNombreProducto(productoSeleccionado) }}</strong>
+
+            <p>
+              {{ productoSeleccionado.codigoProducto }}
+              · {{ productoSeleccionado.categoria || 'Sin categoría' }}
+              · {{ productoSeleccionado.marca || 'Sin marca' }}
+            </p>
+          </div>
+
+          <div class="form-grid two product-inputs">
+            <div class="field">
+              <label for="s3s-compras-346">Cantidad</label>
+
+              <input id="s3s-compras-346" type="number" [(ngModel)]="detalleFormulario.cantidad" name="cantidadDetalle" min="1" step="1"
+                placeholder="Cantidad" (input)="limpiarErrorCampo('cantidadDetalle')" />
+
+              <small class="field-error" *ngIf="erroresCampo['cantidadDetalle']">
+                {{ erroresCampo['cantidadDetalle'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-compras-357">Precio compra con IGV</label>
+
+              <input id="s3s-compras-357" type="number" [(ngModel)]="detalleFormulario.precioCompra" name="precioDetalle" min="0" step="0.01"
+                placeholder="S/ 0.00" (input)="limpiarErrorCampo('precioDetalle')" />
+
+              <small class="field-error" *ngIf="erroresCampo['precioDetalle']">
+                {{ erroresCampo['precioDetalle'] }}
+              </small>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-secondary add-product-btn" (click)="agregarDetalle()"><s3s-icon name="plus"></s3s-icon>
+            Agregar producto
+          </button>
+
+          <small class="field-error" *ngIf="erroresCampo['detalles']">
+            {{ erroresCampo['detalles'] }}
+          </small>
+
+          <div class="detail-list" *ngIf="compra.detalles.length > 0">
+            <article class="detail-card" *ngFor="let detalle of compra.detalles; let i = index">
+              <div class="detail-product">
+                <span class="detail-code">{{ detalle.codigoProducto }}</span>
+                <strong>{{ detalle.producto }}</strong>
+
+                <small>
+                  {{ detalle.categoria || 'Sin categoría' }}
+                  · {{ detalle.marca || 'Sin marca' }}
+                  · {{ detalle.unidadMedida || 'Unidad' }}
+                </small>
+              </div>
+
+              <div class="detail-values">
+                <div>
+                  <span>Cantidad</span>
+                  <strong>{{ detalle.cantidad }}</strong>
+                </div>
+
+                <div>
+                  <span>P. Unit. c/IGV</span>
+                  <strong>S/ {{ detalle.precioCompra | number:'1.2-2' }}</strong>
+                </div>
+
+                <div>
+                  <span>Importe</span>
+                  <strong>S/ {{ calcularSubtotalDetalle(detalle) | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+
+              <button type="button" class="remove-btn" (click)="eliminarDetalle(i)" aria-label="Quitar elemento"><s3s-icon name="close"></s3s-icon></button>
+            </article>
+          </div>
+        </div>
+
+        <div class="form-section s3s-payment">
+          <div class="section-title"><s3s-icon name="wallet"></s3s-icon>5. Pago de compra</div>
+
+          <div class="form-grid two">
+            <div class="field">
+              <label for="s3s-compras-434">Tipo de pago</label>
+
+              <select id="s3s-compras-434" [(ngModel)]="compra.tipoPago" name="tipoPago" (change)="cambiarTipoPago()">
+                <option *ngFor="let tipo of tiposPago" [value]="tipo">
+                  {{ tipo }}
+                </option>
+              </select>
+
+              <small class="field-error" *ngIf="erroresCampo['tipoPago']">
+                {{ erroresCampo['tipoPago'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-compras-449">Método de pago</label>
+
+              <select id="s3s-compras-449" [(ngModel)]="compra.metodoPago" name="metodoPago" (change)="limpiarErrorCampo('metodoPago')">
+                <option value="">Seleccionar</option>
+
+                <option *ngFor="let metodo of metodosPago" [value]="metodo">
+                  {{ metodo }}
+                </option>
+              </select>
+
+              <small class="field-error" *ngIf="erroresCampo['metodoPago']">
+                {{ erroresCampo['metodoPago'] }}
+              </small>
+            </div>
+          </div>
+
+          <div class="form-grid two">
+            <div class="field">
+              <label for="s3s-compras-470">{{ compra.tipoPago === 'Cuotas' ? 'Pago inicial' : 'Monto pagado' }}</label>
+
+              <input id="s3s-compras-470" type="number" [(ngModel)]="compra.montoPagado" name="montoPagado" min="0" step="0.01"
+                [readonly]="compra.tipoPago === 'Total'" (input)="cambiarMontoPagado()" />
+
+              <small class="field-error" *ngIf="erroresCampo['montoPagado']">
+                {{ erroresCampo['montoPagado'] }}
+              </small>
+            </div>
+
+            <div class="field readonly-field">
+              <label for="s3s-compras-481">Saldo pendiente</label>
+
+              <input id="s3s-compras-481" type="text" [value]="'S/ ' + (calcularSaldo() | number:'1.2-2')" readonly />
+            </div>
+          </div>
+
+          <div class="form-grid two" *ngIf="compra.tipoPago === 'Cuotas'">
+            <div class="field">
+              <label for="s3s-compras-492">Número de cuotas</label>
+
+              <input id="s3s-compras-492" type="number" [(ngModel)]="compra.numeroCuotas" name="numeroCuotas" min="1" max="24" step="1"
+                placeholder="Ej. 6" (input)="cambiarNumeroCuotas()" />
+
+              <small class="field-error" *ngIf="erroresCampo['numeroCuotas']">
+                {{ erroresCampo['numeroCuotas'] }}
+              </small>
+            </div>
+
+            <div class="field">
+              <label for="s3s-compras-503">Primer vencimiento</label>
+
+              <input id="s3s-compras-503" type="date" [(ngModel)]="compra.fechaPrimerVencimiento" name="fechaPrimerVencimiento"
+                (input)="cambiarFechaPrimerVencimiento()" />
+
+              <small class="field-error" *ngIf="erroresCampo['fechaPrimerVencimiento']">
+                {{ erroresCampo['fechaPrimerVencimiento'] }}
+              </small>
+            </div>
+          </div>
+
+          <div class="cuotas-card" *ngIf="compra.tipoPago === 'Cuotas'">
+            <div class="cuotas-header">
+              <div>
+                <strong>Cronograma de cuotas</strong>
+                <span>
+                  Se calcula sobre el saldo pendiente. Puedes editar la fecha de cada cuota antes de registrar.
+                </span>
+              </div>
+
+              <div class="cuotas-resumen">
+                <span>Saldo a financiar</span>
+                <strong>S/ {{ obtenerSaldoFinanciar() | number:'1.2-2' }}</strong>
+              </div>
+            </div>
+
+            <small class="field-error" *ngIf="erroresCampo['cronogramaCuotas']">
+              {{ erroresCampo['cronogramaCuotas'] }}
+            </small>
+
+            <div class="empty-box" *ngIf="!compra.numeroCuotas || !compra.fechaPrimerVencimiento">
+              Ingresa el número de cuotas y el primer vencimiento para generar el cronograma.
+            </div>
+
+            <div class="empty-box"
+              *ngIf="compra.numeroCuotas && compra.fechaPrimerVencimiento && compra.cuotas.length === 0">
+              No se pudo generar el cronograma. Revisa que exista saldo pendiente y que el número de cuotas sea válido.
+            </div>
+
+            <div class="cuotas-table" *ngIf="compra.cuotas.length > 0">
+              <div class="cuotas-row cuotas-row-head">
+                <span>Cuota</span>
+                <span>Fecha de vencimiento</span>
+                <span>Monto</span>
+              </div>
+
+              <div class="cuotas-row" *ngFor="let cuota of compra.cuotas; let i = index">
+                <div>
+                  <span class="cuota-badge">Cuota {{ cuota.numeroCuota }}</span>
+                </div>
+
+                <div class="field cuota-date-field">
+                  <input type="date" [(ngModel)]="cuota.fechaVencimiento" [name]="'fechaCuota' + i"
+                    (input)="cambiarFechaCuota(i)" />
+
+                  <small class="field-error" *ngIf="erroresCampo['fechaCuota' + i]">
+                    {{ erroresCampo['fechaCuota' + i] }}
+                  </small>
+                </div>
+
+                <div class="cuota-monto">
+                  <strong>S/ {{ cuota.montoCuota | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="cuotas-total" *ngIf="compra.cuotas.length > 0">
+              <span>Total cuotas</span>
+              <strong>S/ {{ calcularTotalCuotas() | number:'1.2-2' }}</strong>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="s3s-compras-595">Observación de pago</label>
+
+            <textarea id="s3s-compras-595" [(ngModel)]="compra.observacionPago" name="observacionPago" rows="2"
+              placeholder="Observación opcional..."></textarea>
+          </div>
+        </div>
+
+        <div class="totals-card"><div class="s3s-form-heading"><s3s-icon name="receipt"></s3s-icon><h3>Resumen de compra</h3></div>
+          <div>
+            <span>Subtotal sin IGV</span>
+            <strong>S/ {{ calcularSubtotal() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>IGV 18%</span>
+            <strong>S/ {{ calcularIgv() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div class="total">
+            <span>Total</span>
+            <strong>S/ {{ calcularTotal() | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Pagado</span>
+            <strong>S/ {{ (compra.montoPagado || 0) | number:'1.2-2' }}</strong>
+          </div>
+
+          <div>
+            <span>Saldo</span>
+            <strong>S/ {{ calcularSaldo() | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-light" (click)="limpiarFormulario()"><s3s-icon name="refresh"></s3s-icon>
+            Limpiar
+          </button>
+
+          <button type="submit" class="btn btn-primary" [disabled]="guardando"><s3s-icon name="check"></s3s-icon>
+            {{ guardando ? 'Registrando...' : 'Registrar compra' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="panel list-panel">
+      <div class="panel-header list-header">
+        <div>
+          <h2>Compras registradas</h2>
+          <p>Consulta compras, pagos pendientes, anulaciones y reportes PDF/Excel.</p>
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="btn btn-light" [disabled]="generandoReportePdf" (click)="exportarReportePdf()"><s3s-icon name="download"></s3s-icon>
+            {{ generandoReportePdf ? 'Generando...' : 'Reporte PDF' }}
+          </button>
+
+          <button type="button" class="btn btn-excel" [disabled]="generandoReporteExcel"
+            (click)="exportarReporteExcel()"><s3s-icon name="download"></s3s-icon>
+            {{ generandoReporteExcel ? 'Generando...' : 'Reporte Excel' }}
+          </button>
+
+          <button type="button" class="btn btn-primary" (click)="abrirProductosEnNuevaPestana()">
+            + Registrar producto
+          </button>
+        </div>
+      </div>
+
+      <div class="filters-card">
+        <div class="filter-row-main">
+          <div class="field">
+            <label for="s3s-compras-693">Buscar compra</label>
+
+            <input id="s3s-compras-693" type="text" [(ngModel)]="buscarCompra" name="buscarCompra"
+              placeholder="Proveedor, RUC, serie o número..." (keyup.enter)="buscarCompras()" />
+          </div>
+
+          <div class="field">
+            <label for="s3s-compras-701">Estado de pago</label>
+
+            <select id="s3s-compras-701" [(ngModel)]="estadoPagoFiltro" name="estadoPagoFiltro" (change)="buscarCompras()">
+              <option value="">Todos los pagos</option>
+
+              <option *ngFor="let estado of estadosPago" [value]="estado">
+                {{ estado }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-row-dates">
+          <div class="field">
+            <label for="s3s-compras-719">Fecha inicio</label>
+
+            <input id="s3s-compras-719" type="date" [(ngModel)]="fechaInicioFiltro" name="fechaInicioFiltro" />
+          </div>
+
+          <div class="field">
+            <label for="s3s-compras-727">Fecha fin</label>
+
+            <input id="s3s-compras-727" type="date" [(ngModel)]="fechaFinFiltro" name="fechaFinFiltro" />
+          </div>
+
+          <div class="filter-actions">
+            <button type="button" class="btn btn-dark" (click)="buscarCompras()"><s3s-icon name="search"></s3s-icon>
+              Buscar
+            </button>
+
+            <button type="button" class="btn btn-light" (click)="limpiarFiltros()"><s3s-icon name="refresh"></s3s-icon>
+              Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="cargando" class="empty-box">
+        Cargando compras...
+      </div>
+
+      <div *ngIf="!cargando && compras.length === 0" class="empty-box">
+        No hay compras registradas.
+      </div>
+
+      <div class="purchase-list" *ngIf="!cargando && compras.length > 0">
+        <article class="purchase-card" *ngFor="let item of compras">
+          <div class="purchase-top">
+            <div>
+              <span class="doc-label">{{ item.tipoComprobanteProveedor }}</span>
+              <h3>{{ item.documentoCompleto }}</h3>
+              <p>{{ item.razonSocialProveedor }}</p>
+
+              <small>
+                {{ item.rucProveedor }} · {{ item.fechaCompra | date:'dd/MM/yyyy HH:mm' }}
+              </small>
+            </div>
+
+            <span class="status-badge" [ngClass]="obtenerClaseEstadoPago(item.estadoPago)">
+              {{ item.estadoPago }}
+            </span>
+          </div>
+
+          <div class="purchase-metrics">
+            <div>
+              <span>Total</span>
+              <strong>S/ {{ item.total | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Pagado</span>
+              <strong>S/ {{ item.totalPagado | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Saldo</span>
+              <strong>S/ {{ item.saldoPendiente | number:'1.2-2' }}</strong>
+            </div>
+
+            <div>
+              <span>Guía</span>
+              <strong>{{ item.tieneGuia ? 'Sí' : 'No' }}</strong>
+            </div>
+          </div>
+
+          <div class="purchase-actions">
+            <button type="button" class="btn btn-light" (click)="verPdfCompra(item)"
+              [disabled]="generandoPdfCompraId === item.idCompra">
+              {{ generandoPdfCompraId === item.idCompra ? 'Generando...' : 'Ver PDF' }}
+            </button>
+
+            <button *ngIf="puedePagar(item)" type="button" class="btn btn-secondary" (click)="abrirPago(item)">
+              Registrar pago
+            </button>
+
+            <button *ngIf="puedeAnular(item)" type="button" class="btn btn-danger" (click)="abrirAnular(item)"><s3s-icon name="trash"></s3s-icon>
+              Anular
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div class="pagination-bar" *ngIf="!cargando && totalRegistros > 0">
+        <div>
+          Mostrando {{ compras.length }} de {{ totalRegistros }}
+        </div>
+
+        <div class="pagination-controls">
+          <select [(ngModel)]="tamanioPagina" name="tamanioPagina" (change)="cambiarTamanioPagina()">
+            <option *ngFor="let opcion of opcionesTamanioPagina" [ngValue]="opcion">
+              {{ opcion }} por página
+            </option>
+          </select>
+
+          <button type="button" class="btn btn-page" [disabled]="pagina <= 1" (click)="paginaAnterior()">
+            Anterior
+          </button>
+
+          <span>Página {{ pagina }} de {{ totalPaginas }}</span>
+
+          <button type="button" class="btn btn-page" [disabled]="pagina >= totalPaginas" (click)="paginaSiguiente()">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="compraPagoSeleccionada">
+    <article class="modal-card payment-modal">
+      <h2>Registrar pago</h2>
+
+      <p>
+        Compra {{ compraPagoSeleccionada.documentoCompleto }} ·
+        Saldo pendiente:
+        <strong>S/ {{ compraPagoSeleccionada.saldoPendiente | number:'1.2-2' }}</strong>
+      </p>
+
+      <div class="payment-summary">
+        <div>
+          <span>Saldo actual</span>
+          <strong>S/ {{ compraPagoSeleccionada.saldoPendiente | number:'1.2-2' }}</strong>
+        </div>
+
+        <div>
+          <span>Monto a pagar</span>
+          <strong>S/ {{ (pago.montoPagado || 0) | number:'1.2-2' }}</strong>
+        </div>
+
+        <div>
+          <span>Saldo después del pago</span>
+          <strong>S/ {{ calcularSaldoDespuesPago() | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="s3s-compras-899">Método de pago</label>
+
+        <select id="s3s-compras-899" [(ngModel)]="pago.metodoPago" name="metodoPagoModal" (change)="limpiarErrorCampo('metodoPagoPago')">
+          <option value="">Seleccionar</option>
+
+          <option *ngFor="let metodo of metodosPago" [value]="metodo">
+            {{ metodo }}
+          </option>
+        </select>
+
+        <small class="field-error" *ngIf="erroresCampo['metodoPagoPago']">
+          {{ erroresCampo['metodoPagoPago'] }}
+        </small>
+      </div>
+
+      <div class="payment-info-box" *ngIf="!esPagoEnCuotas()">
+        <strong>Pago restante completo</strong>
+
+        <p>
+          Esta compra no tiene cronograma de cuotas. Por regla del sistema,
+          el pago debe cancelar el saldo pendiente completo.
+        </p>
+
+        <div class="readonly-payment">
+          <span>Monto a cancelar</span>
+          <strong>S/ {{ pago.montoPagado | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <div class="payment-installments" *ngIf="esPagoEnCuotas()">
+        <div class="installments-title">
+          <div>
+            <strong>Cuotas pendientes</strong>
+            <span>Selecciona una o más cuotas para pagar.</span>
+          </div>
+
+          <div class="installment-actions">
+            <button type="button" class="btn btn-light"
+              [disabled]="cargandoDetallePago || cuotasPendientesPago().length === 0"
+              (click)="seleccionarTodasCuotasPago()">
+              Seleccionar todas
+            </button>
+
+            <button type="button" class="btn btn-light"
+              [disabled]="cargandoDetallePago || cuotasSeleccionadasPago.length === 0" (click)="limpiarCuotasPago()"><s3s-icon name="refresh"></s3s-icon>
+              Limpiar selección
+            </button>
+          </div>
+        </div>
+
+        <div class="empty-box" *ngIf="cargandoDetallePago">
+          Cargando cuotas pendientes...
+        </div>
+
+        <small class="field-error" *ngIf="erroresCampo['cuotasPago']">
+          {{ erroresCampo['cuotasPago'] }}
+        </small>
+
+        <div class="empty-box" *ngIf="!cargandoDetallePago && cuotasPendientesPago().length === 0">
+          No hay cuotas pendientes para esta compra.
+        </div>
+
+        <div class="installment-payment-list" *ngIf="!cargandoDetallePago && cuotasPendientesPago().length > 0">
+          <button type="button" class="installment-payment-item" *ngFor="let cuota of cuotasPendientesPago()"
+            [class.selected]="estaCuotaPagoSeleccionada(cuota.idCuotaCompra)" (click)="seleccionarCuotaPago(cuota)">
+            <div class="installment-check">
+              <input type="checkbox" [checked]="estaCuotaPagoSeleccionada(cuota.idCuotaCompra)" readonly />
+            </div>
+
+            <div class="installment-info">
+              <strong>Cuota {{ cuota.numeroCuota }}</strong>
+              <span>Vence: {{ cuota.fechaVencimiento | date:'dd/MM/yyyy' }}</span>
+            </div>
+
+            <div class="installment-amounts">
+              <span>
+                Monto:
+                <strong>S/ {{ cuota.montoCuota | number:'1.2-2' }}</strong>
+              </span>
+
+              <span>
+                Pagado:
+                <strong>S/ {{ cuota.montoPagado | number:'1.2-2' }}</strong>
+              </span>
+
+              <span class="pending">
+                Pendiente:
+                <strong>S/ {{ calcularSaldoCuota(cuota) | number:'1.2-2' }}</strong>
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="s3s-compras-1009">Monto pagado</label>
+
+        <input id="s3s-compras-1009" type="number" [(ngModel)]="pago.montoPagado" name="montoPagoModal" min="0" step="0.01" readonly />
+
+        <small class="field-error" *ngIf="erroresCampo['montoPago']">
+          {{ erroresCampo['montoPago'] }}
+        </small>
+      </div>
+
+      <div class="field">
+        <label for="s3s-compras-1020">Observación</label>
+
+        <textarea id="s3s-compras-1020" [(ngModel)]="pago.observacion" name="observacionPagoModal" rows="3"
+          placeholder="Observación opcional..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-light" (click)="cerrarPago()">
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-primary" [disabled]="guardando || cargandoDetallePago"
+          (click)="registrarPago()">
+          {{ guardando ? 'Guardando...' : 'Registrar pago' }}
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="compraAnularSeleccionada">
+    <article class="modal-card">
+      <h2>Anular compra</h2>
+
+      <p>
+        Se revertirá la entrada de stock de la compra
+        <strong>{{ compraAnularSeleccionada.documentoCompleto }}</strong>.
+        Los pagos realizados se devolverán a la caja abierta, conservando los egresos originales
+        y su devolución en el historial. Confirma que corresponde devolver ese dinero.
+      </p>
+
+      <div class="field">
+        <label for="s3s-compras-1052">Motivo de anulación</label>
+
+        <textarea id="s3s-compras-1052" [(ngModel)]="anularDto.motivo" name="motivoAnulacion" rows="4" placeholder="Ingresa el motivo..."
+          (input)="limpiarErrorCampo('motivoAnulacion')"></textarea>
+
+        <small class="field-error" *ngIf="erroresCampo['motivoAnulacion']">
+          {{ erroresCampo['motivoAnulacion'] }}
+        </small>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-light" (click)="cerrarAnular()"><s3s-icon name="trash"></s3s-icon>
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-danger" [disabled]="guardando" (click)="anularCompra()"><s3s-icon name="trash"></s3s-icon>
+          {{ guardando ? 'Anulando...' : 'Confirmar anulación' }}
+        </button>
+      </div>
+    </article>
+  </div>
+</section>

@@ -1,9 +1,9 @@
 <section class="detail-shell">
-  <div class="public-status" *ngIf="cargando">
+  <div class="public-status" *ngIf="cargando" role="status">
     Cargando información del producto...
   </div>
 
-  <div class="public-status error" *ngIf="error">
+  <div class="public-status error" *ngIf="error" role="status">
     {{ error }}
 
     <button type="button" (click)="volverCatalogo()">
@@ -23,13 +23,7 @@
     <section class="product-detail">
       <div class="gallery-card">
         <div class="main-image">
-          <img
-            *ngIf="imagenSeleccionada"
-            [src]="imagenSeleccionada"
-            [alt]="producto.nombre"
-            decoding="async"
-            fetchpriority="high"
-          />
+          <app-imagen-catalogo [ruta]="imagenSeleccionada" [descripcion]="producto.nombre" *ngIf="imagenSeleccionada" />
 
           <div class="image-placeholder" *ngIf="!imagenSeleccionada">
             <strong>3S</strong>
@@ -42,9 +36,10 @@
             type="button"
             *ngFor="let imagen of imagenes; trackBy: trackByImagen"
             [class.active]="imagenSeleccionada === imagen.urlImagen"
+            [attr.aria-pressed]="imagenSeleccionada === imagen.urlImagen" [attr.aria-label]="'Ver imagen: ' + (imagen.textoAlternativo || producto.nombre)"
             (click)="seleccionarImagen(imagen)"
           >
-            <img [src]="imagen.urlImagen" [alt]="imagen.textoAlternativo" loading="lazy" />
+            <app-imagen-catalogo [ruta]="imagen.urlImagen" [descripcion]="imagen.textoAlternativo" />
           </button>
         </div>
       </div>
@@ -83,9 +78,9 @@
 
         <div class="quote-panel">
           <div class="qty-control">
-            <label>Cantidad a cotizar</label>
+            <label for="producto-cantidad">Cantidad a cotizar</label>
 
-            <input
+            <input id="producto-cantidad"
               type="number"
               min="1"
               [(ngModel)]="producto.cantidad"
@@ -93,18 +88,20 @@
             />
           </div>
 
-          <button type="button" class="main-quote-btn" (click)="abrirWhatsAppProducto(producto)">
-            Cotizar este producto por WhatsApp
+          <button type="button" class="main-quote-btn" (click)="accionCotizar(producto)">
+            {{ clienteLogueado ? 'Agregar al carrito de cotización' : 'Cotizar este producto por WhatsApp' }}
           </button>
         </div>
 
-        <div class="operation-message" *ngIf="mensajeOperacion">
+        <div class="operation-message" *ngIf="mensajeOperacion" role="status">
           {{ mensajeOperacion }}
         </div>
 
         <div class="account-note" *ngIf="!clienteLogueado">
-          
-          
+          <strong>¿Deseas cotizar varios productos?</strong>
+          <p>
+            Crea una cuenta de cliente para agregar productos al carrito y enviar una solicitud conjunta al equipo comercial.
+          </p>
 
           <a routerLink="/cliente/registro">
             Crear cuenta de cliente
@@ -125,13 +122,7 @@
           *ngFor="let item of relacionados; trackBy: trackByProducto"
         >
           <button type="button" class="related-image" (click)="verProductoRelacionado(item)">
-            <img
-              *ngIf="item.imagenUrl"
-              [src]="item.imagenUrl"
-              [alt]="item.nombre"
-              loading="lazy"
-              decoding="async"
-            />
+            <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombre" *ngIf="item.imagenUrl" />
 
             <div class="image-placeholder small" *ngIf="!item.imagenUrl">
               <strong>3S</strong>

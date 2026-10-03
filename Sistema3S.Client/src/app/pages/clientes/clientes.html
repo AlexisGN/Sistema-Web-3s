@@ -1,6 +1,6 @@
 <div class="clientes-page">
   <section class="page-hero">
-    <div class="page-hero__content">
+    <div class="page-hero__content s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="people"></s3s-icon></span>
       <span class="hero-chip">Gestión comercial</span>
 
       <h1>Gestión de clientes</h1>
@@ -36,10 +36,11 @@
       </div>
 
       <form class="cliente-form" (ngSubmit)="guardarCliente()" #clienteForm="ngForm">
-        <div class="field field-quarter">
-          <label>Tipo de cliente</label>
+        <div class="s3s-form-heading"><s3s-icon name="people"></s3s-icon><h3>Identificación y ubicación</h3></div>
+<div class="field field-quarter">
+          <label for="s3s-clientes-52">Tipo de cliente</label>
 
-          <select [(ngModel)]="cliente.idTipoCliente" name="idTipoCliente" required (change)="cambiarTipoCliente()">
+          <select id="s3s-clientes-52" [(ngModel)]="cliente.idTipoCliente" name="idTipoCliente" required (change)="cambiarTipoCliente()">
             <option [ngValue]="0">Selecciona</option>
 
             <option *ngFor="let tipo of tiposCliente" [ngValue]="tipo.idTipoCliente">
@@ -53,9 +54,9 @@
         </div>
 
         <div class="field field-quarter">
-          <label>Tipo de documento</label>
+          <label for="s3s-clientes-70">Tipo de documento</label>
 
-          <select [(ngModel)]="cliente.idTipoDocumento" name="idTipoDocumento" required
+          <select id="s3s-clientes-70" [(ngModel)]="cliente.idTipoDocumento" name="idTipoDocumento" required
             (change)="limpiarErrorCampo('idTipoDocumento')">
             <option [ngValue]="0">Selecciona</option>
 
@@ -70,16 +71,16 @@
         </div>
 
         <div class="field field-documento field-full">
-          <label>Número de documento</label>
+          <label for="s3s-clientes-90">Número de documento</label>
 
           <div class="documento-search">
-            <input type="text" [(ngModel)]="cliente.numeroDocumento" name="numeroDocumento"
+            <input id="s3s-clientes-90" type="text" [(ngModel)]="cliente.numeroDocumento" name="numeroDocumento"
               [placeholder]="esEmpresa() ? 'Ingrese RUC de 11 dígitos' : 'Ingrese DNI de 8 dígitos'"
               [maxlength]="esEmpresa() ? 11 : 8" inputmode="numeric" autocomplete="off"
               (input)="filtrarDocumentoSoloNumeros()" />
 
             <button type="button" class="btn-consulta-documento" (click)="consultarDocumento()"
-              [disabled]="consultandoDocumento || cargandoCombos">
+              [disabled]="consultandoDocumento || cargandoCombos"><s3s-icon name="search"></s3s-icon>
               <span *ngIf="!consultandoDocumento">
                 {{ esEmpresa() ? 'Consultar SUNAT' : 'Consultar RENIEC' }}
               </span>
@@ -104,13 +105,13 @@
         </div>
 
         <div class="field field-ubigeo field-full">
-          <label>Ubicación</label>
+          <label for="s3s-clientes-119">Ubicación</label>
 
           <div class="ubigeo-search">
-            <input type="text" [(ngModel)]="ubigeoBuscar" name="ubigeoBuscar"
+            <input id="s3s-clientes-119" type="text" [(ngModel)]="ubigeoBuscar" name="ubigeoBuscar"
               placeholder="Buscar por código, departamento, provincia o distrito" (input)="buscarUbigeos()" />
 
-            <button type="button" class="btn-clear-ubigeo" *ngIf="cliente.idUbigeo" (click)="limpiarUbigeo()">
+            <button type="button" class="btn-clear-ubigeo" *ngIf="cliente.idUbigeo" (click)="limpiarUbigeo()"><s3s-icon name="refresh"></s3s-icon>
               Limpiar
             </button>
           </div>
@@ -130,14 +131,14 @@
         </div>
 
         <ng-container *ngIf="esPersonaNatural()">
-          <div class="field field-full section-title">
+          <div class="field field-full section-title"><s3s-icon name="people"></s3s-icon>
             <span>Datos de persona natural</span>
           </div>
 
           <div class="field">
-            <label>Nombres</label>
+            <label for="s3s-clientes-151">Nombres</label>
 
-            <input type="text" [(ngModel)]="cliente.nombres" name="nombres" placeholder="Ej. Juan Carlos"
+            <input id="s3s-clientes-151" type="text" [(ngModel)]="cliente.nombres" name="nombres" placeholder="Ej. Juan Carlos"
               (input)="limpiarErrorCampo('nombres')" />
 
             <small class="field-error" *ngIf="erroresCampo['nombres']">
@@ -146,9 +147,9 @@
           </div>
 
           <div class="field">
-            <label>Apellido paterno</label>
+            <label for="s3s-clientes-162">Apellido paterno</label>
 
-            <input type="text" [(ngModel)]="cliente.apellidoPaterno" name="apellidoPaterno" placeholder="Ej. Ramírez"
+            <input id="s3s-clientes-162" type="text" [(ngModel)]="cliente.apellidoPaterno" name="apellidoPaterno" placeholder="Ej. Ramírez"
               (input)="limpiarErrorCampo('apellidoPaterno')" />
 
             <small class="field-error" *ngIf="erroresCampo['apellidoPaterno']">
@@ -157,9 +158,9 @@
           </div>
 
           <div class="field">
-            <label>Apellido materno</label>
+            <label for="s3s-clientes-173">Apellido materno</label>
 
-            <input type="text" [(ngModel)]="cliente.apellidoMaterno" name="apellidoMaterno" placeholder="Opcional"
+            <input id="s3s-clientes-173" type="text" [(ngModel)]="cliente.apellidoMaterno" name="apellidoMaterno" placeholder="Opcional"
               (input)="limpiarErrorCampo('apellidoMaterno')" />
 
             <small class="field-error" *ngIf="erroresCampo['apellidoMaterno']">
@@ -169,14 +170,14 @@
         </ng-container>
 
         <ng-container *ngIf="esEmpresa()">
-          <div class="field field-full section-title">
+          <div class="field field-full section-title"><s3s-icon name="people"></s3s-icon>
             <span>Datos de empresa</span>
           </div>
 
           <div class="field field-full">
-            <label>Razón social</label>
+            <label for="s3s-clientes-193">Razón social</label>
 
-            <input type="text" [(ngModel)]="cliente.razonSocial" name="razonSocial"
+            <input id="s3s-clientes-193" type="text" [(ngModel)]="cliente.razonSocial" name="razonSocial"
               placeholder="Ej. Agroindustrial La Esperanza S.A.C." (input)="limpiarErrorCampo('razonSocial')" />
 
             <small class="field-error" *ngIf="erroresCampo['razonSocial']">
@@ -185,20 +186,19 @@
           </div>
 
           <div class="field field-full">
-            <label>Nombre comercial</label>
+            <label for="s3s-clientes-204">Nombre comercial</label>
 
-            <input type="text" [(ngModel)]="cliente.nombreComercial" name="nombreComercial" placeholder="Opcional" />
+            <input id="s3s-clientes-204" type="text" [(ngModel)]="cliente.nombreComercial" name="nombreComercial" placeholder="Opcional" />
           </div>
         </ng-container>
 
-        <div class="field field-full section-title">
+        <div class="field field-full section-title"><s3s-icon name="people"></s3s-icon>
           <span>Datos de contacto del cliente</span>
         </div>
+<div class="field">
+          <label for="s3s-clientes-219">Correo</label>
 
-        <div class="field">
-          <label>Correo</label>
-
-          <input type="email" [(ngModel)]="cliente.correo" name="correo" placeholder="correo@empresa.com"
+          <input id="s3s-clientes-219" type="email" [(ngModel)]="cliente.correo" name="correo" placeholder="correo@empresa.com"
             (input)="limpiarErrorCampo('correo')" />
 
           <small class="field-error" *ngIf="erroresCampo['correo']">
@@ -207,24 +207,24 @@
         </div>
 
         <div class="field">
-          <label>Teléfono</label>
+          <label for="s3s-clientes-230">Teléfono</label>
 
-          <input type="text" [(ngModel)]="cliente.telefono" name="telefono" placeholder="+51999999999" maxlength="12"
-            autocomplete="off" (input)="limpiarErrorCampo('telefono')" />
+          <div class="telefono-pe"><span aria-hidden="true">+51</span><input s3sTelefonoPe id="s3s-clientes-230" type="tel" [(ngModel)]="cliente.telefono" name="telefono" placeholder="999999999" 
+             (input)="limpiarErrorCampo('telefono')" /></div>
 
           <small class="field-error" *ngIf="erroresCampo['telefono']">
             {{ erroresCampo['telefono'] }}
           </small>
 
           <small class="field-help">
-            Formato Perú: +51 seguido de 9 dígitos.
+            Ingresa los 9 dígitos. El prefijo +51 ya está incluido.
           </small>
         </div>
 
         <div class="field field-full">
-          <label>Dirección</label>
+          <label for="s3s-clientes-244">Dirección</label>
 
-          <input type="text" [(ngModel)]="cliente.direccion" name="direccion" placeholder="Dirección fiscal o comercial"
+          <input id="s3s-clientes-244" type="text" [(ngModel)]="cliente.direccion" name="direccion" placeholder="Dirección fiscal o comercial"
             (input)="limpiarErrorCampo('direccion')" />
 
           <small class="field-error" *ngIf="erroresCampo['direccion']">
@@ -253,7 +253,7 @@
               <div class="field">
                 <label>Nombres</label>
 
-                <input type="text" [(ngModel)]="contacto.nombres" name="contactoNombres" placeholder="Ej. Luis Alberto"
+                <input aria-label="Ej. Luis Alberto" type="text" [(ngModel)]="contacto.nombres" name="contactoNombres" placeholder="Ej. Luis Alberto"
                   (input)="limpiarErrorCampo('contactoNombres')" />
 
                 <small class="field-error" *ngIf="erroresCampo['contactoNombres']">
@@ -264,7 +264,7 @@
               <div class="field">
                 <label>Apellido paterno</label>
 
-                <input type="text" [(ngModel)]="contacto.apellidoPaterno" name="contactoApellidoPaterno"
+                <input aria-label="Ej. Ramírez" type="text" [(ngModel)]="contacto.apellidoPaterno" name="contactoApellidoPaterno"
                   placeholder="Ej. Ramírez" (input)="limpiarErrorCampo('contactoApellidoPaterno')" />
 
                 <small class="field-error" *ngIf="erroresCampo['contactoApellidoPaterno']">
@@ -275,7 +275,7 @@
               <div class="field">
                 <label>Apellido materno</label>
 
-                <input type="text" [(ngModel)]="contacto.apellidoMaterno" name="contactoApellidoMaterno"
+                <input aria-label="Opcional" type="text" [(ngModel)]="contacto.apellidoMaterno" name="contactoApellidoMaterno"
                   placeholder="Opcional" (input)="limpiarErrorCampo('contactoApellidoMaterno')" />
 
                 <small class="field-error" *ngIf="erroresCampo['contactoApellidoMaterno']">
@@ -286,14 +286,14 @@
               <div class="field">
                 <label>Cargo</label>
 
-                <input type="text" [(ngModel)]="contacto.cargo" name="contactoCargo"
+                <input aria-label="Ej. Jefe de mantenimiento" type="text" [(ngModel)]="contacto.cargo" name="contactoCargo"
                   placeholder="Ej. Jefe de mantenimiento" />
               </div>
 
               <div class="field">
                 <label>Correo del contacto</label>
 
-                <input type="email" [(ngModel)]="contacto.correo" name="contactoCorreo"
+                <input aria-label="contacto@empresa.com" type="email" [(ngModel)]="contacto.correo" name="contactoCorreo"
                   placeholder="contacto@empresa.com" (input)="limpiarErrorCampo('contactoCorreo')" />
 
                 <small class="field-error" *ngIf="erroresCampo['contactoCorreo']">
@@ -304,15 +304,15 @@
               <div class="field">
                 <label>Teléfono del contacto</label>
 
-                <input type="text" [(ngModel)]="contacto.telefono" name="contactoTelefono" placeholder="+51999999999"
-                  maxlength="12" autocomplete="off" (input)="limpiarErrorCampo('contactoTelefono')" />
+                <div class="telefono-pe"><span aria-hidden="true">+51</span><input s3sTelefonoPe  type="tel" [(ngModel)]="contacto.telefono" name="contactoTelefono" placeholder="999999999"
+                    (input)="limpiarErrorCampo('contactoTelefono')" /></div>
 
                 <small class="field-error" *ngIf="erroresCampo['contactoTelefono']">
                   {{ erroresCampo['contactoTelefono'] }}
                 </small>
 
                 <small class="field-help">
-                  Formato Perú: +51 seguido de 9 dígitos.
+                  Ingresa los 9 dígitos. El prefijo +51 ya está incluido.
                 </small>
               </div>
             </div>
@@ -328,7 +328,7 @@
 
         <div class="field field-full form-actions">
           <button type="submit" class="btn btn-primary"
-            [disabled]="guardando || cargandoCombos || consultandoDocumento">
+            [disabled]="guardando || cargandoCombos || consultandoDocumento"><s3s-icon name="check"></s3s-icon>
             {{
             guardando
             ? 'Guardando...'
@@ -336,7 +336,7 @@
             }}
           </button>
 
-          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
+          <button type="button" class="btn btn-secondary" (click)="limpiarFormulario()"><s3s-icon name="refresh"></s3s-icon>
             {{ editando ? 'Cancelar edición' : 'Limpiar' }}
           </button>
         </div>
@@ -363,10 +363,10 @@
       </div>
 
       <div class="search-bar">
-        <input type="text" [(ngModel)]="buscar" name="buscar"
+        <input aria-label="Buscar por DNI, RUC, cliente, correo, teléfono o contacto..." type="text" [(ngModel)]="buscar" name="buscar"
           placeholder="Buscar por DNI, RUC, cliente, correo, teléfono o contacto..." (keyup.enter)="buscarClientes()" />
 
-        <button type="button" class="btn btn-dark" (click)="buscarClientes()">
+        <button type="button" class="btn btn-dark" (click)="buscarClientes()"><s3s-icon name="search"></s3s-icon>
           Buscar
         </button>
       </div>
@@ -460,11 +460,11 @@
           </div>
 
           <div class="cliente-card__actions">
-            <button type="button" class="btn btn-edit" (click)="editarCliente(item)">
+            <button type="button" class="btn btn-edit" (click)="editarCliente(item)"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
-            <button type="button" class="btn btn-delete" (click)="eliminarCliente(item)" [disabled]="!item.estado">
+            <button type="button" class="btn btn-delete" (click)="eliminarCliente(item)" [disabled]="!item.estado"><s3s-icon name="trash"></s3s-icon>
               Desactivar
             </button>
           </div>
