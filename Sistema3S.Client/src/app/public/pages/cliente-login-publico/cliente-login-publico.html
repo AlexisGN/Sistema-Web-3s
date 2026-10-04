@@ -57,7 +57,7 @@
         /><button type="button" (click)="mostrarClave = !mostrarClave" [attr.aria-label]="mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="mostrarClave"><s3s-icon name="eye" /></button></div>
       </div>
 
-      
+      <a class="recovery-link" routerLink="/cliente/recuperar">¿Olvidaste tu contraseña?</a>
       <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
       </s3s-aviso>

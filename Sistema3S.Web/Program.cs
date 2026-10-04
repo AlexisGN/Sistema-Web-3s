@@ -74,6 +74,9 @@ builder.Services
 // Políticas estándar para los atributos Authorize de los controladores.
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<ClienteCuentaService>();
+builder.Services.AddSingleton<RecuperacionClienteQueue>();
+builder.Services.AddHostedService<RecuperacionClienteWorker>();
 builder.Services.AddRateLimiter(options => {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, ct) => {

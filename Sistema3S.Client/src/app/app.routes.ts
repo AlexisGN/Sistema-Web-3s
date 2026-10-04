@@ -81,9 +81,21 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./public/pages/servicio-detalle-publico/servicio-detalle-publico').then(m => m.ServicioDetallePublicoComponent)
       },
-      
-      
-      
+      {
+        path: 'cliente/recuperar',
+        title: 'Recuperar cuenta | 3S', data: { modo: 'recuperar', titulo: 'Recuperar cuenta' },
+        loadComponent: () => import('./public/pages/cliente-seguridad/cliente-seguridad').then(m => m.ClienteSeguridadComponent)
+      },
+      {
+        path: 'cliente/restablecer',
+        title: 'Restablecer contraseña | 3S', data: { modo: 'restablecer', titulo: 'Restablecer contraseña' },
+        loadComponent: () => import('./public/pages/cliente-seguridad/cliente-seguridad').then(m => m.ClienteSeguridadComponent)
+      },
+      {
+        path: 'cliente/seguridad',
+        title: 'Seguridad de cuenta | 3S', data: { modo: 'cambiar', titulo: 'Seguridad de cuenta' },
+        loadComponent: () => import('./public/pages/cliente-seguridad/cliente-seguridad').then(m => m.ClienteSeguridadComponent)
+      },
       {
         path: 'cliente/login',
         title: 'Iniciar sesión | 3S', data: { titulo: 'Iniciar sesión' },
