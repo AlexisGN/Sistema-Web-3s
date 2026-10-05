@@ -108,7 +108,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./public/pages/cliente-registro-publico/cliente-registro-publico').then(m => m.ClienteRegistroPublicoComponent)
       },
-      
+      {
+        path: 'cliente/perfil',
+        title: 'Mi perfil | 3S', data: { titulo: 'Mi perfil' },
+        loadComponent: () =>
+          import('./public/pages/cliente-perfil-publico/cliente-perfil-publico').then(m => m.ClientePerfilPublicoComponent)
+      },
       {
         path: 'cliente/carrito',
         title: 'Carrito de cotización | 3S', data: { titulo: 'Carrito de cotización' },

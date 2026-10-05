@@ -20,7 +20,7 @@
           <button type="button" class="account-btn" (click)="toggleCuenta()" [attr.aria-expanded]="cuentaAbierta" aria-controls="account-dropdown"><s3s-icon name="people" /><span>{{ clienteLogueado ? nombreClienteCorto : 'Mi cuenta' }}</span></button>
           <div id="account-dropdown" class="account-dropdown" *ngIf="cuentaAbierta && clienteSesion">
             <div class="account-summary"><strong>{{ clienteSesion.nombreCliente }}</strong><small>{{ clienteSesion.correo }}</small></div>
-            <a routerLink="/cliente/historial-cotizaciones" (click)="cerrarCuenta()">Mis cotizaciones</a><a routerLink="/cliente/seguridad" (click)="cerrarCuenta()">Seguridad</a><button type="button" class="logout-option" (click)="cerrarSesionCliente()"><s3s-icon name="logout" /> Cerrar sesión</button>
+            <a routerLink="/cliente/perfil" (click)="cerrarCuenta()">Mi perfil</a><a routerLink="/cliente/historial-cotizaciones" (click)="cerrarCuenta()">Mis cotizaciones</a><a routerLink="/cliente/seguridad" (click)="cerrarCuenta()">Seguridad</a><button type="button" class="logout-option" (click)="cerrarSesionCliente()"><s3s-icon name="logout" /> Cerrar sesión</button>
           </div>
         </div>
         <button type="button" class="quote-btn" (click)="abrirWhatsAppGeneral()">Cotizar <s3s-icon name="arrow" /></button>

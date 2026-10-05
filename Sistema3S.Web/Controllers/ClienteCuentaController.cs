@@ -13,6 +13,12 @@ public sealed class ClienteCuentaController(ClienteCuentaService service, Recupe
 {
     private int Usuario => int.TryParse(User.FindFirst("idUsuario")?.Value,out var id) ? id : 0;
     private int Cliente => int.TryParse(User.FindFirst("idCliente")?.Value,out var id) ? id : 0;
+    [HttpGet("perfil")]
+    public Task<IActionResult> Perfil() => Ejecutar(() => service.PerfilAsync(Usuario,Cliente));
+    [HttpPut("perfil")]
+    public Task<IActionResult> Editar(ClientePerfilEditarDto dto) => Ejecutar(() => service.EditarPerfilAsync(Usuario,Cliente,dto));
+    [HttpGet("ubicaciones")]
+    public Task<IActionResult> Ubicaciones([FromQuery] string? q="") => Ejecutar(() => service.UbigeosAsync((q ?? "").Trim()[..Math.Min((q ?? "").Trim().Length,80)]));
     [HttpPost("cambiar-contrasena"), EnableRateLimiting("cuenta-cliente")]
     public Task<IActionResult> Cambiar(ClienteCambiarClaveDto dto) => Ejecutar(async () => { await service.CambiarClaveAsync(Usuario,dto); return new { mensaje="Contraseña actualizada. Inicia sesión nuevamente." }; });
 
