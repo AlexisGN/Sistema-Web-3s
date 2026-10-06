@@ -842,6 +842,39 @@ END;
 
 GO
 /* =========================================================
+   6. FUNCIÓN PARA VALIDAR ADMINISTRADOR
+   ========================================================= */
+
+CREATE   FUNCTION dbo.fn_EsUsuarioAdministrador
+(
+    @IdUsuario INT
+)
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @EsAdministrador BIT = 0;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario
+          AND u.Estado = 1
+          AND r.Estado = 1
+          AND (
+                UPPER(LTRIM(RTRIM(r.Nombre))) = 'ADMINISTRADOR'
+             OR UPPER(LTRIM(RTRIM(r.Nombre))) = 'ADMIN'
+          )
+    )
+    BEGIN
+        SET @EsAdministrador = 1;
+    END;
+
+    RETURN @EsAdministrador;
+END;
+
+GO
+/* =========================================================
    7. PROCEDIMIENTO: ABRIR CAJA
    ========================================================= */
 
@@ -992,6 +1025,77 @@ BEGIN
         @IdCotizacion AS IdCotizacion,
         @ArchivoPdf AS ArchivoPdf,
         'PDF de cotización actualizado correctamente.' AS Mensaje;
+END;
+
+GO
+/* =========================================================
+   14. PROCEDIMIENTO: ACTUALIZAR USUARIO
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ActualizarUsuario
+    @IdUsuario INT,
+    @IdRol INT,
+    @Correo NVARCHAR(300),
+    @Estado BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdRolActual INT;
+    DECLARE @RolActual NVARCHAR(100);
+    DECLARE @RolNuevo NVARCHAR(100);
+    DECLARE @EstadoActual BIT;
+
+    SET @Correo = LOWER(LTRIM(RTRIM(ISNULL(@Correo, ''))));
+
+    IF @IdUsuario <= 0 OR NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE IdUsuario = @IdUsuario)
+        THROW 72301, 'El usuario seleccionado no existe.', 1;
+
+    IF @IdRol <= 0 OR NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE IdRol = @IdRol AND Estado = 1)
+        THROW 72302, 'Selecciona un rol válido.', 1;
+
+    IF @Correo = '' OR @Correo NOT LIKE '%_@_%._%'
+        THROW 72303, 'Ingresa un correo válido.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.Usuario
+        WHERE LOWER(Correo) = @Correo
+          AND IdUsuario <> @IdUsuario
+    )
+        THROW 72304, 'Ya existe otro usuario registrado con ese correo.', 1;
+
+    SELECT
+        @IdRolActual = u.IdRol,
+        @RolActual = r.Nombre,
+        @EstadoActual = u.Estado
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+    WHERE u.IdUsuario = @IdUsuario;
+
+    SELECT @RolNuevo = Nombre
+    FROM dbo.Rol
+    WHERE IdRol = @IdRol;
+
+    IF @EstadoActual = 1
+       AND UPPER(LTRIM(RTRIM(@RolActual))) IN ('ADMINISTRADOR', 'ADMIN')
+       AND (
+            ISNULL(@Estado, 0) = 0
+            OR UPPER(LTRIM(RTRIM(@RolNuevo))) NOT IN ('ADMINISTRADOR', 'ADMIN')
+       )
+       AND dbo.fn_CantidadAdministradoresActivos() <= 1
+    BEGIN
+        THROW 72305, 'No puedes quitar o desactivar el último administrador activo del sistema.', 1;
+    END;
+
+    UPDATE dbo.Usuario
+    SET
+        IdRol = @IdRol,
+        Correo = @Correo,
+        Estado = ISNULL(@Estado, 1)
+    WHERE IdUsuario = @IdUsuario;
+
+    EXEC dbo.sp_ObtenerUsuarioPorId @IdUsuario = @IdUsuario;
 END;
 
 GO
@@ -1516,6 +1620,98 @@ BEGIN
     END CATCH;
 END;
 GO
+/* =========================================================
+   13. PROCEDIMIENTO: CREAR USUARIO
+   La contraseña llega como hash desde backend.
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_CrearUsuario
+    @IdRol INT,
+    @Correo NVARCHAR(300),
+    @ContrasenaHash NVARCHAR(510),
+    @Estado BIT = 1
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdUsuario INT;
+
+    SET @Correo = LOWER(LTRIM(RTRIM(ISNULL(@Correo, ''))));
+    SET @ContrasenaHash = LTRIM(RTRIM(ISNULL(@ContrasenaHash, '')));
+
+    IF @IdRol <= 0 OR NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE IdRol = @IdRol AND Estado = 1)
+        THROW 72201, 'Selecciona un rol válido.', 1;
+
+    IF @Correo = '' OR @Correo NOT LIKE '%_@_%._%'
+        THROW 72202, 'Ingresa un correo válido.', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.Usuario WHERE LOWER(Correo) = @Correo)
+        THROW 72203, 'Ya existe un usuario registrado con ese correo.', 1;
+
+    IF LEN(@ContrasenaHash) < 20
+        THROW 72204, 'La contraseña no fue procesada correctamente.', 1;
+
+    INSERT INTO dbo.Usuario (
+        IdRol,
+        Correo,
+        ContrasenaHash,
+        Estado,
+        FechaRegistro
+    )
+    VALUES (
+        @IdRol,
+        @Correo,
+        @ContrasenaHash,
+        ISNULL(@Estado, 1),
+        GETDATE()
+    );
+
+    SET @IdUsuario = SCOPE_IDENTITY();
+
+    EXEC dbo.sp_ObtenerUsuarioPorId @IdUsuario = @IdUsuario;
+END;
+
+GO
+/* =========================================================
+   16. PROCEDIMIENTO: DESACTIVAR USUARIO
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_DesactivarUsuario
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Rol NVARCHAR(100);
+    DECLARE @Estado BIT;
+
+    IF @IdUsuario <= 0 OR NOT EXISTS (SELECT 1 FROM dbo.Usuario WHERE IdUsuario = @IdUsuario)
+        THROW 72501, 'El usuario seleccionado no existe.', 1;
+
+    SELECT
+        @Rol = r.Nombre,
+        @Estado = u.Estado
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+    WHERE u.IdUsuario = @IdUsuario;
+
+    IF @Estado = 1
+       AND UPPER(LTRIM(RTRIM(@Rol))) IN ('ADMINISTRADOR', 'ADMIN')
+       AND dbo.fn_CantidadAdministradoresActivos() <= 1
+    BEGIN
+        THROW 72502, 'No puedes desactivar el último administrador activo del sistema.', 1;
+    END;
+
+    UPDATE dbo.Usuario
+    SET Estado = 0
+    WHERE IdUsuario = @IdUsuario;
+
+    SELECT
+        'Usuario desactivado correctamente.' AS Mensaje,
+        @IdUsuario AS IdUsuario;
+END;
+
+GO
 CREATE   PROCEDURE dbo.sp_ExigirAdministradorAuditoria @IdUsuario INT
 AS
 BEGIN
@@ -1797,6 +1993,46 @@ BEGIN
       AND (@FechaFin IS NULL OR CONVERT(DATE, mc.FechaMovimiento) <= @FechaFin)
     ORDER BY mc.FechaMovimiento DESC, mc.IdMovimientoCaja DESC;
 END;
+GO
+/* =========================================================
+   11. PROCEDIMIENTO: LISTAR USUARIOS
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ListarUsuarios
+    @Buscar NVARCHAR(300) = NULL,
+    @SoloActivos BIT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @Buscar = NULLIF(LTRIM(RTRIM(ISNULL(@Buscar, ''))), '');
+
+    SELECT
+        u.IdUsuario,
+        u.IdRol,
+        r.Nombre AS Rol,
+        u.Correo,
+        u.Estado,
+        u.FechaRegistro,
+        ISNULL(permisos.TotalPermisos, 0) AS TotalPermisos
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+    OUTER APPLY (
+        SELECT COUNT(*) AS TotalPermisos
+        FROM dbo.RolPermiso rp
+        INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+        WHERE rp.IdRol = u.IdRol
+          AND p.Estado = 1
+    ) permisos
+    WHERE (@SoloActivos IS NULL OR u.Estado = @SoloActivos)
+      AND (
+            @Buscar IS NULL
+         OR u.Correo LIKE '%' + @Buscar + '%'
+         OR r.Nombre LIKE '%' + @Buscar + '%'
+      )
+    ORDER BY u.IdUsuario DESC;
+END;
+
 GO
 /* =========================================================
    6. LISTAR VENTAS
@@ -2583,6 +2819,29 @@ BEGIN
         @Numero AS Numero,
         CONCAT(@Serie, '-', @Numero) AS DocumentoCompleto;
 END
+
+GO
+/* =========================================================
+   12. PROCEDIMIENTO: OBTENER USUARIO POR ID
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ObtenerUsuarioPorId
+    @IdUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1
+        u.IdUsuario,
+        u.IdRol,
+        r.Nombre AS Rol,
+        u.Correo,
+        u.Estado,
+        u.FechaRegistro
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+    WHERE u.IdUsuario = @IdUsuario;
+END;
 
 GO
 /* =========================================================
@@ -5372,6 +5631,60 @@ BEGIN
 END;
 
 GO
+/* =========================================================
+   10. PROCEDIMIENTO: VALIDAR PERMISO DE USUARIO
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ValidarPermisoUsuario
+    @IdUsuario INT,
+    @Permiso NVARCHAR(200)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TienePermiso BIT = 0;
+    DECLARE @IdRol INT;
+    DECLARE @NombreRol NVARCHAR(100);
+
+    SET @Permiso = UPPER(LTRIM(RTRIM(ISNULL(@Permiso, ''))));
+
+    SELECT
+        @IdRol = u.IdRol,
+        @NombreRol = r.Nombre
+    FROM dbo.Usuario u
+    INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+    WHERE u.IdUsuario = @IdUsuario
+      AND u.Estado = 1
+      AND r.Estado = 1;
+
+    IF @IdRol IS NULL
+    BEGIN
+        SELECT CAST(0 AS BIT) AS TienePermiso;
+        RETURN;
+    END;
+
+    IF UPPER(LTRIM(RTRIM(@NombreRol))) IN ('ADMINISTRADOR', 'ADMIN')
+    BEGIN
+        SELECT CAST(1 AS BIT) AS TienePermiso;
+        RETURN;
+    END;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.RolPermiso rp
+        INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+        WHERE rp.IdRol = @IdRol
+          AND p.Estado = 1
+          AND UPPER(p.Nombre) = @Permiso
+    )
+    BEGIN
+        SET @TienePermiso = 1;
+    END;
+
+    SELECT @TienePermiso AS TienePermiso;
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_Caja_Auditoria ON dbo.[Caja] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6214,6 +6527,22 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdUnidadMedida]=d.[IdUnidadMedida];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_Usuario_Auditoria ON dbo.[Usuario] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdUsuario] IS NULL THEN N'CREAR' WHEN i.[IdUsuario] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Usuario',
+ COALESCE(i.[IdUsuario],d.[IdUsuario]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdUsuario] IS NOT NULL THEN (SELECT d.[IdUsuario],d.[IdRol],d.[Correo],d.[Estado],d.[FechaRegistro] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdUsuario] IS NOT NULL THEN (SELECT i.[IdUsuario],i.[IdRol],i.[Correo],i.[Estado],i.[FechaRegistro] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdUsuario]=d.[IdUsuario];
 END;
 
 GO

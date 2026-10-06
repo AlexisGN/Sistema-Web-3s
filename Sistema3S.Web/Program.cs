@@ -126,6 +126,8 @@ builder.Services.AddScoped<ICajaService, CajaService>();
 
 builder.Services.AddScoped<PasswordHashService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRolService, RolService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IClienteWebService, ClienteWebService>();
 builder.Services.AddScoped<ICatalogoArchivoService, CatalogoArchivoService>();
 

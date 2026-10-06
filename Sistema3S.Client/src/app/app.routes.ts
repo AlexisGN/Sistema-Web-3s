@@ -237,7 +237,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/caja/caja').then(m => m.CajaComponent)
       },
-      ]
+      {
+        path: 'usuarios-roles',
+        canActivate: [permissionGuard],
+        data: {
+          permisos: ['USUARIOS_VER', 'ROLES_VER', 'ROLES_GESTIONAR_PERMISOS']
+        },
+        loadComponent: () =>
+          import('./pages/usuarios-roles/usuarios-roles').then(m => m.UsuariosRolesComponent)
+      }
+    ]
   },
   {
     path: '**',
