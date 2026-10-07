@@ -84,5 +84,335 @@ namespace Sistema3S.Web.Services.Implementations
 
             return roles;
         }
+
+        public async Task<RolRespuestaListadoDto> CrearAsync(RolCrearDto dto)
+        {
+            var nombre = (dto.Nombre ?? string.Empty).Trim();
+            var descripcion = string.IsNullOrWhiteSpace(dto.Descripcion)
+                ? null
+                : dto.Descripcion.Trim();
+
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new InvalidOperationException("Ingresa el nombre del rol.");
+            }
+
+            if (nombre.Equals("Administrador", StringComparison.OrdinalIgnoreCase) || nombre.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("El rol administrador existente es reservado.");
+
+            await using var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.AbrirAuditadaAsync();
+            }
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                await using (var validar = connection.CreateCommand())
+                {
+                    validar.Transaction = transaction;
+                    validar.CommandText = @"
+                        SELECT COUNT(1)
+                        FROM dbo.Rol
+                        WHERE UPPER(LTRIM(RTRIM(Nombre))) = UPPER(@Nombre);
+                    ";
+
+                    var pNombre = validar.CreateParameter();
+                    pNombre.ParameterName = "@Nombre";
+                    pNombre.Value = nombre;
+                    validar.Parameters.Add(pNombre);
+
+                    var existe = Convert.ToInt32(await validar.ExecuteScalarAsync());
+
+                    if (existe > 0)
+                    {
+                        throw new InvalidOperationException("Ya existe un rol con ese nombre.");
+                    }
+                }
+
+                int idRol;
+
+                await using (var insertar = connection.CreateCommand())
+                {
+                    insertar.Transaction = transaction;
+                    insertar.CommandText = @"
+                        INSERT INTO dbo.Rol (Nombre, Descripcion, Estado)
+                        VALUES (@Nombre, @Descripcion, 1);
+
+                        SELECT CAST(SCOPE_IDENTITY() AS INT);
+                    ";
+
+                    var pNombre = insertar.CreateParameter();
+                    pNombre.ParameterName = "@Nombre";
+                    pNombre.Value = nombre;
+                    insertar.Parameters.Add(pNombre);
+
+                    var pDescripcion = insertar.CreateParameter();
+                    pDescripcion.ParameterName = "@Descripcion";
+                    pDescripcion.Value = descripcion ?? (object)DBNull.Value;
+                    insertar.Parameters.Add(pDescripcion);
+
+                    idRol = Convert.ToInt32(await insertar.ExecuteScalarAsync());
+                }
+
+                await transaction.CommitAsync();
+
+                return new RolRespuestaListadoDto
+                {
+                    Mensaje = "Rol creado correctamente.",
+                    Roles = await ListarAsync(null)
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<RolRespuestaListadoDto> ActualizarAsync(int idRol, RolActualizarDto dto)
+        {
+            var nombre = (dto.Nombre ?? string.Empty).Trim();
+            var descripcion = string.IsNullOrWhiteSpace(dto.Descripcion)
+                ? null
+                : dto.Descripcion.Trim();
+
+            if (idRol <= 0)
+            {
+                throw new InvalidOperationException("Selecciona un rol válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new InvalidOperationException("Ingresa el nombre del rol.");
+            }
+
+            await using var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.AbrirAuditadaAsync();
+            }
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                string? nombreActual;
+
+                await using (var obtener = connection.CreateCommand())
+                {
+                    obtener.Transaction = transaction;
+                    obtener.CommandText = @"
+                        SELECT Nombre
+                        FROM dbo.Rol
+                        WHERE IdRol = @IdRol;
+                    ";
+
+                    var pIdRol = obtener.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    obtener.Parameters.Add(pIdRol);
+
+                    nombreActual = Convert.ToString(await obtener.ExecuteScalarAsync());
+                }
+
+                if (string.IsNullOrWhiteSpace(nombreActual))
+                {
+                    throw new InvalidOperationException("No se encontró el rol seleccionado.");
+                }
+
+                if (!nombreActual.Trim().Equals("Administrador", StringComparison.OrdinalIgnoreCase) && !nombreActual.Trim().Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                    && (nombre.Equals("Administrador", StringComparison.OrdinalIgnoreCase) || nombre.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("El rol administrador existente es reservado.");
+
+                if (nombreActual.Trim().Equals("Administrador", StringComparison.OrdinalIgnoreCase))
+                {
+                    dto.Estado = true;
+                    nombre = "Administrador";
+                }
+
+                await using (var validar = connection.CreateCommand())
+                {
+                    validar.Transaction = transaction;
+                    validar.CommandText = @"
+                        SELECT COUNT(1)
+                        FROM dbo.Rol
+                        WHERE IdRol <> @IdRol
+                          AND UPPER(LTRIM(RTRIM(Nombre))) = UPPER(@Nombre);
+                    ";
+
+                    var pIdRol = validar.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    validar.Parameters.Add(pIdRol);
+
+                    var pNombre = validar.CreateParameter();
+                    pNombre.ParameterName = "@Nombre";
+                    pNombre.Value = nombre;
+                    validar.Parameters.Add(pNombre);
+
+                    var existe = Convert.ToInt32(await validar.ExecuteScalarAsync());
+
+                    if (existe > 0)
+                    {
+                        throw new InvalidOperationException("Ya existe otro rol con ese nombre.");
+                    }
+                }
+
+                await using (var actualizar = connection.CreateCommand())
+                {
+                    actualizar.Transaction = transaction;
+                    actualizar.CommandText = @"
+                        UPDATE dbo.Rol
+                        SET
+                            Nombre = @Nombre,
+                            Descripcion = @Descripcion,
+                            Estado = @Estado
+                        WHERE IdRol = @IdRol;
+                    ";
+
+                    var pNombre = actualizar.CreateParameter();
+                    pNombre.ParameterName = "@Nombre";
+                    pNombre.Value = nombre;
+                    actualizar.Parameters.Add(pNombre);
+
+                    var pDescripcion = actualizar.CreateParameter();
+                    pDescripcion.ParameterName = "@Descripcion";
+                    pDescripcion.Value = descripcion ?? (object)DBNull.Value;
+                    actualizar.Parameters.Add(pDescripcion);
+
+                    var pEstado = actualizar.CreateParameter();
+                    pEstado.ParameterName = "@Estado";
+                    pEstado.Value = dto.Estado;
+                    actualizar.Parameters.Add(pEstado);
+
+                    var pIdRol = actualizar.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    actualizar.Parameters.Add(pIdRol);
+
+                    await actualizar.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+
+                return new RolRespuestaListadoDto
+                {
+                    Mensaje = "Rol actualizado correctamente.",
+                    Roles = await ListarAsync(null)
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<RolOperacionResultadoDto> DesactivarAsync(int idRol)
+        {
+            if (idRol <= 0)
+            {
+                throw new InvalidOperationException("Selecciona un rol válido.");
+            }
+
+            await using var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.AbrirAuditadaAsync();
+            }
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                string? nombre;
+
+                await using (var obtener = connection.CreateCommand())
+                {
+                    obtener.Transaction = transaction;
+                    obtener.CommandText = @"
+                        SELECT Nombre
+                        FROM dbo.Rol
+                        WHERE IdRol = @IdRol;
+                    ";
+
+                    var pIdRol = obtener.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    obtener.Parameters.Add(pIdRol);
+
+                    nombre = Convert.ToString(await obtener.ExecuteScalarAsync());
+                }
+
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    throw new InvalidOperationException("No se encontró el rol seleccionado.");
+                }
+
+                if (nombre.Trim().Equals("Administrador", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("No se puede desactivar el rol Administrador.");
+                }
+
+                await using (var validarUsuarios = connection.CreateCommand())
+                {
+                    validarUsuarios.Transaction = transaction;
+                    validarUsuarios.CommandText = @"
+                        SELECT COUNT(1)
+                        FROM dbo.Usuario
+                        WHERE IdRol = @IdRol
+                          AND Estado = 1;
+                    ";
+
+                    var pIdRol = validarUsuarios.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    validarUsuarios.Parameters.Add(pIdRol);
+
+                    var totalUsuarios = Convert.ToInt32(await validarUsuarios.ExecuteScalarAsync());
+
+                    if (totalUsuarios > 0)
+                    {
+                        throw new InvalidOperationException("No se puede desactivar un rol con usuarios activos asignados.");
+                    }
+                }
+
+                await using (var desactivar = connection.CreateCommand())
+                {
+                    desactivar.Transaction = transaction;
+                    desactivar.CommandText = @"
+                        UPDATE dbo.Rol
+                        SET Estado = 0
+                        WHERE IdRol = @IdRol;
+                    ";
+
+                    var pIdRol = desactivar.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    desactivar.Parameters.Add(pIdRol);
+
+                    await desactivar.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+
+                return new RolOperacionResultadoDto
+                {
+                    IdRol = idRol,
+                    Mensaje = "Rol desactivado correctamente."
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }
