@@ -19,8 +19,8 @@
     </div>
   </section>
 
-  <section class="cotizaciones-grid">
-    <article class="panel panel-form">
+  <section class="cotizaciones-grid" [style.grid-template-columns]="permisos.tienePermiso('COTIZACIONES_CREAR') ? null : 'minmax(0, 1fr)'">
+    <article class="panel panel-form" *ngIf="permisos.tienePermiso('COTIZACIONES_CREAR')">
       <div class="panel-header">
         <div>
           <h2>Nueva cotización</h2>
@@ -437,7 +437,7 @@
     </div>
   </div>
 
-  <div class="modal-backdrop" *ngIf="modalWhatsappVisible">
+  <div class="modal-backdrop" *ngIf="modalWhatsappVisible && permisos.tienePermiso('COTIZACIONES_ENVIAR_WHATSAPP')">
     <div class="modal-card modal-whatsapp">
       <div class="modal-header">
         <div>
@@ -497,7 +497,7 @@
           class="btn btn-whatsapp"
           (click)="confirmarWhatsAppEnviado()"
           [disabled]="procesandoAccion && accionActual === 'confirmar-whatsapp'"
-        >
+         *ngIf="permisos.tienePermiso('COTIZACIONES_EDITAR')">
           {{
             procesandoAccion && accionActual === 'confirmar-whatsapp'
               ? 'Confirmando...'

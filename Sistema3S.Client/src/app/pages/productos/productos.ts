@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { SessionService } from '../../core/services/session.service';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -22,6 +24,7 @@ import { environment } from '../../../environments/environment';
   styleUrl: './productos.scss'
 })
 export class ProductosComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   productos: ProductoListado[] = [];
 
   categorias: CatalogoItem[] = [];
@@ -64,7 +67,7 @@ export class ProductosComponent implements OnInit {
 
   ngOnInit(): void {
     this.subirArriba();
-    this.cargarCombos();
+    if (this.permisos.tienePermiso('PRODUCTOS_CREAR') || this.permisos.tienePermiso('PRODUCTOS_EDITAR')) this.cargarCombos();
     this.cargarProductos();
   }
 
@@ -218,6 +221,7 @@ export class ProductosComponent implements OnInit {
   }
 
   guardarProducto(): void {
+    if (!(this.editando ? this.permisos.tienePermiso('PRODUCTOS_EDITAR') : this.permisos.tienePermiso('PRODUCTOS_CREAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -247,6 +251,7 @@ export class ProductosComponent implements OnInit {
   }
 
   registrarProducto(): void {
+    if (!this.permisos.tienePermiso('PRODUCTOS_CREAR')) return;
     this.guardando = true;
 
     this.productoService.crear(
@@ -274,6 +279,7 @@ export class ProductosComponent implements OnInit {
   }
 
   actualizarProducto(): void {
+    if (!this.permisos.tienePermiso('PRODUCTOS_EDITAR')) return;
     if (this.idProductoEditando === null) {
       this.error = 'No se encontró el producto a editar.';
       return;
@@ -319,6 +325,7 @@ export class ProductosComponent implements OnInit {
   }
 
   editarProducto(item: ProductoListado): void {
+    if (!(this.permisos.tienePermiso('PRODUCTOS_EDITAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -353,6 +360,7 @@ export class ProductosComponent implements OnInit {
   }
 
   eliminarProducto(idProducto: number): void {
+    if (!(this.permisos.tienePermiso('PRODUCTOS_ELIMINAR'))) return;
     const confirmar = confirm('¿Deseas eliminar este producto?');
 
     if (!confirmar) {

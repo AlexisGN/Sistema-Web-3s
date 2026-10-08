@@ -27,6 +27,7 @@ import {
   styleUrl: './ventas.scss'
 })
 export class VentasComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   private readonly sesionAnulacion = inject(SessionService);
   ventas: VentaListado[] = [];
   clientes: ClienteVenta[] = [];
@@ -187,6 +188,7 @@ export class VentasComponent implements OnInit {
   }
 
   cargarClientes(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_CREAR'))) return;
     this.buscandoClientes = true;
 
     this.ventaService.listarClientes(this.buscarCliente, 1, 10).subscribe({
@@ -205,6 +207,7 @@ export class VentasComponent implements OnInit {
   }
 
   cargarProductos(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_CREAR'))) return;
     this.buscandoProductos = true;
 
     this.ventaService.listarProductos(this.buscarProducto, 1, 10).subscribe({
@@ -226,6 +229,7 @@ export class VentasComponent implements OnInit {
   }
 
   cargarServicios(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_CREAR'))) return;
     this.buscandoServicios = true;
 
     this.ventaService.listarServicios(this.buscarServicio, 1, 10).subscribe({
@@ -247,6 +251,7 @@ export class VentasComponent implements OnInit {
   }
 
   cargarCotizacionParaVenta(idCotizacion: number): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_CONVERTIR_VENTA') && this.permisos.tienePermiso('VENTAS_CREAR'))) return;
     this.cargandoCotizacion = true;
     this.error = '';
     this.mensaje = '';
@@ -618,6 +623,7 @@ export class VentasComponent implements OnInit {
     this.cdr.detectChanges();
   }
   guardarVenta(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_CREAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -703,6 +709,7 @@ export class VentasComponent implements OnInit {
   }
 
   exportarReportePdf(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_REPORTE'))) return;
     this.error = '';
     this.mensaje = '';
     this.generandoReportePdf = true;
@@ -761,6 +768,7 @@ export class VentasComponent implements OnInit {
   }
 
   exportarReporteExcel(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_REPORTE'))) return;
     this.error = '';
     this.mensaje = '';
     this.generandoReporteExcel = true;
@@ -798,6 +806,7 @@ export class VentasComponent implements OnInit {
   }
 
   abrirPago(venta: VentaListado): void {
+    if (!(this.permisos.tienePermiso('VENTAS_COBRAR'))) return;
     this.ventaPagoSeleccionada = venta;
     this.ventaDetallePago = null;
     this.cargandoDetallePago = false;
@@ -857,6 +866,7 @@ export class VentasComponent implements OnInit {
   }
 
   registrarPago(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_COBRAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -928,6 +938,7 @@ export class VentasComponent implements OnInit {
   }
 
   anularVenta(): void {
+    if (!(this.permisos.tienePermiso('VENTAS_ANULAR'))) return;
     if (!this.sesionAnulacion.esAdministrador()) return;
     this.mensaje = '';
     this.error = '';
@@ -1297,10 +1308,12 @@ export class VentasComponent implements OnInit {
   }
 
   puedePagar(venta: VentaListado): boolean {
+    if (!this.permisos.tienePermiso('VENTAS_COBRAR')) return false;
     return venta.estadoVenta !== 'Anulada' && Number(venta.saldoPendiente) > 0;
   }
 
   puedeAnular(venta: VentaListado): boolean {
+    if (!this.permisos.tienePermiso('VENTAS_ANULAR')) return false;
     if (!this.sesionAnulacion.esAdministrador()) return false;
     return venta.estadoVenta !== 'Anulada';
   }

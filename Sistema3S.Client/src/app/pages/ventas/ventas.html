@@ -30,8 +30,8 @@
     Cargando cotización para venta...
   </div>
 
-  <section class="ventas-grid">
-    <article class="panel form-panel">
+  <section class="ventas-grid" [style.grid-template-columns]="permisos.tienePermiso('VENTAS_CREAR') ? null : 'minmax(0, 1fr)'">
+    <article class="panel form-panel" *ngIf="permisos.tienePermiso('VENTAS_CREAR')">
       <div class="panel-header">
         <div>
           <h2>Registrar venta</h2>
@@ -510,12 +510,12 @@
         </div>
 
         <div class="header-actions">
-          <button type="button" class="btn btn-light" [disabled]="generandoReportePdf" (click)="exportarReportePdf()"><s3s-icon name="download"></s3s-icon>
+          <button type="button" class="btn btn-light" [disabled]="generandoReportePdf" (click)="exportarReportePdf()" *ngIf="permisos.tienePermiso('VENTAS_REPORTE')"><s3s-icon name="download"></s3s-icon>
             {{ generandoReportePdf ? 'Generando...' : 'Reporte PDF' }}
           </button>
 
           <button type="button" class="btn btn-excel" [disabled]="generandoReporteExcel"
-            (click)="exportarReporteExcel()"><s3s-icon name="download"></s3s-icon>
+            (click)="exportarReporteExcel()" *ngIf="permisos.tienePermiso('VENTAS_REPORTE')"><s3s-icon name="download"></s3s-icon>
             {{ generandoReporteExcel ? 'Generando...' : 'Reporte Excel' }}
           </button>
         </div>
@@ -686,7 +686,7 @@
     </article>
   </section>
 
-  <div class="modal-backdrop" *ngIf="ventaPagoSeleccionada">
+  <div class="modal-backdrop" *ngIf="ventaPagoSeleccionada && permisos.tienePermiso('VENTAS_COBRAR')">
     <article class="modal-card payment-modal">
       <h2>Registrar cobro</h2>
 
@@ -838,7 +838,7 @@
     </article>
   </div>
 
-  <div class="modal-backdrop" *ngIf="ventaAnularSeleccionada">
+  <div class="modal-backdrop" *ngIf="ventaAnularSeleccionada && permisos.tienePermiso('VENTAS_ANULAR')">
     <article class="modal-card">
       <h2>Anular venta</h2>
 

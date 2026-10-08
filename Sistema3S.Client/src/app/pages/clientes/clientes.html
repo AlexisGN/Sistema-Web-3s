@@ -19,8 +19,8 @@
     </div>
   </section>
 
-  <section class="clientes-grid">
-    <article class="panel panel-form">
+  <section class="clientes-grid" [style.grid-template-columns]="(editando ? permisos.tienePermiso('CLIENTES_EDITAR') : permisos.tienePermiso('CLIENTES_CREAR')) ? null : 'minmax(0, 1fr)'">
+    <article class="panel panel-form" *ngIf="editando ? permisos.tienePermiso('CLIENTES_EDITAR') : permisos.tienePermiso('CLIENTES_CREAR')">
       <div class="panel-header">
         <div>
           <h2>{{ editando ? 'Editar cliente' : 'Nuevo cliente' }}</h2>
@@ -460,11 +460,11 @@
           </div>
 
           <div class="cliente-card__actions">
-            <button type="button" class="btn btn-edit" (click)="editarCliente(item)"><s3s-icon name="edit"></s3s-icon>
+            <button type="button" class="btn btn-edit" (click)="editarCliente(item)" *ngIf="permisos.tienePermiso('CLIENTES_EDITAR')"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
-            <button type="button" class="btn btn-delete" (click)="eliminarCliente(item)" [disabled]="!item.estado"><s3s-icon name="trash"></s3s-icon>
+            <button type="button" class="btn btn-delete" (click)="eliminarCliente(item)" [disabled]="!item.estado" *ngIf="permisos.tienePermiso('CLIENTES_DESACTIVAR')"><s3s-icon name="trash"></s3s-icon>
               Desactivar
             </button>
           </div>

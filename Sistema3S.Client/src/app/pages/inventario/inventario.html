@@ -205,7 +205,7 @@
       </div>
     </article>
 
-    <article class="panel panel-actions">
+    <article class="panel panel-actions" *ngIf="permisos.tienePermiso('INVENTARIO_AJUSTAR') || permisos.tienePermiso('INVENTARIO_REPORTE')">
       <div class="panel-header">
         <div>
           <h2>Gestión de stock</h2>
@@ -233,7 +233,7 @@
           {{ erroresCampo['producto'] }}
         </small>
 
-        <form class="action-form" (ngSubmit)="guardarStockMinimo()">
+        <form class="action-form" (ngSubmit)="guardarStockMinimo()" *ngIf="permisos.tienePermiso('INVENTARIO_AJUSTAR')">
           <div class="section-title"><s3s-icon name="layers"></s3s-icon>
             Actualizar stock mínimo
           </div>
@@ -265,7 +265,7 @@
           </button>
         </form>
 
-        <form class="action-form" (ngSubmit)="registrarMovimiento()">
+        <form class="action-form" (ngSubmit)="registrarMovimiento()" *ngIf="permisos.tienePermiso('INVENTARIO_AJUSTAR')">
           <div class="section-title"><s3s-icon name="layers"></s3s-icon>
             Registrar movimiento manual
           </div>
@@ -360,7 +360,7 @@
           {{ error }}
         </div>
 
-        <div class="history-box">
+        <div class="history-box" *ngIf="permisos.tienePermiso('INVENTARIO_REPORTE')">
           <h3>Historial del producto</h3>
 
           <div *ngIf="cargandoMovimientos" class="estado-box small">
@@ -393,7 +393,7 @@
     </article>
   </section>
 
-  <section class="panel recent-panel">
+  <section class="panel recent-panel" *ngIf="permisos.tienePermiso('INVENTARIO_REPORTE')">
     <div class="panel-header">
       <div>
         <h2>Movimientos recientes</h2>

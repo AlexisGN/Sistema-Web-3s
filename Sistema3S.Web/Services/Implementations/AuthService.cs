@@ -169,7 +169,7 @@ namespace Sistema3S.Web.Services.Implementations
             }
         }
 
-        private async Task<List<PermisoSesionDto>> ObtenerPermisosUsuarioAsync(int idUsuario)
+        public async Task<List<PermisoSesionDto>> ObtenerPermisosUsuarioAsync(int idUsuario)
         {
             var permisos = new List<PermisoSesionDto>();
 

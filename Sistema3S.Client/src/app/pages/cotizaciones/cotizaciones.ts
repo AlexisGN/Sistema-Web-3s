@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { inject, Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 
 import { CotizacionService } from '../../core/services/cotizacion';
 import {
@@ -25,6 +25,7 @@ import {
   styleUrl: './cotizaciones.scss'
 })
 export class CotizacionesComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   private readonly sesionAnulacion = inject(SessionService);
   private readonly rutaModuloVentas = '/admin/ventas';
 
@@ -89,8 +90,8 @@ export class CotizacionesComponent implements OnInit {
     this.error = '';
 
     forkJoin({
-      clientes: this.cotizacionService.listarClientes(),
-      elementos: this.cotizacionService.listarElementosCotizables(),
+      clientes: this.permisos.tienePermiso('COTIZACIONES_CREAR') ? this.cotizacionService.listarClientes() : of([]),
+      elementos: this.permisos.tienePermiso('COTIZACIONES_CREAR') ? this.cotizacionService.listarElementosCotizables() : of([]),
       estados: this.cotizacionService.listarEstados()
     }).subscribe({
       next: (data) => {
@@ -156,6 +157,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   guardarCotizacion(): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_CREAR'))) return;
     this.mensaje = '';
     this.error = '';
 
@@ -231,6 +233,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   generarPdf(item: CotizacionListado, abrirDespues = false): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_VER'))) return;
     this.mensaje = '';
     this.error = '';
 
@@ -299,6 +302,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   enviarCorreo(item: CotizacionListado): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_ENVIAR_CORREO'))) return;
     this.mensaje = '';
     this.error = '';
 
@@ -339,6 +343,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   enviarWhatsApp(item: CotizacionListado): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_ENVIAR_WHATSAPP'))) return;
     this.mensaje = '';
     this.error = '';
 
@@ -416,6 +421,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   confirmarWhatsAppEnviado(): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_EDITAR'))) return;
     if (!this.cotizacionWhatsAppPendiente) {
       this.error = 'No hay una cotización pendiente de confirmación por WhatsApp.';
       return;
@@ -460,6 +466,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   aprobarCotizacion(item: CotizacionListado): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_APROBAR'))) return;
     this.mensaje = '';
     this.error = '';
 
@@ -495,6 +502,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   cancelarCotizacion(item: CotizacionListado): void {
+    if (!(this.permisos.tienePermiso('COTIZACIONES_CANCELAR'))) return;
     if (!this.sesionAnulacion.esAdministrador()) return;
     this.mensaje = '';
     this.error = '';
@@ -922,25 +930,30 @@ export class CotizacionesComponent implements OnInit {
   }
 
   puedeGenerarPdf(item: CotizacionListado): boolean {
+    if (!this.permisos.tienePermiso('COTIZACIONES_VER')) return false;
     return !this.esEstado(item.estadoCotizacion, 'Convertida en venta') &&
       !this.esEstado(item.estadoCotizacion, 'Cancelada');
   }
 
   puedeEnviarCorreo(item: CotizacionListado): boolean {
+    if (!this.permisos.tienePermiso('COTIZACIONES_ENVIAR_CORREO')) return false;
     return this.esEstado(item.estadoCotizacion, 'Pendiente') ||
       this.esEstado(item.estadoCotizacion, 'Respondida');
   }
 
   puedeEnviarWhatsApp(item: CotizacionListado): boolean {
+    if (!this.permisos.tienePermiso('COTIZACIONES_ENVIAR_WHATSAPP')) return false;
     return this.esEstado(item.estadoCotizacion, 'Pendiente') ||
       this.esEstado(item.estadoCotizacion, 'Respondida');
   }
 
   puedeAprobar(item: CotizacionListado): boolean {
+    if (!this.permisos.tienePermiso('COTIZACIONES_APROBAR')) return false;
     return this.esEstado(item.estadoCotizacion, 'Respondida');
   }
 
   puedeCancelar(item: CotizacionListado): boolean {
+    if (!this.permisos.tienePermiso('COTIZACIONES_CANCELAR')) return false;
     if (!this.sesionAnulacion.esAdministrador()) return false;
     return this.esEstado(item.estadoCotizacion, 'Pendiente') ||
       this.esEstado(item.estadoCotizacion, 'Respondida') ||
@@ -948,6 +961,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   puedeConvertirEnVenta(item: CotizacionListado): boolean {
+    if (!this.permisos.tienePermiso('COTIZACIONES_CONVERTIR_VENTA') || !this.permisos.tienePermiso('VENTAS_CREAR') || !this.permisos.tienePermiso('VENTAS_VER')) return false;
     if (item.puedeConvertirVenta) {
       return true;
     }
@@ -958,6 +972,7 @@ export class CotizacionesComponent implements OnInit {
   }
 
   puedeVerVenta(item: CotizacionListado): boolean {
+    if (!this.permisos.tienePermiso('VENTAS_VER')) return false;
     return this.esEstado(item.estadoCotizacion, 'Convertida') ||
       !!item.idVentaAsociada ||
       !!item.idVentaGenerada;

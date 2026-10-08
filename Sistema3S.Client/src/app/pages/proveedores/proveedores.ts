@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { SessionService } from '../../core/services/session.service';
 import { TelefonoPeDirective } from '../../shared/telefono-pe/telefono-pe';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
@@ -21,6 +23,7 @@ import {
   styleUrl: './proveedores.scss'
 })
 export class ProveedoresComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   proveedores: ProveedorListado[] = [];
   ubigeos: Ubigeo[] = [];
 
@@ -91,6 +94,7 @@ export class ProveedoresComponent implements OnInit {
   }
 
   guardarProveedor(): void {
+    if (!(this.editando ? this.permisos.tienePermiso('PROVEEDORES_EDITAR') : this.permisos.tienePermiso('PROVEEDORES_CREAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -113,6 +117,7 @@ export class ProveedoresComponent implements OnInit {
   }
 
   registrarProveedor(): void {
+    if (!this.permisos.tienePermiso('PROVEEDORES_CREAR')) return;
     this.guardando = true;
 
     this.proveedorService.crear(this.proveedor).subscribe({
@@ -136,6 +141,7 @@ export class ProveedoresComponent implements OnInit {
   }
 
   actualizarProveedor(): void {
+    if (!this.permisos.tienePermiso('PROVEEDORES_EDITAR')) return;
     if (this.idProveedorEditando === null) {
       this.error = 'No se encontró el proveedor a editar.';
       return;
@@ -178,6 +184,7 @@ export class ProveedoresComponent implements OnInit {
   }
 
   editarProveedor(item: ProveedorListado): void {
+    if (!(this.permisos.tienePermiso('PROVEEDORES_EDITAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -224,6 +231,7 @@ export class ProveedoresComponent implements OnInit {
   }
 
   eliminarProveedor(idProveedor: number): void {
+    if (!(this.permisos.tienePermiso('PROVEEDORES_DESACTIVAR'))) return;
     const confirmar = confirm('¿Deseas eliminar este proveedor?');
 
     if (!confirmar) {

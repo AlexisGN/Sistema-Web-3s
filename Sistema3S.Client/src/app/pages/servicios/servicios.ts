@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { SessionService } from '../../core/services/session.service';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -19,6 +21,7 @@ import { environment } from '../../../environments/environment';
   styleUrl: './servicios.scss'
 })
 export class ServiciosComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   servicios: ServicioListado[] = [];
 
   cargando = false;
@@ -136,6 +139,7 @@ export class ServiciosComponent implements OnInit {
   }
 
   guardarServicio(): void {
+    if (!(this.editando ? this.permisos.tienePermiso('SERVICIOS_EDITAR') : this.permisos.tienePermiso('SERVICIOS_CREAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -166,6 +170,7 @@ export class ServiciosComponent implements OnInit {
   }
 
   registrarServicio(): void {
+    if (!this.permisos.tienePermiso('SERVICIOS_CREAR')) return;
     this.guardando = true;
 
     this.servicioService.crear(this.servicio, this.imagenArchivo!).subscribe({
@@ -189,6 +194,7 @@ export class ServiciosComponent implements OnInit {
   }
 
   actualizarServicio(): void {
+    if (!this.permisos.tienePermiso('SERVICIOS_EDITAR')) return;
     if (this.idServicioEditando === null) {
       this.error = 'No se encontró el servicio a editar.';
       return;
@@ -231,6 +237,7 @@ export class ServiciosComponent implements OnInit {
   }
 
   editarServicio(item: ServicioListado): void {
+    if (!(this.permisos.tienePermiso('SERVICIOS_EDITAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -262,6 +269,7 @@ export class ServiciosComponent implements OnInit {
   }
 
   eliminarServicio(idServicio: number): void {
+    if (!(this.permisos.tienePermiso('SERVICIOS_ELIMINAR'))) return;
     const confirmar = confirm('¿Deseas eliminar este servicio?');
 
     if (!confirmar) {

@@ -1,3 +1,4 @@
+import { inject } from '@angular/core';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -28,6 +29,7 @@ interface GrupoPermisos {
   styleUrl: './usuarios-roles.scss'
 })
 export class UsuariosRolesComponent implements OnInit, OnDestroy {
+  readonly permisos = inject(SessionService);
   mostrarFormulario = false;
   paginaUsuarios = 1;
   private consultaUsuarios?: Subscription;
@@ -85,6 +87,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.tabActiva = this.permisos.tienePermiso('USUARIOS_VER') ? 'usuarios' : this.permisos.tienePermiso('ROLES_VER') ? 'roles' : 'permisos';
     this.cargarTodo();
   }
 
@@ -108,6 +111,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   cambiarTab(tab: TabUsuariosRoles): void {
+    if (!this.permisos.tienePermiso({ usuarios: 'USUARIOS_VER', clientes: 'CLIENTES_VER', roles: 'ROLES_VER', permisos: 'ROLES_GESTIONAR_PERMISOS' }[tab])) return;
     if (this.procesando) return;
     this.tabActiva = tab;
     this.cerrarFormulario();
@@ -121,6 +125,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   cargarUsuarios(callback?: () => void): void {
+    if (!this.permisos.tienePermiso(this.tabActiva === 'clientes' ? 'CLIENTES_VER' : 'USUARIOS_VER')) { this.usuarios = []; callback?.(); return; }
     this.consultaUsuarios?.unsubscribe();
     this.cargando = true;
     this.error = '';
@@ -158,6 +163,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   cargarPermisosRol(idRol: number): void {
+    if (!this.permisos.tieneAlgunPermiso(['ROLES_VER', 'ROLES_GESTIONAR_PERMISOS'])) return;
     if (!idRol) {
       this.permisosRol = [];
       return;
@@ -188,6 +194,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   nuevoUsuario(): void {
+    if (!(this.permisos.tienePermiso('USUARIOS_CREAR'))) return;
     this.mostrarFormulario = true;
     this.cancelarCambioContrasena();
     this.limpiarMensajes();
@@ -205,6 +212,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   editarUsuario(usuario: UsuarioListado): void {
+    if (!(this.permisos.tienePermiso('USUARIOS_EDITAR'))) return;
     if (usuario.esCliente) return;
     this.mostrarFormulario = true;
     this.cancelarCambioContrasena();
@@ -222,6 +230,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   guardarUsuario(): void {
+    if (!(this.usuarioForm.editando ? this.permisos.tienePermiso('USUARIOS_EDITAR') : this.permisos.tienePermiso('USUARIOS_CREAR'))) return;
     this.limpiarMensajes();
 
     if (!this.usuarioForm.idRol) {
@@ -290,6 +299,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   prepararCambioContrasena(usuario: UsuarioListado): void {
+    if (!(this.permisos.tienePermiso('USUARIOS_CAMBIAR_CONTRASENA'))) return;
     this.cerrarFormulario();
     window.scrollTo({top: 0, behavior: 'smooth'});
     this.limpiarMensajes();
@@ -310,6 +320,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   cambiarContrasena(): void {
+    if (!(this.permisos.tienePermiso('USUARIOS_CAMBIAR_CONTRASENA'))) return;
     this.limpiarMensajes();
 
     if (!this.contrasenaForm.idUsuario) {
@@ -342,6 +353,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   desactivarUsuario(usuario: UsuarioListado): void {
+    if (!(this.permisos.tienePermiso('USUARIOS_DESACTIVAR'))) return;
     this.limpiarMensajes();
 
     if (usuario.idUsuario === this.sessionService.obtenerIdUsuario()) {
@@ -374,6 +386,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   nuevoRol(): void {
+    if (!(this.permisos.tienePermiso('ROLES_CREAR'))) return;
     this.limpiarMensajes();
 
     this.rolForm = {
@@ -386,6 +399,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   editarRol(rol: RolListado): void {
+    if (!(this.permisos.tienePermiso('ROLES_EDITAR'))) return;
     this.limpiarMensajes();
 
     this.rolForm = {
@@ -398,6 +412,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   guardarRol(): void {
+    if (!(this.rolForm.editando ? this.permisos.tienePermiso('ROLES_EDITAR') : this.permisos.tienePermiso('ROLES_CREAR'))) return;
     this.limpiarMensajes();
 
     if (!this.rolForm.nombre.trim()) {
@@ -451,6 +466,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   desactivarRol(rol: RolListado): void {
+    if (!(this.permisos.tienePermiso('ROLES_DESACTIVAR'))) return;
     this.limpiarMensajes();
 
     const confirmar = window.confirm(`¿Deseas desactivar el rol ${rol.nombre}?`);
@@ -477,6 +493,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   togglePermiso(permiso: Permiso): void {
+    if (!(this.permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS'))) return;
     if (this.rolSeleccionadoEsAdministrador()) {
       return;
     }
@@ -485,6 +502,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
   }
 
   guardarPermisosRol(): void {
+    if (!(this.permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS'))) return;
     this.limpiarMensajes();
 
     if (!this.idRolPermisosSeleccionado) {
@@ -514,6 +532,19 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
         this.procesando = false;
       }
     });
+  }
+
+  // Conserva los nodos y el foco aunque la agrupación o la respuesta HTTP cree objetos nuevos.
+  identificarGrupoPermisos(_indice: number, grupo: GrupoPermisos): string {
+    return grupo.modulo;
+  }
+
+  identificarPermiso(_indice: number, permiso: Permiso): number {
+    return permiso.idPermiso;
+  }
+
+  identificarRol(_indice: number, rol: RolListado): number {
+    return rol.idRol;
   }
 
   gruposPermisos(): GrupoPermisos[] {

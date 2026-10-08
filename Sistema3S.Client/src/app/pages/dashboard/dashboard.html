@@ -21,7 +21,7 @@
   </div>
 
   <div class="metrics-grid">
-    <article class="metric-card" *ngFor="let card of cards" [class.ready]="card.status === 'ready'"
+    <article class="metric-card" *ngFor="let card of cardsVisibles" [class.ready]="card.status === 'ready'"
       [class.warning]="card.status === 'warning'" [class.money]="card.status === 'money'">
       <div class="metric-top">
         <span class="metric-tag"><s3s-icon [name]="card.tag"></s3s-icon><span class="s3s-sr-only">{{ card.tag }}</span></span>
@@ -47,7 +47,7 @@
       </div>
 
       <div class="quick-grid">
-        <a *ngFor="let action of quickActions" class="quick-action" [class.disabled]="action.disabled"
+        <a *ngFor="let action of quickActionsVisibles" class="quick-action" [class.disabled]="action.disabled"
           [routerLink]="action.disabled ? null : action.route">
           <span>{{ action.label }}</span>
           <small>{{ action.description }}</small>
@@ -64,13 +64,13 @@
       </div>
 
       <div class="alert-list">
-        <div class="alert-item">
+        <div class="alert-item" *ngIf="sessionService.tienePermiso('INVENTARIO_VER')">
           <span class="alert-dot danger"></span>
 
           <div>
             <strong>Stock bajo</strong>
 
-            <ng-container *ngFor="let card of cards">
+            <ng-container *ngFor="let card of cardsVisibles">
               <p *ngIf="card.label === 'Productos con stock bajo'">
                 {{ card.value }} productos requieren atención por stock bajo o sin stock.
               </p>
@@ -82,13 +82,13 @@
           </div>
         </div>
 
-        <div class="alert-item">
+        <div class="alert-item" *ngIf="sessionService.tienePermiso('COTIZACIONES_VER')">
           <span class="alert-dot warning"></span>
 
           <div>
             <strong>Cotizaciones pendientes</strong>
 
-            <ng-container *ngFor="let card of cards">
+            <ng-container *ngFor="let card of cardsVisibles">
               <p *ngIf="card.label === 'Cotizaciones pendientes'">
                 {{ card.value }} cotizaciones están pendientes de revisión.
               </p>
@@ -100,13 +100,13 @@
           </div>
         </div>
 
-        <div class="alert-item">
+        <div class="alert-item" *ngIf="sessionService.tienePermiso('COMPRAS_VER')">
           <span class="alert-dot warning"></span>
 
           <div>
             <strong>Compras pendientes de pago</strong>
 
-            <ng-container *ngFor="let card of cards">
+            <ng-container *ngFor="let card of cardsVisibles">
               <p *ngIf="card.label === 'Compras pendientes de pago'">
                 {{ card.value }} compras tienen saldo pendiente por pagar al proveedor.
               </p>
@@ -118,7 +118,7 @@
           </div>
         </div>
 
-        <div class="alert-item">
+        <div class="alert-item" *ngIf="sessionService.tienePermiso('INVENTARIO_REPORTE')">
           <span class="alert-dot neutral"></span>
 
           <div>

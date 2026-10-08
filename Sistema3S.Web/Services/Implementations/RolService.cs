@@ -93,6 +93,9 @@ namespace Sistema3S.Web.Services.Implementations
                 throw new InvalidOperationException("Ingresa el nombre del rol.");
             }
 
+            if (nombre.Equals("Administrador", StringComparison.OrdinalIgnoreCase) || nombre.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("El rol administrador existente es reservado.");
+
             await using var connection = _context.Database.GetDbConnection();
 
             if (connection.State != ConnectionState.Open)
@@ -217,6 +220,10 @@ namespace Sistema3S.Web.Services.Implementations
                 {
                     throw new InvalidOperationException("No se encontró el rol seleccionado.");
                 }
+
+                if (!nombreActual.Trim().Equals("Administrador", StringComparison.OrdinalIgnoreCase) && !nombreActual.Trim().Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                    && (nombre.Equals("Administrador", StringComparison.OrdinalIgnoreCase) || nombre.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("El rol administrador existente es reservado.");
 
                 if (nombreActual.Trim().Equals("Administrador", StringComparison.OrdinalIgnoreCase))
                 {

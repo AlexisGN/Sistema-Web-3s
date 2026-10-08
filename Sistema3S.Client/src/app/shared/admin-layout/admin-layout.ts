@@ -1,12 +1,13 @@
 import { UiIconComponent } from '../ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { timeout } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { SessionService } from '../../core/services/session.service';
+import { AuthService } from '../../core/services/auth.service';
 
 interface MenuItem {
   label: string;
@@ -129,7 +130,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           label: 'Usuarios y roles',
           icon: 'UR',
           route: '/admin/usuarios-roles',
-          permisos: ['USUARIOS_VER', 'ROLES_VER']
+          permisos: ['USUARIOS_VER', 'ROLES_VER', 'ROLES_GESTIONAR_PERMISOS']
         },
         {
           label: 'Auditoría',
@@ -144,7 +145,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private sessionService: SessionService
+    private sessionService: SessionService,
+    private auth: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -156,6 +159,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
     this.intervaloEstado = setInterval(() => {
       this.verificarEstadoSistema();
+      this.refrescarPermisos();
     }, 15000);
   }
 
@@ -163,6 +167,23 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     if (this.intervaloEstado) {
       clearInterval(this.intervaloEstado);
     }
+  }
+
+  @HostListener('window:focus')
+  refrescarPermisos(): void {
+    if (!this.sessionService.estaAutenticado()) { this.router.navigate(['/login']); return; }
+    this.auth.perfil().subscribe({
+      next: () => {
+        this.usuarioCorreo = this.sessionService.obtenerCorreo();
+        this.usuarioRol = this.sessionService.obtenerRol();
+        this.cargarMenuPermitido();
+        const actual = this.router.url.split('?')[0];
+        const item = this.menuGroups.flatMap(g => g.items).find(i => i.route === actual);
+        if (item && !this.sessionService.tieneAlgunPermiso(item.permisos)) this.router.navigateByUrl(this.sessionService.obtenerRutaInicial());
+        this.cdr.markForCheck();
+      },
+      error: () => { this.cargarMenuPermitido(); this.cdr.markForCheck(); }
+    });
   }
 
   cargarMenuPermitido(): void {

@@ -22,12 +22,12 @@
     </div>
   </section>
 
-  <div class="access-box" *ngIf="!esAdministrador">
+  <div class="access-box" *ngIf="!permisos.tienePermiso('CAJA_VER')">
     <strong>Acceso restringido</strong>
-    <p>Solo el administrador puede ingresar al módulo Caja.</p>
+    <p>No tienes permiso para consultar Caja.</p>
   </div>
 
-  <ng-container *ngIf="esAdministrador">
+  <ng-container *ngIf="permisos.tienePermiso('CAJA_VER')">
     <div class="alert success" *ngIf="mensaje">
       {{ mensaje }}
     </div>
@@ -42,7 +42,7 @@
         class="action-card action-open"
         (click)="abrirModalApertura()"
         [disabled]="!!cajaActiva || cargando"
-      ><s3s-icon name="wallet"></s3s-icon>
+       *ngIf="permisos.tienePermiso('CAJA_ABRIR')"><s3s-icon name="wallet"></s3s-icon>
         <span>Abrir caja</span>
         <strong>Iniciar jornada</strong>
       </button>
@@ -52,7 +52,7 @@
         class="action-card action-income"
         (click)="abrirModalMovimiento('Ingreso manual')"
         [disabled]="!cajaActiva || cargando"
-      ><s3s-icon name="plus"></s3s-icon>
+       *ngIf="permisos.tienePermiso('CAJA_MOVIMIENTO_MANUAL')"><s3s-icon name="plus"></s3s-icon>
         <span>Ingreso manual</span>
         <strong>Registrar entrada</strong>
       </button>
@@ -62,7 +62,7 @@
         class="action-card action-expense"
         (click)="abrirModalMovimiento('Egreso manual')"
         [disabled]="!cajaActiva || cargando"
-      ><s3s-icon name="minus"></s3s-icon>
+       *ngIf="permisos.tienePermiso('CAJA_MOVIMIENTO_MANUAL')"><s3s-icon name="minus"></s3s-icon>
         <span>Egreso manual</span>
         <strong>Registrar salida</strong>
       </button>
@@ -72,7 +72,7 @@
         class="action-card action-close"
         (click)="abrirModalCierre()"
         [disabled]="!cajaActiva || cargando"
-      ><s3s-icon name="check"></s3s-icon>
+       *ngIf="permisos.tienePermiso('CAJA_CERRAR')"><s3s-icon name="check"></s3s-icon>
         <span>Cerrar caja</span>
         <strong>Finalizar jornada</strong>
       </button>
@@ -82,7 +82,7 @@
         class="action-card action-report"
         (click)="abrirModalReporte()"
         [disabled]="cargando"
-      ><s3s-icon name="activity"></s3s-icon>
+       *ngIf="permisos.tienePermiso('CAJA_REPORTE')"><s3s-icon name="activity"></s3s-icon>
         <span>Historial</span>
         <strong>Ver cajas</strong>
       </button>
@@ -140,7 +140,7 @@
               debe abrir caja primero.
             </p>
 
-            <button type="button" class="btn btn-primary" (click)="abrirModalApertura()">
+            <button type="button" class="btn btn-primary" (click)="abrirModalApertura()" *ngIf="permisos.tienePermiso('CAJA_ABRIR')">
               Abrir caja
             </button>
           </div>
@@ -427,7 +427,7 @@
 </div>
 
 <!-- MODAL ABRIR CAJA -->
-<div class="modal-backdrop" *ngIf="accionModal === 'abrir'">
+<div class="modal-backdrop" *ngIf="accionModal === 'abrir' && permisos.tienePermiso('CAJA_ABRIR')">
   <div class="modal-card">
     <div class="modal-header">
       <div>
@@ -466,7 +466,7 @@
         Cancelar
       </button>
 
-      <button type="button" class="btn btn-primary" (click)="abrirCaja()" [disabled]="procesando">
+      <button type="button" class="btn btn-primary" (click)="abrirCaja()" [disabled]="procesando" *ngIf="permisos.tienePermiso('CAJA_ABRIR')">
         {{ procesando ? 'Abriendo...' : 'Abrir caja' }}
       </button>
     </div>
@@ -474,7 +474,7 @@
 </div>
 
 <!-- MODAL MOVIMIENTO MANUAL -->
-<div class="modal-backdrop" *ngIf="accionModal === 'movimiento'">
+<div class="modal-backdrop" *ngIf="accionModal === 'movimiento' && permisos.tienePermiso('CAJA_MOVIMIENTO_MANUAL')">
   <div class="modal-card">
     <div class="modal-header">
       <div>
@@ -543,7 +543,7 @@
         class="btn btn-primary"
         (click)="registrarMovimientoManual()"
         [disabled]="procesando"
-      >
+       *ngIf="permisos.tienePermiso('CAJA_MOVIMIENTO_MANUAL')">
         {{ procesando ? 'Registrando...' : 'Registrar movimiento' }}
       </button>
     </div>
@@ -551,7 +551,7 @@
 </div>
 
 <!-- MODAL CERRAR CAJA -->
-<div class="modal-backdrop" *ngIf="accionModal === 'cerrar'">
+<div class="modal-backdrop" *ngIf="accionModal === 'cerrar' && permisos.tienePermiso('CAJA_CERRAR')">
   <div class="modal-card modal-large">
     <div class="modal-header">
       <div>
@@ -644,7 +644,7 @@
         Cancelar
       </button>
 
-      <button type="button" class="btn btn-danger" (click)="cerrarCaja()" [disabled]="procesando">
+      <button type="button" class="btn btn-danger" (click)="cerrarCaja()" [disabled]="procesando" *ngIf="permisos.tienePermiso('CAJA_CERRAR')">
         {{ procesando ? 'Cerrando...' : 'Cerrar caja' }}
       </button>
     </div>
@@ -652,7 +652,7 @@
 </div>
 
 <!-- MODAL REPORTE -->
-<div class="modal-backdrop" *ngIf="accionModal === 'reporte'">
+<div class="modal-backdrop" *ngIf="accionModal === 'reporte' && permisos.tienePermiso('CAJA_REPORTE')">
   <div class="modal-card modal-large">
     <div class="modal-header">
       <div>

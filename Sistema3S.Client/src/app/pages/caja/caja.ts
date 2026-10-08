@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { SessionService } from '../../core/services/session.service';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
@@ -32,6 +34,7 @@ interface ResumenMetodoPago {
   styleUrls: ['./caja.scss']
 })
 export class CajaComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   idUsuarioActual = 1;
   usuarioActual = 'Administrador';
   rolActual = 'Administrador';
@@ -101,8 +104,8 @@ export class CajaComponent implements OnInit {
   ngOnInit(): void {
     this.cargarUsuarioActual();
 
-    if (!this.esAdministrador) {
-      this.error = 'Acceso denegado. Solo el administrador puede acceder al módulo Caja.';
+    if (!this.permisos.tienePermiso('CAJA_VER')) {
+      this.error = 'No tienes permiso para consultar Caja.';
       return;
     }
 
@@ -191,6 +194,7 @@ export class CajaComponent implements OnInit {
   }
 
   cargarReporte(): void {
+    if (!(this.permisos.tienePermiso('CAJA_REPORTE'))) return;
     this.cajaService.obtenerReporte(
       this.idUsuarioActual,
       this.reporteFechaInicio || null,
@@ -208,6 +212,7 @@ export class CajaComponent implements OnInit {
   }
 
   abrirModalApertura(): void {
+    if (!(this.permisos.tienePermiso('CAJA_ABRIR'))) return;
     this.limpiarMensajes();
 
     this.abrirForm = {
@@ -219,6 +224,7 @@ export class CajaComponent implements OnInit {
   }
 
   abrirModalMovimiento(tipo: string = 'Ingreso manual'): void {
+    if (!(this.permisos.tienePermiso('CAJA_MOVIMIENTO_MANUAL'))) return;
     this.limpiarMensajes();
 
     this.movimientoForm = {
@@ -233,6 +239,7 @@ export class CajaComponent implements OnInit {
   }
 
   abrirModalCierre(): void {
+    if (!(this.permisos.tienePermiso('CAJA_CERRAR'))) return;
     this.limpiarMensajes();
 
     this.cerrarForm = {
@@ -244,6 +251,7 @@ export class CajaComponent implements OnInit {
   }
 
   abrirModalReporte(): void {
+    if (!(this.permisos.tienePermiso('CAJA_REPORTE'))) return;
     this.limpiarMensajes();
     this.cargarReporte();
     this.accionModal = 'reporte';
@@ -258,6 +266,7 @@ export class CajaComponent implements OnInit {
   }
 
   abrirCaja(): void {
+    if (!(this.permisos.tienePermiso('CAJA_ABRIR'))) return;
     this.limpiarMensajes();
 
     if (this.abrirForm.saldoInicial < 0) {
@@ -288,6 +297,7 @@ export class CajaComponent implements OnInit {
   }
 
   registrarMovimientoManual(): void {
+    if (!(this.permisos.tienePermiso('CAJA_MOVIMIENTO_MANUAL'))) return;
     this.limpiarMensajes();
 
     if (!this.cajaActiva) {
@@ -339,6 +349,7 @@ export class CajaComponent implements OnInit {
   }
 
   cerrarCaja(): void {
+    if (!(this.permisos.tienePermiso('CAJA_CERRAR'))) return;
     this.limpiarMensajes();
 
     if (!this.cajaActiva) {
@@ -718,65 +729,10 @@ export class CajaComponent implements OnInit {
   }
 
   private cargarUsuarioActual(): void {
-    const claves = [
-      'usuario',
-      'usuarioActual',
-      'authUser',
-      'user',
-      'sesionUsuario'
-    ];
-
-    let data: any = null;
-
-    for (const clave of claves) {
-      const raw = localStorage.getItem(clave);
-
-      if (!raw) {
-        continue;
-      }
-
-      try {
-        data = JSON.parse(raw);
-        break;
-      } catch {
-        data = null;
-      }
-    }
-
-    const idUsuario = Number(
-      data?.idUsuario ??
-      data?.usuario?.idUsuario ??
-      data?.id ??
-      1
-    );
-
-    const rol = String(
-      data?.rol ??
-      data?.rolNombre ??
-      data?.nombreRol ??
-      data?.usuario?.rol ??
-      data?.usuario?.rolNombre ??
-      'Administrador'
-    );
-
-    const nombre = String(
-      data?.correo ??
-      data?.nombre ??
-      data?.usuario ??
-      data?.usuario?.correo ??
-      'Administrador'
-    );
-
-    this.idUsuarioActual = idUsuario > 0 ? idUsuario : 1;
-    this.usuarioActual = nombre;
-    this.rolActual = rol;
-
-    const rolNormalizado = rol.trim().toLowerCase();
-
-    this.esAdministrador =
-      this.idUsuarioActual === 1 ||
-      rolNormalizado === 'administrador' ||
-      rolNormalizado === 'admin';
+    this.idUsuarioActual = this.permisos.obtenerIdUsuario();
+    this.usuarioActual = this.permisos.obtenerCorreo();
+    this.rolActual = this.permisos.obtenerRol();
+    this.esAdministrador = this.permisos.esAdministrador();
   }
 
   private limpiarMensajes(): void {

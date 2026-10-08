@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { SessionService } from '../../core/services/session.service';
 import { TelefonoPeDirective } from '../../shared/telefono-pe/telefono-pe';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
@@ -26,6 +28,7 @@ import {
   styleUrl: './clientes.scss'
 })
 export class ClientesComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   clientes: ClienteListado[] = [];
 
   tiposCliente: TipoCliente[] = [];
@@ -64,7 +67,7 @@ export class ClientesComponent implements OnInit {
 
   ngOnInit(): void {
     this.subirArriba();
-    this.cargarCombos();
+    if (this.permisos.tienePermiso('CLIENTES_CREAR') || this.permisos.tienePermiso('CLIENTES_EDITAR')) this.cargarCombos();
     this.cargarClientes();
   }
 
@@ -126,6 +129,7 @@ export class ClientesComponent implements OnInit {
   }
 
   guardarCliente(): void {
+    if (!(this.editando ? this.permisos.tienePermiso('CLIENTES_EDITAR') : this.permisos.tienePermiso('CLIENTES_CREAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -146,6 +150,7 @@ export class ClientesComponent implements OnInit {
   }
 
   registrarCliente(): void {
+    if (!this.permisos.tienePermiso('CLIENTES_CREAR')) return;
     this.guardando = true;
 
     const payload = this.prepararPayloadCrear();
@@ -169,6 +174,7 @@ export class ClientesComponent implements OnInit {
   }
 
   actualizarCliente(): void {
+    if (!this.permisos.tienePermiso('CLIENTES_EDITAR')) return;
     if (this.idClienteEditando === null) {
       this.error = 'No se encontró el cliente a editar.';
       return;
@@ -196,6 +202,7 @@ export class ClientesComponent implements OnInit {
   }
 
   editarCliente(item: ClienteListado): void {
+    if (!(this.permisos.tienePermiso('CLIENTES_EDITAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -259,6 +266,7 @@ export class ClientesComponent implements OnInit {
   }
 
   eliminarCliente(item: ClienteListado): void {
+    if (!(this.permisos.tienePermiso('CLIENTES_DESACTIVAR'))) return;
     const confirmar = confirm(`¿Deseas desactivar al cliente ${item.cliente}?`);
 
     if (!confirmar) {
