@@ -1,3 +1,5 @@
+import { inject } from '@angular/core';
+import { SessionService } from '../../core/services/session.service';
 import { ImagenCatalogoComponent } from '../../shared/imagen-catalogo/imagen-catalogo';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
@@ -20,6 +22,7 @@ import {
   styleUrl: './inventario.scss'
 })
 export class InventarioComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   inventarios: InventarioListado[] = [];
   movimientosProducto: MovimientoStockListado[] = [];
   movimientosRecientes: MovimientoStockListado[] = [];
@@ -116,6 +119,7 @@ export class InventarioComponent implements OnInit {
   }
 
   cargarMovimientosRecientes(): void {
+    if (!(this.permisos.tienePermiso('INVENTARIO_REPORTE'))) return;
     this.inventarioService.listarMovimientosRecientes(5).subscribe({
       next: (data) => {
         this.movimientosRecientes = data;
@@ -143,6 +147,7 @@ export class InventarioComponent implements OnInit {
   }
 
   cargarMovimientosProducto(idProducto: number): void {
+    if (!(this.permisos.tienePermiso('INVENTARIO_REPORTE'))) return;
     this.cargandoMovimientos = true;
 
     this.inventarioService.listarMovimientosPorProducto(idProducto).subscribe({
@@ -161,6 +166,7 @@ export class InventarioComponent implements OnInit {
   }
 
   guardarStockMinimo(): void {
+    if (!(this.permisos.tienePermiso('INVENTARIO_AJUSTAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -205,6 +211,7 @@ export class InventarioComponent implements OnInit {
   }
 
   registrarMovimiento(): void {
+    if (!(this.permisos.tienePermiso('INVENTARIO_AJUSTAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};

@@ -19,8 +19,8 @@
     </div>
   </section>
 
-  <section class="servicios-grid">
-    <article class="panel panel-form">
+  <section class="servicios-grid" [style.grid-template-columns]="(editando ? permisos.tienePermiso('SERVICIOS_EDITAR') : permisos.tienePermiso('SERVICIOS_CREAR')) ? null : 'minmax(0, 1fr)'">
+    <article class="panel panel-form" *ngIf="editando ? permisos.tienePermiso('SERVICIOS_EDITAR') : permisos.tienePermiso('SERVICIOS_CREAR')">
       <div class="panel-header">
         <div>
           <h2>{{ editando ? 'Editar servicio' : 'Nuevo servicio' }}</h2>
@@ -296,11 +296,11 @@
           </div>
 
           <div class="servicio-card__actions">
-            <button type="button" class="btn btn-edit" (click)="editarServicio(item)"><s3s-icon name="edit"></s3s-icon>
+            <button type="button" class="btn btn-edit" (click)="editarServicio(item)" *ngIf="permisos.tienePermiso('SERVICIOS_EDITAR')"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
-            <button type="button" class="btn btn-delete" (click)="eliminarServicio(item.idServicio)"><s3s-icon name="trash"></s3s-icon>
+            <button type="button" class="btn btn-delete" (click)="eliminarServicio(item.idServicio)" *ngIf="permisos.tienePermiso('SERVICIOS_ELIMINAR')"><s3s-icon name="trash"></s3s-icon>
               Eliminar
             </button>
           </div>

@@ -22,7 +22,7 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 // MVC / Controllers
 builder.Services.AddScoped<OperacionAuditadaFilter>();
-builder.Services.AddControllersWithViews(options => options.Filters.Add<OperacionAuditadaFilter>());
+builder.Services.AddControllersWithViews(options => options.Filters.Add<OperacionAuditadaFilter>(-3000));
 
 // DbContext - SQL Server
 builder.Services.AddDbContext<Bd3sContext>(options =>

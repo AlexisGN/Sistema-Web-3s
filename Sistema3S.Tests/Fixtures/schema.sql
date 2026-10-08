@@ -817,8 +817,6 @@ CREATE INDEX [IX_Compra_Proveedor] ON dbo.[Compra] ([IdProveedor]);
 GO
 CREATE INDEX [IX_Compra_Estado] ON dbo.[Compra] ([IdEstadoCompra]);
 GO
-
-
 /* =========================================================
    7. FUNCIÓN: CANTIDAD DE ADMINISTRADORES ACTIVOS
    ========================================================= */
@@ -840,8 +838,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    6. FUNCIÓN PARA VALIDAR ADMINISTRADOR
    ========================================================= */
@@ -875,7 +871,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    7. PROCEDIMIENTO: ABRIR CAJA
    ========================================================= */
@@ -900,8 +895,15 @@ BEGIN
     SET @SaldoInicial = ROUND(ISNULL(@SaldoInicial, 0), 2);
     SET @ObservacionApertura = NULLIF(LTRIM(RTRIM(ISNULL(@ObservacionApertura, ''))), '');
 
-    IF dbo.fn_EsUsuarioAdministrador(@IdUsuarioApertura) = 0
-        THROW 70001, 'Acceso denegado. Solo el administrador puede abrir caja.', 1;
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuarioApertura AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_ABRIR'))
+    )
+        THROW 70001, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
 
     IF @SaldoInicial < 0
         THROW 70002, 'El saldo inicial no puede ser negativo.', 1;
@@ -988,9 +990,7 @@ BEGIN
         THROW;
     END CATCH;
 END;
-
 GO
-
 /* =========================================================
    7. ACTUALIZAR ARCHIVO PDF DE COTIZACIÓN
    ========================================================= */
@@ -1025,8 +1025,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    19. PROCEDIMIENTO: ACTUALIZAR ROL
    ========================================================= */
@@ -1083,8 +1081,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    14. PROCEDIMIENTO: ACTUALIZAR USUARIO
    ========================================================= */
@@ -1156,7 +1152,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    9. ANULAR COMPRA Y REVERTIR STOCK
    ========================================================= */
@@ -1279,7 +1274,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    9. ANULAR VENTA
    ========================================================= */
@@ -1402,8 +1396,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    23. PROCEDIMIENTO: ASIGNAR PERMISOS A ROL
    @PermisosJson admite:
@@ -1493,8 +1485,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    15. PROCEDIMIENTO: CAMBIAR CONTRASEÑA DE USUARIO
    La contraseña llega como hash desde backend.
@@ -1525,7 +1515,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    9. CAMBIAR ESTADO DE COTIZACIÓN
    Flujo:
@@ -1628,7 +1617,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    10. CANCELAR COTIZACIÓN
    ========================================================= */
@@ -1647,7 +1635,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    13. PROCEDIMIENTO: CERRAR CAJA
    ========================================================= */
@@ -1676,8 +1663,15 @@ BEGIN
     SET @SaldoContado = ROUND(ISNULL(@SaldoContado, 0), 2);
     SET @ObservacionCierre = NULLIF(LTRIM(RTRIM(ISNULL(@ObservacionCierre, ''))), '');
 
-    IF dbo.fn_EsUsuarioAdministrador(@IdUsuarioCierre) = 0
-        THROW 70601, 'Acceso denegado. Solo el administrador puede cerrar caja.', 1;
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuarioCierre AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_CERRAR'))
+    )
+        THROW 70601, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
 
     IF @IdCaja <= 0
         THROW 70602, 'Selecciona una caja válida.', 1;
@@ -1767,10 +1761,7 @@ BEGIN
         THROW;
     END CATCH;
 END;
-
 GO
-
-
 /* =========================================================
    18. PROCEDIMIENTO: CREAR ROL
    ========================================================= */
@@ -1802,8 +1793,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    13. PROCEDIMIENTO: CREAR USUARIO
    La contraseña llega como hash desde backend.
@@ -1856,8 +1845,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    20. PROCEDIMIENTO: DESACTIVAR ROL
    ========================================================= */
@@ -1898,8 +1885,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    16. PROCEDIMIENTO: DESACTIVAR USUARIO
    ========================================================= */
@@ -1940,7 +1925,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   PROCEDURE dbo.sp_ExigirAdministradorAuditoria @IdUsuario INT
 AS
 BEGIN
@@ -1952,7 +1936,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    6. LISTAR COMPRAS
    ========================================================= */
@@ -2033,7 +2016,6 @@ BEGIN
 END
 
 GO
-
 /* =========================================================
    4. LISTAR COTIZACIONES
    ========================================================= */
@@ -2157,8 +2139,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    12. PROCEDIMIENTO: LISTAR MOVIMIENTOS DE CAJA
    ========================================================= */
@@ -2172,8 +2152,15 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF dbo.fn_EsUsuarioAdministrador(@IdUsuario) = 0
-        THROW 70501, 'Acceso denegado. Solo el administrador puede listar movimientos de caja.', 1;
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_VER'))
+    )
+        THROW 70501, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
 
     IF @IdCaja IS NULL
     BEGIN
@@ -2219,10 +2206,7 @@ BEGIN
       AND (@FechaFin IS NULL OR CONVERT(DATE, mc.FechaMovimiento) <= @FechaFin)
     ORDER BY mc.FechaMovimiento DESC, mc.IdMovimientoCaja DESC;
 END;
-
 GO
-
-
 /* =========================================================
    21. PROCEDIMIENTO: LISTAR PERMISOS
    ========================================================= */
@@ -2279,8 +2263,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    11. PROCEDIMIENTO: LISTAR USUARIOS
    ========================================================= */
@@ -2321,7 +2303,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    6. LISTAR VENTAS
    ========================================================= */
@@ -2428,8 +2409,6 @@ BEGIN
 END
 
 GO
-
-
 /* =========================================================
    8. PROCEDIMIENTO: LOGIN
    Nota: este SP NO valida contraseña.
@@ -2467,7 +2446,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    12. MARCAR COTIZACIÓN COMO CONVERTIDA EN VENTA
    Este SP se llamará después de registrar la venta.
@@ -2548,7 +2526,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    8. MARCAR COTIZACIÓN COMO RESPONDIDA
    Se usa después de enviar por correo o WhatsApp.
@@ -2648,8 +2625,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    8. PROCEDIMIENTO: OBTENER CAJA ACTIVA
    ========================================================= */
@@ -2660,8 +2635,15 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF dbo.fn_EsUsuarioAdministrador(@IdUsuario) = 0
-        THROW 70101, 'Acceso denegado. Solo el administrador puede consultar caja.', 1;
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_VER'))
+    )
+        THROW 70101, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
 
     SELECT TOP 1
         c.IdCaja,
@@ -2690,9 +2672,7 @@ BEGIN
       AND ec.Estado = 1
     ORDER BY c.IdCaja DESC;
 END;
-
 GO
-
 /* =========================================================
    7. DETALLE COMPLETO DE COMPRA
    ========================================================= */
@@ -2798,7 +2778,6 @@ BEGIN
 END
 
 GO
-
 /* =========================================================
    6. OBTENER DETALLE DE COTIZACIÓN
    Resultado 1: cabecera
@@ -2919,8 +2898,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    22. PROCEDIMIENTO: OBTENER PERMISOS POR ROL
    ========================================================= */
@@ -2972,8 +2949,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    9. PROCEDIMIENTO: OBTENER PERMISOS DEL USUARIO
    Administrador devuelve todos los permisos activos.
@@ -3027,8 +3002,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    11. PROCEDIMIENTO: RESUMEN DE CAJA
    ========================================================= */
@@ -3040,8 +3013,15 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF dbo.fn_EsUsuarioAdministrador(@IdUsuario) = 0
-        THROW 70401, 'Acceso denegado. Solo el administrador puede ver el resumen de caja.', 1;
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_VER'))
+    )
+        THROW 70401, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
 
     IF @IdCaja IS NULL
     BEGIN
@@ -3120,9 +3100,7 @@ BEGIN
         c.ObservacionApertura,
         c.ObservacionCierre;
 END;
-
 GO
-
 /* =========================================================
    1. PROCEDURE PARA PREVISUALIZAR SIGUIENTE COMPROBANTE
    ========================================================= */
@@ -3163,8 +3141,6 @@ BEGIN
 END
 
 GO
-
-
 /* =========================================================
    12. PROCEDIMIENTO: OBTENER USUARIO POR ID
    ========================================================= */
@@ -3188,7 +3164,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    7. OBTENER DETALLE DE VENTA
    ========================================================= */
@@ -3292,7 +3267,6 @@ BEGIN
 END
 
 GO
-
 /* =========================================================
    11. PREPARAR COTIZACIÓN PARA VENTA
    Solo si está Aprobada y no fue convertida.
@@ -3338,7 +3312,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   PROCEDURE dbo.sp_RecalcularCajaAuditoria @IdCaja INT
 AS
 BEGIN
@@ -3646,7 +3619,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   PROCEDURE sp_RegistrarCompraCompleta
     @IdProveedor INT,
     @IdUsuarioRegistro INT,
@@ -4137,7 +4109,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    5. REGISTRAR COTIZACIÓN
    ========================================================= */
@@ -4311,7 +4282,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   PROCEDURE dbo.sp_RegistrarCotizacionWeb
     @IdCliente INT,
     @IdUsuarioRegistro INT = NULL,
@@ -4527,7 +4497,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    9. PROCEDIMIENTO INTERNO: REGISTRAR MOVIMIENTO AUTOMÁTICO
    Este procedimiento lo usarán ventas y compras.
@@ -4696,7 +4665,6 @@ BEGIN
 END;
 
 GO
-
 /* =========================================================
    10. PROCEDIMIENTO: REGISTRAR MOVIMIENTO MANUAL
    ========================================================= */
@@ -4725,8 +4693,15 @@ BEGIN
     SET @Descripcion = NULLIF(LTRIM(RTRIM(ISNULL(@Descripcion, ''))), '');
     SET @Monto = ROUND(ISNULL(@Monto, 0), 2);
 
-    IF dbo.fn_EsUsuarioAdministrador(@IdUsuarioRegistro) = 0
-        THROW 70301, 'Acceso denegado. Solo el administrador puede registrar movimientos manuales de caja.', 1;
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuarioRegistro AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_MOVIMIENTO_MANUAL'))
+    )
+        THROW 70301, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
 
     IF @TipoMovimiento NOT IN ('Ingreso manual', 'Egreso manual', 'Ajuste ingreso', 'Ajuste egreso')
         THROW 70302, 'Selecciona un tipo de movimiento manual válido.', 1;
@@ -4824,9 +4799,7 @@ BEGIN
         THROW;
     END CATCH;
 END;
-
 GO
-
 CREATE   PROCEDURE sp_RegistrarPagoCompra
     @IdCompra INT,
     @IdUsuarioRegistro INT,
@@ -5045,7 +5018,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   PROCEDURE sp_RegistrarPagoVenta
     @IdVenta INT,
     @IdUsuarioRegistro INT,
@@ -5268,7 +5240,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   PROCEDURE sp_RegistrarVentaCompleta
     @IdCliente INT,
     @IdCotizacion INT = NULL,
@@ -5760,8 +5731,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    14. PROCEDIMIENTO: REPORTE DE CAJA
    ========================================================= */
@@ -5774,8 +5743,15 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    IF dbo.fn_EsUsuarioAdministrador(@IdUsuario) = 0
-        THROW 70701, 'Acceso denegado. Solo el administrador puede consultar el reporte de caja.', 1;
+    IF NOT EXISTS (
+        SELECT 1 FROM dbo.Usuario u
+        INNER JOIN dbo.Rol r ON r.IdRol = u.IdRol
+        WHERE u.IdUsuario = @IdUsuario AND u.Estado = 1 AND r.Estado = 1
+          AND (UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+               OR EXISTS (SELECT 1 FROM dbo.RolPermiso rp INNER JOIN dbo.Permiso p ON p.IdPermiso = rp.IdPermiso
+                          WHERE rp.IdRol = u.IdRol AND p.Estado = 1 AND p.Nombre = N'CAJA_REPORTE'))
+    )
+        THROW 70701, 'Acceso denegado. No tienes permiso para esta operacion de caja.', 1;
 
     SELECT
         c.IdCaja,
@@ -5801,9 +5777,7 @@ BEGIN
       AND (@FechaFin IS NULL OR CONVERT(DATE, c.FechaApertura) <= @FechaFin)
     ORDER BY c.IdCaja DESC;
 END;
-
 GO
-
 /* =========================================================
    10. REPORTE DE COMPRAS PDF/EXCEL
    ========================================================= */
@@ -5862,7 +5836,6 @@ BEGIN
 END
 
 GO
-
 /* =========================================================
    10. REPORTE DE VENTAS
    ========================================================= */
@@ -5936,7 +5909,6 @@ BEGIN
 END
 
 GO
-
 CREATE   PROCEDURE dbo.sp_RevertirCajaCompra
     @IdCompra INT, @IdUsuarioRegistro INT, @Motivo NVARCHAR(300)
 AS
@@ -5979,8 +5951,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    10. PROCEDIMIENTO: VALIDAR PERMISO DE USUARIO
    ========================================================= */
@@ -6035,7 +6005,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Caja_Auditoria ON dbo.[Caja] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6052,7 +6021,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Categoria_Auditoria ON dbo.[Categoria] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6069,7 +6037,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Cliente_Auditoria ON dbo.[Cliente] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6086,7 +6053,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_ClienteEmpresa_Auditoria ON dbo.[ClienteEmpresa] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6103,7 +6069,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_ClientePersonaNatural_Auditoria ON dbo.[ClientePersonaNatural] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6120,7 +6085,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Compra_AnulacionAdministrador ON dbo.Compra AFTER UPDATE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6133,7 +6097,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Compra_Auditoria ON dbo.[Compra] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6150,7 +6113,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Comprobante_Auditoria ON dbo.[Comprobante] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6167,7 +6129,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_ContactoCliente_Auditoria ON dbo.[ContactoCliente] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6184,7 +6145,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_ContactoProveedor_Auditoria ON dbo.[ContactoProveedor] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6201,7 +6161,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Cotizacion_AnulacionAdministrador ON dbo.Cotizacion AFTER UPDATE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6214,7 +6173,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Cotizacion_Auditoria ON dbo.[Cotizacion] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6231,7 +6189,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_CuotaCompra_Auditoria ON dbo.[CuotaCompra] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6248,7 +6205,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_CuotaVenta_Auditoria ON dbo.[CuotaVenta] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6265,7 +6221,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_DetalleCompra_Auditoria ON dbo.[DetalleCompra] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6282,7 +6237,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_DetalleCotizacion_Auditoria ON dbo.[DetalleCotizacion] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6299,7 +6253,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_DetalleVenta_Auditoria ON dbo.[DetalleVenta] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6316,7 +6269,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_ElementoCatalogo_Auditoria ON dbo.[ElementoCatalogo] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6333,7 +6285,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_EnvioCorreo_Auditoria ON dbo.[EnvioCorreo] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6350,7 +6301,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_GuiaRemisionCompra_Auditoria ON dbo.[GuiaRemisionCompra] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6367,7 +6317,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Inventario_Auditoria ON dbo.[Inventario] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6384,7 +6333,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Marca_Auditoria ON dbo.[Marca] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6401,7 +6349,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_MovimientoCaja_Auditoria ON dbo.[MovimientoCaja] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6418,7 +6365,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_MovimientoCaja_ValidarSaldo ON dbo.MovimientoCaja AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
@@ -6446,7 +6392,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_MovimientoStock_Auditoria ON dbo.[MovimientoStock] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6463,7 +6408,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_PagoCompra_Auditoria ON dbo.[PagoCompra] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6480,8 +6424,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    4. TRIGGER: PAGO DE COMPRA → EGRESO AUTOMÁTICO A CAJA
    ========================================================= */
@@ -6624,7 +6566,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_PagoCompraCuota_Auditoria ON dbo.[PagoCompraCuota] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6641,7 +6582,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_PagoVenta_Auditoria ON dbo.[PagoVenta] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6658,8 +6598,6 @@ BEGIN
 END;
 
 GO
-
-
 /* =========================================================
    3. TRIGGER: PAGO DE VENTA → INGRESO AUTOMÁTICO A CAJA
    ========================================================= */
@@ -6800,7 +6738,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_PagoVentaCuota_Auditoria ON dbo.[PagoVentaCuota] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6817,7 +6754,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Permiso_Auditoria ON dbo.[Permiso] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6834,7 +6770,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_PersonalInterno_Auditoria ON dbo.[PersonalInterno] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6851,7 +6786,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Producto_Auditoria ON dbo.[Producto] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6868,7 +6802,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Proveedor_Auditoria ON dbo.[Proveedor] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6885,7 +6818,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Rol_Auditoria ON dbo.[Rol] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6902,7 +6834,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_RolPermiso_Auditoria ON dbo.[RolPermiso] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6919,7 +6850,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_SerieComprobante_Auditoria ON dbo.[SerieComprobante] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6936,7 +6866,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Servicio_Auditoria ON dbo.[Servicio] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6953,7 +6882,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_UnidadMedida_Auditoria ON dbo.[UnidadMedida] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6970,7 +6898,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Usuario_Auditoria ON dbo.[Usuario] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6987,7 +6914,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Venta_AnulacionAdministrador ON dbo.Venta AFTER UPDATE AS
 BEGIN
  SET NOCOUNT ON;
@@ -7000,7 +6926,6 @@ BEGIN
 END;
 
 GO
-
 CREATE   TRIGGER dbo.trg_Venta_Auditoria ON dbo.[Venta] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;

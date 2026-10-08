@@ -31,7 +31,7 @@
       type="button"
       [class.active]="tabActiva === 'usuarios'"
       (click)="cambiarTab('usuarios')"
-    >
+     *ngIf="permisos.tienePermiso('USUARIOS_VER')">
       Personal interno
     </button>
 
@@ -39,7 +39,7 @@
       type="button"
       [class.active]="tabActiva === 'roles'"
       (click)="cambiarTab('roles')"
-    >
+     *ngIf="permisos.tienePermiso('ROLES_VER')">
       Roles
     </button>
 
@@ -47,14 +47,14 @@
       type="button"
       [class.active]="tabActiva === 'permisos'"
       (click)="cambiarTab('permisos')"
-    >
+     *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
       Permisos por rol
     </button>
-    <button type="button" class="clients-tab" [class.active]="tabActiva === 'clientes'" [attr.aria-pressed]="tabActiva === 'clientes'" (click)="cambiarTab('clientes')">Ver clientes</button>
+    <button type="button" class="clients-tab" [class.active]="tabActiva === 'clientes'" [attr.aria-pressed]="tabActiva === 'clientes'" (click)="cambiarTab('clientes')" *ngIf="permisos.tienePermiso('CLIENTES_VER')">Ver clientes</button>
   </section>
 
   <section class="content-grid accounts-grid" *ngIf="tabActiva === 'usuarios' || tabActiva === 'clientes'">
-    <article class="panel form-panel" *ngIf="tabActiva === 'usuarios' && mostrarFormulario">
+    <article class="panel form-panel" *ngIf="tabActiva === 'usuarios' && mostrarFormulario && (usuarioForm.editando ? permisos.tienePermiso('USUARIOS_EDITAR') : permisos.tienePermiso('USUARIOS_CREAR'))">
       <div class="panel-header"><div><h2>{{ usuarioForm.editando ? 'Editar usuario' : 'Nuevo usuario interno' }}</h2><p>Define el correo y el acceso del personal al panel administrativo.</p></div></div>
       <form (ngSubmit)="guardarUsuario()" autocomplete="off">
         <div class="form-grid account-form">
@@ -67,14 +67,14 @@
         <div class="actions-row"><button type="submit" class="btn btn-primary" [disabled]="procesando"><s3s-icon name="check"></s3s-icon>{{ procesando ? 'Guardando…' : (usuarioForm.editando ? 'Guardar cambios' : 'Crear usuario') }}</button><button type="button" class="btn btn-light" (click)="cerrarFormulario()" [disabled]="procesando">Cancelar</button></div>
       </form>
     </article>
-    <article class="panel" *ngIf="tabActiva === 'usuarios' && contrasenaForm.idUsuario">
+    <article class="panel" *ngIf="tabActiva === 'usuarios' && contrasenaForm.idUsuario && permisos.tienePermiso('USUARIOS_CAMBIAR_CONTRASENA')">
       <h2>Cambiar contraseña</h2><p>{{ contrasenaForm.correo }}</p>
       <form (ngSubmit)="cambiarContrasena()"><div class="field"><label for="personal-nueva-clave">Nueva contraseña</label><input id="personal-nueva-clave" type="password" [(ngModel)]="contrasenaForm.nuevaContrasena" name="nuevaContrasena" autocomplete="new-password" required minlength="8" /></div>
       <div class="actions-row"><button type="submit" class="btn btn-primary" [disabled]="procesando"><s3s-icon name="check"></s3s-icon>Guardar contraseña</button><button type="button" class="btn btn-light" (click)="cancelarCambioContrasena()" [disabled]="procesando">Cancelar</button></div></form>
     </article>
     <article class="panel list-panel">
       <div class="panel-header"><div><h2>{{ tabActiva === 'clientes' ? 'Cuentas de clientes' : 'Personal interno' }}</h2><p>{{ tabActiva === 'clientes' ? 'Clientes registrados en el portal web para solicitar y consultar sus cotizaciones.' : 'Personal con acceso al panel administrativo. Los clientes se consultan por separado.' }}</p></div>
-        <button *ngIf="tabActiva === 'usuarios'" type="button" class="btn btn-primary" (click)="nuevoUsuario()" [disabled]="procesando || cargando">+ Nuevo usuario</button>
+        <button *ngIf="(tabActiva === 'usuarios') && (permisos.tienePermiso('USUARIOS_CREAR'))" type="button" class="btn btn-primary" (click)="nuevoUsuario()" [disabled]="procesando || cargando">+ Nuevo usuario</button>
         <a *ngIf="tabActiva === 'clientes' && puedeVerClientes()" class="btn btn-light" routerLink="/admin/clientes">Ir al módulo de clientes</a>
       </div>
       <form class="filters-card" (ngSubmit)="aplicarBusquedaUsuarios()">
@@ -94,9 +94,9 @@
           </div></div>
           <div class="status-pill" [class.inactive]="!usuario.estado">{{ usuario.estado ? 'Acceso activo' : 'Acceso inactivo' }}</div>
           <div class="card-actions" *ngIf="tabActiva === 'usuarios'">
-            <button type="button" class="btn btn-light" (click)="editarUsuario(usuario)" [disabled]="procesando"><s3s-icon name="edit"></s3s-icon>Editar</button>
-            <button type="button" class="btn btn-dark" (click)="prepararCambioContrasena(usuario)" [disabled]="procesando">Contraseña</button>
-            <button type="button" class="btn btn-danger" (click)="desactivarUsuario(usuario)" [disabled]="!usuario.estado || usuario.idUsuario === 1 || procesando"><s3s-icon name="trash"></s3s-icon>Desactivar</button>
+            <button type="button" class="btn btn-light" (click)="editarUsuario(usuario)" [disabled]="procesando" *ngIf="permisos.tienePermiso('USUARIOS_EDITAR')"><s3s-icon name="edit"></s3s-icon>Editar</button>
+            <button type="button" class="btn btn-dark" (click)="prepararCambioContrasena(usuario)" [disabled]="procesando" *ngIf="permisos.tienePermiso('USUARIOS_CAMBIAR_CONTRASENA')">Contraseña</button>
+            <button type="button" class="btn btn-danger" (click)="desactivarUsuario(usuario)" [disabled]="!usuario.estado || usuario.idUsuario === 1 || procesando" *ngIf="permisos.tienePermiso('USUARIOS_DESACTIVAR')"><s3s-icon name="trash"></s3s-icon>Desactivar</button>
           </div>
         </article>
         <div class="empty-state" *ngIf="!usuarios.length && !error">No se encontraron cuentas. Prueba otro nombre o limpia los filtros.</div>
@@ -106,7 +106,7 @@
   </section>
 
   <section class="content-grid" *ngIf="tabActiva === 'roles'">
-    <article class="panel form-panel">
+    <article class="panel form-panel" *ngIf="rolForm.editando ? permisos.tienePermiso('ROLES_EDITAR') : permisos.tienePermiso('ROLES_CREAR')">
       <div class="panel-header">
         <div>
           <h2>{{ rolForm.editando ? 'Editar rol' : 'Nuevo rol' }}</h2>
@@ -143,7 +143,7 @@
       </div>
 
       <div class="actions-row">
-        <button type="button" class="btn btn-light" (click)="nuevoRol()" [disabled]="procesando">
+        <button type="button" class="btn btn-light" (click)="nuevoRol()" [disabled]="procesando" *ngIf="permisos.tienePermiso('ROLES_CREAR')">
           Limpiar
         </button>
 
@@ -152,7 +152,7 @@
           class="btn btn-primary"
           (click)="guardarRol()"
           [disabled]="procesando"
-        >
+         *ngIf="rolForm.editando ? permisos.tienePermiso('ROLES_EDITAR') : permisos.tienePermiso('ROLES_CREAR')">
           {{ rolForm.editando ? 'Actualizar rol' : 'Crear rol' }}
         </button>
       </div>
@@ -192,7 +192,7 @@
           </div>
 
           <div class="card-actions">
-            <button type="button" class="btn btn-light" (click)="editarRol(rol)"><s3s-icon name="edit"></s3s-icon>
+            <button type="button" class="btn btn-light" (click)="editarRol(rol)" *ngIf="permisos.tienePermiso('ROLES_EDITAR')"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
@@ -201,7 +201,7 @@
               class="btn btn-danger"
               (click)="desactivarRol(rol)"
               [disabled]="!rol.estado || esRolAdministrador(rol) || procesando"
-            ><s3s-icon name="trash"></s3s-icon>
+             *ngIf="permisos.tienePermiso('ROLES_DESACTIVAR')"><s3s-icon name="trash"></s3s-icon>
               Desactivar
             </button>
           </div>
@@ -226,7 +226,7 @@
           name="idRolPermisosSeleccionado"
           (ngModelChange)="cargarPermisosRol($event)"
         >
-          <option *ngFor="let rol of roles" [ngValue]="rol.idRol">
+          <option *ngFor="let rol of roles; trackBy: identificarRol" [ngValue]="rol.idRol">
             {{ rol.nombre }}
           </option>
         </select>
@@ -238,20 +238,21 @@
     </div>
 
     <div class="permissions-grid">
-      <article class="permission-group" *ngFor="let grupo of gruposPermisos()">
+      <article class="permission-group" *ngFor="let grupo of gruposPermisos(); trackBy: identificarGrupoPermisos">
         <h3>{{ grupo.titulo }}</h3>
 
+        <ng-container *ngFor="let permiso of grupo.permisos; trackBy: identificarPermiso">
         <button
           type="button"
           class="permission-item"
-          *ngFor="let permiso of grupo.permisos"
           [class.active]="permiso.asignado"
           [disabled]="rolSeleccionadoEsAdministrador()"
           (click)="togglePermiso(permiso)"
-        >
+         *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
           <span>{{ permiso.nombre }}</span>
           <small>{{ permiso.descripcion || 'Sin descripción.' }}</small>
         </button>
+        </ng-container>
       </article>
     </div>
 
@@ -261,7 +262,7 @@
         class="btn btn-primary"
         (click)="guardarPermisosRol()"
         [disabled]="procesando || rolSeleccionadoEsAdministrador()"
-      >
+       *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
         {{ procesando ? 'Guardando...' : 'Guardar permisos' }}
       </button>
     </div>

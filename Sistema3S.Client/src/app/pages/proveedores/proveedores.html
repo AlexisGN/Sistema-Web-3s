@@ -19,8 +19,8 @@
     </div>
   </section>
 
-  <section class="proveedores-grid">
-    <article class="panel panel-form">
+  <section class="proveedores-grid" [style.grid-template-columns]="(editando ? permisos.tienePermiso('PROVEEDORES_EDITAR') : permisos.tienePermiso('PROVEEDORES_CREAR')) ? null : 'minmax(0, 1fr)'">
+    <article class="panel panel-form" *ngIf="editando ? permisos.tienePermiso('PROVEEDORES_EDITAR') : permisos.tienePermiso('PROVEEDORES_CREAR')">
       <div class="panel-header">
         <div>
           <h2>{{ editando ? 'Editar proveedor' : 'Nuevo proveedor' }}</h2>
@@ -408,11 +408,11 @@
           </div>
 
           <div class="proveedor-card__actions">
-            <button type="button" class="btn btn-edit" (click)="editarProveedor(item)"><s3s-icon name="edit"></s3s-icon>
+            <button type="button" class="btn btn-edit" (click)="editarProveedor(item)" *ngIf="permisos.tienePermiso('PROVEEDORES_EDITAR')"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
-            <button type="button" class="btn btn-delete" (click)="eliminarProveedor(item.idProveedor)"><s3s-icon name="trash"></s3s-icon>
+            <button type="button" class="btn btn-delete" (click)="eliminarProveedor(item.idProveedor)" *ngIf="permisos.tienePermiso('PROVEEDORES_DESACTIVAR')"><s3s-icon name="trash"></s3s-icon>
               Eliminar
             </button>
           </div>

@@ -6,6 +6,8 @@ namespace Sistema3S.Web.Services.Interfaces
     {
         Task<LoginResultadoDto> LoginAsync(LoginDto dto);
 
+        Task<List<PermisoSesionDto>> ObtenerPermisosUsuarioAsync(int idUsuario);
+
         Task<CambiarContrasenaResultadoDto> CambiarContrasenaInicialAsync(
             CambiarContrasenaInicialDto dto
         );

@@ -19,8 +19,8 @@
     </div>
   </section>
 
-  <section class="productos-grid">
-    <article class="panel panel-form">
+  <section class="productos-grid" [style.grid-template-columns]="(editando ? permisos.tienePermiso('PRODUCTOS_EDITAR') : permisos.tienePermiso('PRODUCTOS_CREAR')) ? null : 'minmax(0, 1fr)'">
+    <article class="panel panel-form" *ngIf="editando ? permisos.tienePermiso('PRODUCTOS_EDITAR') : permisos.tienePermiso('PRODUCTOS_CREAR')">
       <div class="panel-header">
         <div>
           <h2>{{ editando ? 'Editar producto' : 'Nuevo producto' }}</h2>
@@ -375,11 +375,11 @@
           </div>
 
           <div class="producto-card__actions">
-            <button type="button" class="btn btn-edit" (click)="editarProducto(item)"><s3s-icon name="edit"></s3s-icon>
+            <button type="button" class="btn btn-edit" (click)="editarProducto(item)" *ngIf="permisos.tienePermiso('PRODUCTOS_EDITAR')"><s3s-icon name="edit"></s3s-icon>
               Editar
             </button>
 
-            <button type="button" class="btn btn-delete" (click)="eliminarProducto(item.idProducto)"><s3s-icon name="trash"></s3s-icon>
+            <button type="button" class="btn btn-delete" (click)="eliminarProducto(item.idProducto)" *ngIf="permisos.tienePermiso('PRODUCTOS_ELIMINAR')"><s3s-icon name="trash"></s3s-icon>
               Eliminar
             </button>
           </div>

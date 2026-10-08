@@ -160,9 +160,30 @@ export class DashboardComponent implements OnInit {
     private compraService: CompraService,
     private ventaService: VentaService,
     private cajaService: CajaService,
-    private sessionService: SessionService,
+    public sessionService: SessionService,
     private cdr: ChangeDetectorRef
   ) { }
+
+  get cardsVisibles(): DashboardCard[] {
+    const permisos: Record<string, string> = {
+      'Productos activos': 'PRODUCTOS_VER',
+      'Servicios activos': 'SERVICIOS_VER',
+      'Clientes activos': 'CLIENTES_VER',
+      'Proveedores activos': 'PROVEEDORES_VER',
+      'Cotizaciones pendientes': 'COTIZACIONES_VER',
+      'Ventas del día': 'VENTAS_VER',
+      'Productos con stock bajo': 'INVENTARIO_VER',
+      'Saldo de caja': 'CAJA_VER',
+      'Compras pendientes de pago': 'COMPRAS_VER'
+    };
+    return this.cards.filter(c => this.sessionService.tienePermiso(permisos[c.label]));
+  }
+
+  get quickActionsVisibles(): QuickAction[] {
+    const permisos = ['PRODUCTOS_CREAR', 'SERVICIOS_CREAR', 'CLIENTES_CREAR', 'PROVEEDORES_CREAR', 'INVENTARIO_VER', 'VENTAS_CREAR', 'COMPRAS_CREAR'];
+    const vistas = ['PRODUCTOS_VER','SERVICIOS_VER','CLIENTES_VER','PROVEEDORES_VER','INVENTARIO_VER','VENTAS_VER','COMPRAS_VER'];
+    return this.quickActions.filter((_, i) => this.sessionService.tienePermiso(permisos[i]) && this.sessionService.tienePermiso(vistas[i]));
+  }
 
   ngOnInit(): void {
     this.cargarResumenProductos();
@@ -178,6 +199,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenProductos(): void {
+    if (!this.sessionService.tienePermiso('PRODUCTOS_VER')) return;
     this.cargando = true;
 
     this.productoService.contarActivos().subscribe({
@@ -196,6 +218,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenServicios(): void {
+    if (!this.sessionService.tienePermiso('SERVICIOS_VER')) return;
     this.servicioService.contarActivos().subscribe({
       next: (data) => {
         this.actualizarCard('Servicios activos', String(data.total));
@@ -210,6 +233,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenClientes(): void {
+    if (!this.sessionService.tienePermiso('CLIENTES_VER')) return;
     this.clienteService.contarActivos().subscribe({
       next: (data) => {
         this.actualizarCard('Clientes activos', String(data.total));
@@ -224,6 +248,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenCotizaciones(): void {
+    if (!this.sessionService.tienePermiso('COTIZACIONES_VER')) return;
     this.cotizacionService.contarPendientes().subscribe({
       next: (data) => {
         this.actualizarCard('Cotizaciones pendientes', String(data.total));
@@ -238,6 +263,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenProveedores(): void {
+    if (!this.sessionService.tienePermiso('PROVEEDORES_VER')) return;
     this.proveedorService.contarActivos().subscribe({
       next: (data) => {
         this.actualizarCard('Proveedores activos', String(data.total));
@@ -252,6 +278,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenInventario(): void {
+    if (!this.sessionService.tienePermiso('INVENTARIO_VER')) return;
     this.inventarioService.resumen().subscribe({
       next: (data) => {
         const totalCriticos = data.totalStockBajo + data.totalSinStock;
@@ -268,6 +295,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenComprasPendientesPago(): void {
+    if (!this.sessionService.tienePermiso('COMPRAS_VER')) return;
     const tamanioPagina = 100;
 
     this.compraService
@@ -322,6 +350,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenVentasDia(): void {
+    if (!this.sessionService.tienePermiso('VENTAS_VER')) return;
     const fechaHoy = this.obtenerFechaActualIso();
     const tamanioPagina = 100;
 
@@ -379,6 +408,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarResumenCaja(): void {
+    if (!this.sessionService.tienePermiso('CAJA_VER')) return;
     const idUsuarioSesion = this.obtenerIdUsuarioSesion();
 
     const idsUsuarios = Array.from(
@@ -443,6 +473,7 @@ export class DashboardComponent implements OnInit {
   }
 
   cargarMovimientosRecientes(): void {
+    if (!this.sessionService.tienePermiso('INVENTARIO_REPORTE')) return;
     this.inventarioService.listarMovimientosRecientes(3).subscribe({
       next: (data) => {
         this.movimientosRecientes = data;

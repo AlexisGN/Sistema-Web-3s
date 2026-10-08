@@ -26,6 +26,7 @@ import {
   styleUrl: './compras.scss'
 })
 export class ComprasComponent implements OnInit {
+  readonly permisos = inject(SessionService);
   private readonly sesionAnulacion = inject(SessionService);
   compras: CompraListado[] = [];
   proveedores: ProveedorCompra[] = [];
@@ -153,6 +154,7 @@ export class ComprasComponent implements OnInit {
   }
 
   cargarProveedores(): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_CREAR'))) return;
     this.buscandoProveedores = true;
 
     this.compraService
@@ -173,6 +175,7 @@ export class ComprasComponent implements OnInit {
   }
 
   cargarProductos(): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_CREAR'))) return;
     this.buscandoProductos = true;
 
     this.compraService
@@ -273,6 +276,7 @@ export class ComprasComponent implements OnInit {
   }
 
   guardarCompra(): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_CREAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -360,6 +364,7 @@ export class ComprasComponent implements OnInit {
   }
 
   exportarReportePdf(): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_REPORTE'))) return;
     this.error = '';
     this.mensaje = '';
     this.generandoReportePdf = true;
@@ -418,6 +423,7 @@ export class ComprasComponent implements OnInit {
   }
 
   exportarReporteExcel(): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_REPORTE'))) return;
     this.error = '';
     this.mensaje = '';
     this.generandoReporteExcel = true;
@@ -453,6 +459,7 @@ export class ComprasComponent implements OnInit {
   }
 
   abrirPago(compra: CompraListado): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_PAGAR'))) return;
     this.compraPagoSeleccionada = compra;
     this.compraDetallePago = null;
     this.cargandoDetallePago = false;
@@ -512,6 +519,7 @@ export class ComprasComponent implements OnInit {
   }
 
   registrarPago(): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_PAGAR'))) return;
     this.mensaje = '';
     this.error = '';
     this.erroresCampo = {};
@@ -583,6 +591,7 @@ export class ComprasComponent implements OnInit {
   }
 
   anularCompra(): void {
+    if (!(this.permisos.tienePermiso('COMPRAS_ANULAR'))) return;
     if (!this.sesionAnulacion.esAdministrador()) return;
     this.mensaje = '';
     this.error = '';
@@ -897,11 +906,13 @@ export class ComprasComponent implements OnInit {
   }
 
   puedePagar(compra: CompraListado): boolean {
+    if (!this.permisos.tienePermiso('COMPRAS_PAGAR')) return false;
     const estadoCompra = (compra.estadoCompra || '').toLowerCase();
     return !estadoCompra.includes('anulada') && Number(compra.saldoPendiente) > 0;
   }
 
   puedeAnular(compra: CompraListado): boolean {
+    if (!this.permisos.tienePermiso('COMPRAS_ANULAR')) return false;
     if (!this.sesionAnulacion.esAdministrador()) return false;
     const estadoCompra = (compra.estadoCompra || '').toLowerCase();
     return !estadoCompra.includes('anulada');

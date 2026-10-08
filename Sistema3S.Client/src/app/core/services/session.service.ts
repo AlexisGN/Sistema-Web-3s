@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 export interface SesionUsuario {
   idUsuario: number;
@@ -14,6 +14,7 @@ export interface SesionUsuario {
   providedIn: 'root'
 })
 export class SessionService {
+  private readonly revisionPermisos = signal(0);
   private readonly storageKey = 'sistema3s_sesion';
 
   guardarSesion(data: any): void {
@@ -83,9 +84,11 @@ export class SessionService {
       rolNombre: sesion.rol,
       permisos: sesion.permisos
     }));
+    this.revisionPermisos.update(v => v + 1);
   }
 
   obtenerSesion(): SesionUsuario | null {
+    this.revisionPermisos();
     const raw = localStorage.getItem(this.storageKey);
 
     if (!raw) {
@@ -174,7 +177,7 @@ export class SessionService {
       return true;
     }
 
-    return this.tienePermisoPorRol(permisoNormalizado);
+    return false;
   }
 
   tieneAlgunPermiso(permisos: string[] | undefined | null): boolean {
@@ -198,24 +201,6 @@ export class SessionService {
       return '/admin/inicio';
     }
 
-    const rol = this.normalizarTexto(this.obtenerRol());
-
-    if (rol.includes('compras')) {
-      return '/admin/compras';
-    }
-
-    if (rol.includes('encargado de almacen') || rol === 'almacen' || rol.includes('almacen')) {
-      return '/admin/inventario';
-    }
-
-    if (rol.includes('encargado de ventas')) {
-      return '/admin/ventas';
-    }
-
-    if (rol.includes('vendedor')) {
-      return '/admin/cotizaciones';
-    }
-
     const rutasPorPermiso: Array<{ permiso: string; ruta: string }> = [
       { permiso: 'COMPRAS_VER', ruta: '/admin/compras' },
       { permiso: 'PROVEEDORES_VER', ruta: '/admin/proveedores' },
@@ -228,12 +213,13 @@ export class SessionService {
       { permiso: 'CAJA_VER', ruta: '/admin/caja' },
       { permiso: 'USUARIOS_VER', ruta: '/admin/usuarios-roles' },
       { permiso: 'ROLES_VER', ruta: '/admin/usuarios-roles' },
+      { permiso: 'ROLES_GESTIONAR_PERMISOS', ruta: '/admin/usuarios-roles' },
       { permiso: 'INICIO_VER', ruta: '/admin/inicio' }
     ];
 
     const rutaPermitida = rutasPorPermiso.find(item => this.tienePermiso(item.permiso));
 
-    return rutaPermitida?.ruta || '/admin/cotizaciones';
+    return rutaPermitida?.ruta || '/login';
   }
 
   cerrarSesion(): void {
@@ -244,76 +230,38 @@ export class SessionService {
     localStorage.removeItem('authUser');
     localStorage.removeItem('user');
     localStorage.removeItem('sesionUsuario');
-  }
-
-  private tienePermisoPorRol(permiso: string): boolean {
-    const rol = this.normalizarTexto(this.obtenerRol());
-
-    const permisosPorRol: Record<string, string[]> = {
-      administrador: ['*'],
-
-      'compras / almacen': [
-        'COMPRAS_VER',
-        'COMPRAS_CREAR',
-        'COMPRAS_EDITAR',
-        'PROVEEDORES_VER',
-        'PROVEEDORES_CREAR',
-        'PROVEEDORES_EDITAR',
-        'INVENTARIO_VER',
-        'INVENTARIO_MOVIMIENTOS'
-      ],
-
-      'encargado de almacen': [
-        'INVENTARIO_VER',
-        'INVENTARIO_MOVIMIENTOS'
-      ],
-
-      'encargado de ventas': [
-        'CLIENTES_VER',
-        'CLIENTES_CREAR',
-        'CLIENTES_EDITAR',
-        'COTIZACIONES_VER',
-        'COTIZACIONES_CREAR',
-        'COTIZACIONES_EDITAR',
-        'VENTAS_VER',
-        'VENTAS_CREAR'
-      ],
-
-      vendedor: [
-        'CLIENTES_VER',
-        'CLIENTES_CREAR',
-        'COTIZACIONES_VER',
-        'COTIZACIONES_CREAR'
-      ]
-    };
-
-    let permisosRol: string[] = [];
-
-    if (rol.includes('compras')) {
-      permisosRol = permisosPorRol['compras / almacen'];
-    } else if (rol.includes('encargado de almacen') || rol.includes('almacen')) {
-      permisosRol = permisosPorRol['encargado de almacen'];
-    } else if (rol.includes('encargado de ventas')) {
-      permisosRol = permisosPorRol['encargado de ventas'];
-    } else if (rol.includes('vendedor')) {
-      permisosRol = permisosPorRol['vendedor'];
-    } else {
-      permisosRol = permisosPorRol[rol] || [];
-    }
-
-    return permisosRol.includes('*') || permisosRol.includes(permiso);
+    this.revisionPermisos.update(v => v + 1);
   }
 
   private normalizarPermisos(data: any, payload: any): string[] {
-    const permisosDirectos = data?.permisos || data?.Permisos || [];
-    const permisosDetalle = data?.permisosDetalle || data?.PermisosDetalle || [];
-    const permisosPayload = this.extraerPermisosPayload(payload);
+    // La respuesta de sesión es autoritativa. El JWT sólo se usa como compatibilidad cuando no trae lista.
+    const directos = data?.permisos ?? data?.Permisos;
+    if (Array.isArray(directos)) return this.normalizarListaPermisos(directos);
+    const detalle = data?.permisosDetalle ?? data?.PermisosDetalle;
+    if (Array.isArray(detalle)) return this.normalizarListaPermisos(detalle);
+    return this.normalizarListaPermisos(this.extraerPermisosPayload(payload));
+  }
 
-    return this.normalizarListaPermisos([
-      ...permisosDirectos,
-      ...permisosDetalle,
-      ...permisosPayload
-    ]);
+  actualizarPermisos(data: any): void {
+    const sesion = this.obtenerSesion();
+    if (!sesion) return;
+    sesion.idRol = Number(data.idRol ?? sesion.idRol);
+    sesion.rol = String(data.rol ?? sesion.rol);
+    sesion.correo = String(data.correo ?? sesion.correo);
+    sesion.permisos = this.normalizarPermisos(data, null);
+    localStorage.setItem(this.storageKey, JSON.stringify(sesion));
+    localStorage.setItem('usuario', JSON.stringify({ ...sesion, token: undefined, expira: undefined }));
+    this.revisionPermisos.update(v => v + 1);
+  }
+
+  retirarPermisos(): void {
+    const sesion = this.obtenerSesion();
+    if (!sesion) return;
+    sesion.permisos = [];
+    // En un fallo de refresco también se retira la excepción visual del administrador hasta verificarla.
+    sesion.rol = '';
+    localStorage.setItem(this.storageKey, JSON.stringify(sesion));
+    this.revisionPermisos.update(v => v + 1);
   }
 
   private extraerPermisosPayload(payload: any): any[] {
@@ -351,6 +299,7 @@ export class SessionService {
     }
 
     const permisos = lista
+      .filter(item => typeof item === 'string' || (item?.asignado ?? item?.Asignado) !== false)
       .map(item => {
         if (typeof item === 'string') {
           return item;

@@ -26,8 +26,8 @@
     {{ error }}
   </div>
 
-  <section class="compras-grid">
-    <article class="panel form-panel">
+  <section class="compras-grid" [style.grid-template-columns]="permisos.tienePermiso('COMPRAS_CREAR') ? null : 'minmax(0, 1fr)'">
+    <article class="panel form-panel" *ngIf="permisos.tienePermiso('COMPRAS_CREAR')">
       <div class="panel-header">
         <div>
           <h2>Registrar compra</h2>
@@ -249,7 +249,7 @@
           <div class="section-title section-title-flex"><s3s-icon name="box"></s3s-icon>
             <span>4. Productos comprados</span>
 
-            <button type="button" class="mini-link" (click)="abrirProductosEnNuevaPestana()">
+            <button type="button" class="mini-link" (click)="abrirProductosEnNuevaPestana()" *ngIf="permisos.tienePermiso('PRODUCTOS_VER')">
               + Registrar producto nuevo
             </button>
           </div>
@@ -557,16 +557,16 @@
         </div>
 
         <div class="header-actions">
-          <button type="button" class="btn btn-light" [disabled]="generandoReportePdf" (click)="exportarReportePdf()"><s3s-icon name="download"></s3s-icon>
+          <button type="button" class="btn btn-light" [disabled]="generandoReportePdf" (click)="exportarReportePdf()" *ngIf="permisos.tienePermiso('COMPRAS_REPORTE')"><s3s-icon name="download"></s3s-icon>
             {{ generandoReportePdf ? 'Generando...' : 'Reporte PDF' }}
           </button>
 
           <button type="button" class="btn btn-excel" [disabled]="generandoReporteExcel"
-            (click)="exportarReporteExcel()"><s3s-icon name="download"></s3s-icon>
+            (click)="exportarReporteExcel()" *ngIf="permisos.tienePermiso('COMPRAS_REPORTE')"><s3s-icon name="download"></s3s-icon>
             {{ generandoReporteExcel ? 'Generando...' : 'Reporte Excel' }}
           </button>
 
-          <button type="button" class="btn btn-primary" (click)="abrirProductosEnNuevaPestana()">
+          <button type="button" class="btn btn-primary" (click)="abrirProductosEnNuevaPestana()" *ngIf="permisos.tienePermiso('PRODUCTOS_VER')">
             + Registrar producto
           </button>
         </div>
@@ -710,7 +710,7 @@
     </article>
   </section>
 
-  <div class="modal-backdrop" *ngIf="compraPagoSeleccionada">
+  <div class="modal-backdrop" *ngIf="compraPagoSeleccionada && permisos.tienePermiso('COMPRAS_PAGAR')">
     <article class="modal-card payment-modal">
       <h2>Registrar pago</h2>
 
@@ -862,7 +862,7 @@
     </article>
   </div>
 
-  <div class="modal-backdrop" *ngIf="compraAnularSeleccionada">
+  <div class="modal-backdrop" *ngIf="compraAnularSeleccionada && permisos.tienePermiso('COMPRAS_ANULAR')">
     <article class="modal-card">
       <h2>Anular compra</h2>
 
