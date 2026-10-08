@@ -414,5 +414,235 @@ namespace Sistema3S.Web.Services.Implementations
                 throw;
             }
         }
+
+        public async Task<List<PermisoDto>> ListarPermisosAsync()
+        {
+            var permisos = new List<PermisoDto>();
+
+            await using var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.AbrirAuditadaAsync();
+            }
+
+            await using var command = connection.CreateCommand();
+
+            command.CommandText = @"
+                SELECT
+                    IdPermiso,
+                    Nombre,
+                    Descripcion,
+                    Estado
+                FROM dbo.Permiso
+                WHERE Estado = 1
+                ORDER BY Nombre;
+            ";
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                permisos.Add(new PermisoDto
+                {
+                    IdPermiso = Convert.ToInt32(reader["IdPermiso"]),
+                    Nombre = Convert.ToString(reader["Nombre"]) ?? string.Empty,
+                    Descripcion = reader["Descripcion"] == DBNull.Value
+                        ? null
+                        : Convert.ToString(reader["Descripcion"]),
+                    Estado = Convert.ToBoolean(reader["Estado"]),
+                    Asignado = false
+                });
+            }
+
+            return permisos;
+        }
+
+        public async Task<List<PermisoDto>> ObtenerPermisosPorRolAsync(int idRol)
+        {
+            if (idRol <= 0)
+            {
+                throw new InvalidOperationException("Selecciona un rol válido.");
+            }
+
+            var permisos = new List<PermisoDto>();
+
+            await using var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.AbrirAuditadaAsync();
+            }
+
+            await using var command = connection.CreateCommand();
+
+            command.CommandText = @"
+                SELECT
+                    p.IdPermiso,
+                    p.Nombre,
+                    p.Descripcion,
+                    p.Estado,
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM dbo.Rol r
+                            WHERE r.IdRol = @IdRol AND r.Estado = 1
+                              AND UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+                        ) THEN CAST(1 AS BIT)
+                        WHEN rp.IdRol IS NULL THEN CAST(0 AS BIT)
+                        ELSE CAST(1 AS BIT)
+                    END AS Asignado
+                FROM dbo.Permiso p
+                LEFT JOIN dbo.RolPermiso rp
+                    ON rp.IdPermiso = p.IdPermiso
+                   AND rp.IdRol = @IdRol
+                WHERE p.Estado = 1
+                ORDER BY p.Nombre;
+            ";
+
+            var pIdRol = command.CreateParameter();
+            pIdRol.ParameterName = "@IdRol";
+            pIdRol.Value = idRol;
+            command.Parameters.Add(pIdRol);
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                permisos.Add(new PermisoDto
+                {
+                    IdPermiso = Convert.ToInt32(reader["IdPermiso"]),
+                    Nombre = Convert.ToString(reader["Nombre"]) ?? string.Empty,
+                    Descripcion = reader["Descripcion"] == DBNull.Value
+                        ? null
+                        : Convert.ToString(reader["Descripcion"]),
+                    Estado = Convert.ToBoolean(reader["Estado"]),
+                    Asignado = Convert.ToBoolean(reader["Asignado"])
+                });
+            }
+
+            return permisos;
+        }
+
+        public async Task<RolOperacionResultadoDto> AsignarPermisosAsync(
+            int idRol,
+            RolPermisosActualizarDto dto
+        )
+        {
+            if (idRol <= 0)
+            {
+                throw new InvalidOperationException("Selecciona un rol válido.");
+            }
+
+            dto.IdsPermisos ??= new List<int>();
+
+            var idsPermisos = dto.IdsPermisos
+                .Distinct()
+                .ToList();
+
+            await using var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.AbrirAuditadaAsync();
+            }
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                string? nombreRol;
+
+                await using (var obtenerRol = connection.CreateCommand())
+                {
+                    obtenerRol.Transaction = transaction;
+                    obtenerRol.CommandText = @"
+                        SELECT Nombre
+                        FROM dbo.Rol
+                        WHERE IdRol = @IdRol
+                          AND Estado = 1;
+                    ";
+
+                    var pIdRol = obtenerRol.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    obtenerRol.Parameters.Add(pIdRol);
+
+                    nombreRol = Convert.ToString(await obtenerRol.ExecuteScalarAsync());
+                }
+
+                if (string.IsNullOrWhiteSpace(nombreRol))
+                {
+                    throw new InvalidOperationException("No se encontró el rol seleccionado.");
+                }
+
+                if (nombreRol.Trim().Equals("Administrador", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("El rol Administrador mantiene todos los permisos activos.");
+                }
+
+                var catalogo = await ReglasSeleccionPermisos.LeerCatalogoAsync(connection, transaction);
+                ReglasSeleccionPermisos.Validar(catalogo, idsPermisos);
+
+                await using (var eliminar = connection.CreateCommand())
+                {
+                    eliminar.Transaction = transaction;
+                    eliminar.CommandText = @"
+                        DELETE FROM dbo.RolPermiso
+                        WHERE IdRol = @IdRol;
+                    ";
+
+                    var pIdRol = eliminar.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    eliminar.Parameters.Add(pIdRol);
+
+                    await eliminar.ExecuteNonQueryAsync();
+                }
+
+                foreach (var idPermiso in idsPermisos)
+                {
+                    await using var insertar = connection.CreateCommand();
+
+                    insertar.Transaction = transaction;
+                    insertar.CommandText = @"
+                        IF EXISTS (
+                            SELECT 1
+                            FROM dbo.Permiso
+                            WHERE IdPermiso = @IdPermiso
+                              AND Estado = 1
+                        )
+                        BEGIN
+                            INSERT INTO dbo.RolPermiso (IdRol, IdPermiso)
+                            VALUES (@IdRol, @IdPermiso);
+                        END;
+                    ";
+
+                    var pIdRol = insertar.CreateParameter();
+                    pIdRol.ParameterName = "@IdRol";
+                    pIdRol.Value = idRol;
+                    insertar.Parameters.Add(pIdRol);
+
+                    var pIdPermiso = insertar.CreateParameter();
+                    pIdPermiso.ParameterName = "@IdPermiso";
+                    pIdPermiso.Value = idPermiso;
+                    insertar.Parameters.Add(pIdPermiso);
+
+                    await insertar.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+
+                return new RolOperacionResultadoDto
+                {
+                    IdRol = idRol,
+                    Mensaje = "Permisos del rol actualizados correctamente."
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }

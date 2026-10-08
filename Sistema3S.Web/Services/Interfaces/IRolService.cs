@@ -12,5 +12,14 @@ namespace Sistema3S.Web.Services.Interfaces
         Task<RolRespuestaListadoDto> ActualizarAsync(int idRol, RolActualizarDto dto);
 
         Task<RolOperacionResultadoDto> DesactivarAsync(int idRol);
+
+        Task<List<PermisoDto>> ListarPermisosAsync();
+
+        Task<List<PermisoDto>> ObtenerPermisosPorRolAsync(int idRol);
+
+        Task<RolOperacionResultadoDto> AsignarPermisosAsync(
+            int idRol,
+            RolPermisosActualizarDto dto
+        );
     }
 }

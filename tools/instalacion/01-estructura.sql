@@ -2210,6 +2210,26 @@ BEGIN
     ORDER BY mc.FechaMovimiento DESC, mc.IdMovimientoCaja DESC;
 END;
 GO
+/* =========================================================
+   21. PROCEDIMIENTO: LISTAR PERMISOS
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ListarPermisos
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        IdPermiso,
+        Nombre,
+        Descripcion,
+        Estado
+    FROM dbo.Permiso
+    WHERE Estado = 1
+    ORDER BY Nombre;
+END;
+
+GO
 CREATE   PROCEDURE dbo.sp_ListarRoles
     @SoloActivos BIT = NULL
 AS
@@ -6734,6 +6754,22 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdPagoVentaCuota]=d.[IdPagoVentaCuota];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_Permiso_Auditoria ON dbo.[Permiso] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdPermiso] IS NULL THEN N'CREAR' WHEN i.[IdPermiso] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Permiso',
+ COALESCE(i.[IdPermiso],d.[IdPermiso]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdPermiso] IS NOT NULL THEN (SELECT d.[IdPermiso],d.[Nombre],d.[Descripcion],d.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdPermiso] IS NOT NULL THEN (SELECT i.[IdPermiso],i.[Nombre],i.[Descripcion],i.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdPermiso]=d.[IdPermiso];
 END;
 
 GO

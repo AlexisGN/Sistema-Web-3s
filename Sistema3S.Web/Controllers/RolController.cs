@@ -105,5 +105,73 @@ namespace Sistema3S.Web.Controllers
                 });
             }
         }
+
+        [HttpGet("permisos")]
+        public async Task<IActionResult> ListarPermisos()
+        {
+            try
+            {
+                var permisos = await _rolService.ListarPermisosAsync();
+                return Ok(permisos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = $"No se pudieron cargar los permisos: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpGet("{idRol:int}/permisos")]
+        public async Task<IActionResult> ObtenerPermisosPorRol(int idRol)
+        {
+            try
+            {
+                var permisos = await _rolService.ObtenerPermisosPorRolAsync(idRol);
+                return Ok(permisos);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = $"No se pudieron cargar los permisos del rol: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpPut("{idRol:int}/permisos")]
+        public async Task<IActionResult> AsignarPermisos(
+            int idRol,
+            [FromBody] RolPermisosActualizarDto dto
+        )
+        {
+            try
+            {
+                var resultado = await _rolService.AsignarPermisosAsync(idRol, dto);
+                return Ok(resultado);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensaje = $"No se pudieron actualizar los permisos del rol: {ex.Message}"
+                });
+            }
+        }
     }
 }

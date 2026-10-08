@@ -43,7 +43,13 @@
       Roles
     </button>
 
-    
+    <button
+      type="button"
+      [class.active]="tabActiva === 'permisos'"
+      (click)="cambiarTab('permisos')"
+     *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
+      Permisos por rol
+    </button>
     <button type="button" class="clients-tab" [class.active]="tabActiva === 'clientes'" [attr.aria-pressed]="tabActiva === 'clientes'" (click)="cambiarTab('clientes')" *ngIf="permisos.tienePermiso('CLIENTES_VER')">Ver clientes</button>
   </section>
 
@@ -204,5 +210,62 @@
     </article>
   </section>
 
-  
+  <section class="panel permissions-panel" *ngIf="tabActiva === 'permisos'">
+    <div class="panel-header">
+      <div>
+        <h2>Permisos por rol</h2>
+        <p>
+          Selecciona un rol y define qué módulos o acciones podrá utilizar.
+        </p>
+      </div>
+
+      <div class="role-select">
+        <label>Rol</label>
+        <select
+          [(ngModel)]="idRolPermisosSeleccionado"
+          name="idRolPermisosSeleccionado"
+          (ngModelChange)="cargarPermisosRol($event)"
+        >
+          <option *ngFor="let rol of roles; trackBy: identificarRol" [ngValue]="rol.idRol">
+            {{ rol.nombre }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <s3s-aviso *ngIf="rolSeleccionadoEsAdministrador()" tipo="warning">
+      El rol Administrador mantiene todos los permisos activos y no puede quedar limitado.
+    </s3s-aviso>
+
+    <div class="permissions-grid">
+      <article class="permission-group" *ngFor="let grupo of gruposPermisos(); trackBy: identificarGrupoPermisos">
+        <h3>{{ grupo.titulo }}</h3>
+
+        <ng-container *ngFor="let permiso of grupo.permisos; trackBy: identificarPermiso">
+        <button
+          type="button"
+          class="permission-item"
+          [class.active]="permiso.asignado"
+          [disabled]="rolSeleccionadoEsAdministrador() || procesando || permisoSinBase(permiso)"
+          [attr.title]="mensajeDependencia(permiso) || null"
+          (click)="togglePermiso(permiso)"
+         *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
+          <span>{{ permiso.nombre }}</span>
+          <small>{{ permiso.descripcion || 'Sin descripción.' }}</small>
+        </button>
+        </ng-container>
+      </article>
+    </div>
+
+    <div class="actions-row permissions-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="guardarPermisosRol()"
+        [disabled]="procesando || rolSeleccionadoEsAdministrador()"
+       *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
+        {{ procesando ? 'Guardando...' : 'Guardar permisos' }}
+      </button>
+    </div>
+  </section>
 </div>
