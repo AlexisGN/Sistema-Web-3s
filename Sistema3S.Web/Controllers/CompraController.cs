@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Sistema3S.Web.DTOs.Compra;
 using Sistema3S.Web.Services.Interfaces;
 
 namespace Sistema3S.Web.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CompraController : ControllerBase

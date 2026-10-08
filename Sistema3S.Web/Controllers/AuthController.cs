@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sistema3S.Web.DTOs.Auth;
 using Sistema3S.Web.Services.Interfaces;
 
 namespace Sistema3S.Web.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase

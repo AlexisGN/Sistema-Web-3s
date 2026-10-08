@@ -8,7 +8,7 @@
 </section>
 <section class="home-section brand-section" *ngIf="marcas.length" id="marcas">
   <div class="section-heading"><div><span class="eyebrow">Marcas del catálogo</span><h2>Tecnología para cada requerimiento</h2></div></div>
-  <s3s-public-carousel label="Marcas industriales" [speed]="24"><ng-template><a class="brand-card" *ngFor="let marca of marcas; trackBy: trackByMarca" [routerLink]="['/marcas', marca.idMarca || marca.id]" [attr.aria-label]="'Ver productos de ' + marca.nombre"><img *ngIf="marca.logoUrl" [src]="marca.logoUrl" [alt]="marca.nombre" loading="lazy" /><strong *ngIf="!marca.logoUrl">{{ marca.nombre }}</strong></a></ng-template></s3s-public-carousel>
+  <s3s-public-carousel label="Marcas industriales" [duration]="22"><ng-template><a class="brand-card" *ngFor="let marca of marcas; trackBy: trackByMarca" [routerLink]="['/marcas', marca.idMarca || marca.id]" [attr.aria-label]="'Ver productos de ' + marca.nombre"><img *ngIf="marca.logoUrl" [src]="marca.logoUrl" [alt]="marca.nombre" loading="lazy" /><strong *ngIf="!marca.logoUrl">{{ marca.nombre }}</strong></a></ng-template></s3s-public-carousel>
 </section>
 <section class="home-section" id="catalogo" *ngIf="categorias.length">
   <div class="section-heading"><div><span class="eyebrow">Catálogo industrial</span><h2>Encuentra tu especialidad</h2></div><a routerLink="/categorias">Todas las categorías <s3s-icon name="arrow" /></a></div>

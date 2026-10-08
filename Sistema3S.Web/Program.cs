@@ -70,6 +70,9 @@ builder.Services
         };
     });
 
+// Políticas estándar para los atributos Authorize de los controladores.
+builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<ClienteCuentaService>();
 builder.Services.AddSingleton<RecuperacionClienteQueue>();
 builder.Services.AddHostedService<RecuperacionClienteWorker>();

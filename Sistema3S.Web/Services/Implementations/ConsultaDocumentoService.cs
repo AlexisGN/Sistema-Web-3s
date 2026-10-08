@@ -269,7 +269,8 @@ namespace Sistema3S.Web.Services.Implementations
                     _jsonOptions
                 );
 
-                if (datos == null || string.IsNullOrWhiteSpace(datos.NumeroDocumento))
+                if (datos == null || string.IsNullOrWhiteSpace(datos.NumeroDocumento)
+                    || string.IsNullOrWhiteSpace(datos.RazonSocial))
                 {
                     await RegistrarConsultaExternaAsync(
                         "SUNAT",

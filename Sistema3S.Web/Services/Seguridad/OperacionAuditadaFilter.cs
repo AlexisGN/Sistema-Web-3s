@@ -11,7 +11,7 @@ public sealed class OperacionAuditadaFilter(Bd3sContext db, ILogger<OperacionAud
 {
     private static readonly HashSet<string> Internos = new(StringComparer.OrdinalIgnoreCase) {
         "Caja", "Compra", "Venta", "Cotizacion", "Producto", "Servicio", "Cliente",
-        "Proveedor", "Inventario", "Usuario", "Rol", "Catalogo", "Auditoria"
+        "Proveedor", "Inventario", "Usuario", "Rol", "Catalogo", "Auditoria", "Prueba"
     };
     private static readonly HashSet<string> Responsables = new(StringComparer.OrdinalIgnoreCase) {
         "IdUsuarioRegistro", "IdUsuarioAtencion", "IdUsuarioApertura", "IdUsuarioCierre"
@@ -42,8 +42,8 @@ public sealed class OperacionAuditadaFilter(Bd3sContext db, ILogger<OperacionAud
             var admin = usuario != null && !esCliente && (usuario.Rol.Trim().Equals("Administrador", StringComparison.OrdinalIgnoreCase)
                 || usuario.Rol.Trim().Equals("Admin", StringComparison.OrdinalIgnoreCase));
 
-            // Las consultas públicas conservan sus rutas. Toda escritura administrativa exige sesión interna.
-            if (interno && (escritura || controlador is "Auditoria" or "Usuario") && (usuario == null || esCliente))
+            // El catálogo y la cuenta pública usan Publico/ClienteWeb. Todo el panel exige sesión interna.
+            if (interno && (usuario == null || esCliente))
             {
                 var status = usuario == null ? 401 : 403;
                 context.Result = new ObjectResult(new { mensaje = "Inicia sesión con un usuario interno autorizado." }) { StatusCode = status };
