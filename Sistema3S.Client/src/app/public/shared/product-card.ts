@@ -11,7 +11,7 @@ import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
   imports: [CommonModule, FormsModule, RouterLink, ImagenCatalogoComponent, UiIconComponent],
   template: `<article class="product-card">
     <a class="product-image" [routerLink]="['/productos', producto.idProducto || producto.id]" [attr.aria-label]="'Ver ' + producto.nombre">
-      <app-imagen-catalogo [ruta]="producto.imagenUrl" [descripcion]="producto.nombre" />
+      <app-imagen-catalogo ajuste="cover" [ruta]="producto.imagenUrl" [descripcion]="producto.nombre" />
       <span class="new-badge" *ngIf="producto.nuevo">Nuevo</span>
     </a>
     <div class="product-body"><div class="product-meta"><span>{{ producto.codigo }}</span><span>{{ producto.marca || '3S' }}</span></div>

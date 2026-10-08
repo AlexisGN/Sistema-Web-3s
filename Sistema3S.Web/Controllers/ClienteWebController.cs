@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Sistema3S.Web.DTOs.ClienteWeb;
@@ -6,6 +6,7 @@ using Sistema3S.Web.Services.Interfaces;
 
 namespace Sistema3S.Web.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/cliente-web")]
     public class ClienteWebController : ControllerBase

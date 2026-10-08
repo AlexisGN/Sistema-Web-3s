@@ -23,7 +23,7 @@
     <section class="service-detail">
       <div class="gallery-card">
         <div class="main-image">
-          <app-imagen-catalogo [ruta]="imagenSeleccionada" [descripcion]="servicio.nombre" *ngIf="imagenSeleccionada" />
+          <app-imagen-catalogo ajuste="cover" [ruta]="imagenSeleccionada" [descripcion]="servicio.nombre" *ngIf="imagenSeleccionada" />
 
           <div class="image-placeholder" *ngIf="!imagenSeleccionada">
             <strong>3S</strong>
@@ -38,7 +38,7 @@
             [class.active]="imagenSeleccionada === imagen.urlImagen"
             (click)="seleccionarImagen(imagen)"
           >
-            <app-imagen-catalogo [ruta]="imagen.urlImagen" [descripcion]="imagen.textoAlternativo" />
+            <app-imagen-catalogo ajuste="cover" [ruta]="imagen.urlImagen" [descripcion]="imagen.textoAlternativo" />
           </button>
         </div>
       </div>
@@ -94,7 +94,7 @@
           *ngFor="let item of relacionados; trackBy: trackByServicio"
         >
           <button type="button" class="related-image" (click)="verServicioRelacionado(item)">
-            <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombre" *ngIf="item.imagenUrl" />
+            <app-imagen-catalogo ajuste="cover" [ruta]="item.imagenUrl" [descripcion]="item.nombre" *ngIf="item.imagenUrl" />
 
             <div class="image-placeholder small" *ngIf="!item.imagenUrl">
               <strong>3S</strong>

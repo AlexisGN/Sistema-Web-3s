@@ -71,11 +71,11 @@
             *ngIf="item.idProducto"
             [routerLink]="['/productos', item.idProducto]"
           >
-            <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombreProducto"></app-imagen-catalogo>
+            <app-imagen-catalogo ajuste="cover" [ruta]="item.imagenUrl" [descripcion]="item.nombreProducto"></app-imagen-catalogo>
           </a>
 
           <div class="item-image" *ngIf="!item.idProducto">
-            <app-imagen-catalogo [ruta]="item.imagenUrl" [descripcion]="item.nombreProducto"></app-imagen-catalogo>
+            <app-imagen-catalogo ajuste="cover" [ruta]="item.imagenUrl" [descripcion]="item.nombreProducto"></app-imagen-catalogo>
           </div>
 
           <div class="item-info">

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Sistema3S.Web.Services.Interfaces;
 
 namespace Sistema3S.Web.Controllers
 {
+    [AllowAnonymous]
     [ApiController]
     [Route("api/publico")]
     public class PublicoController : ControllerBase
