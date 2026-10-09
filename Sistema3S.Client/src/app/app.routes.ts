@@ -147,7 +147,12 @@ export const routes: Routes = [
       
       
       
-      
+      {
+        path: 'auditoria',
+        canActivate: [permissionGuard],
+        data: { permisos: ['AUDITORIA_VER'] },
+        loadComponent: () => import('./pages/auditoria/auditoria').then(m => m.AuditoriaComponent)
+      },
       {
         path: '',
         redirectTo: 'inicio',

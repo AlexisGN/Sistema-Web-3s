@@ -137,7 +137,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           route: '/admin/usuarios-roles',
           permisos: ['USUARIOS_VER', 'ROLES_VER', 'ROLES_GESTIONAR_PERMISOS']
         },
-        
+        {
+          label: 'Auditoría',
+          icon: 'AU',
+          route: '/admin/auditoria',
+          permisos: ['AUDITORIA_VER']
+        }
       ]
     }
   ];
