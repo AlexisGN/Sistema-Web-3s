@@ -18,17 +18,17 @@
     </div>
   </div>
 
-  <div *ngIf="mensaje" class="alert success">
+  <s3s-aviso *ngIf="mensaje" tipo="success">
     {{ mensaje }}
-  </div>
+  </s3s-aviso>
 
-  <div *ngIf="error" class="alert error">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }}
-  </div>
+  </s3s-aviso>
 
-  <div *ngIf="cargandoCotizacion" class="alert info">
+  <s3s-aviso *ngIf="cargandoCotizacion" tipo="info">
     Cargando cotización para venta...
-  </div>
+  </s3s-aviso>
 
   <section class="ventas-grid" [style.grid-template-columns]="permisos.tienePermiso('VENTAS_CREAR') ? null : 'minmax(0, 1fr)'">
     <article class="panel form-panel" *ngIf="permisos.tienePermiso('VENTAS_CREAR')">
@@ -55,9 +55,9 @@
             </p>
           </div>
 
-          <small class="field-error" *ngIf="erroresCampo['cotizacion']">
+          <s3s-aviso *ngIf="erroresCampo['cotizacion']" tipo="error" [compacto]="true">
             {{ erroresCampo['cotizacion'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="form-section s3s-party">
@@ -76,9 +76,9 @@
               </button>
             </div>
 
-            <small class="field-error" *ngIf="erroresCampo['cliente']">
+            <s3s-aviso *ngIf="erroresCampo['cliente']" tipo="error" [compacto]="true">
               {{ erroresCampo['cliente'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="result-list" *ngIf="clientes.length > 0">
@@ -117,9 +117,9 @@
                 </option>
               </select>
 
-              <small class="field-error" *ngIf="erroresCampo['tipoComprobante']">
+              <s3s-aviso *ngIf="erroresCampo['tipoComprobante']" tipo="error" [compacto]="true">
                 {{ erroresCampo['tipoComprobante'] }}
-              </small>
+              </s3s-aviso>
 
               <!-- <small class="field-help" *ngIf="clienteSeleccionado">
                 Persona natural con DNI: Boleta o Nota de venta. Empresa con RUC: Factura, Boleta o Nota de venta.
@@ -132,9 +132,9 @@
               <input id="s3s-ventas-153" type="date" [(ngModel)]="venta.fechaEmision" name="fechaEmision"
                 (input)="limpiarErrorCampo('fechaEmision')" />
 
-              <small class="field-error" *ngIf="erroresCampo['fechaEmision']">
+              <s3s-aviso *ngIf="erroresCampo['fechaEmision']" tipo="error" [compacto]="true">
                 {{ erroresCampo['fechaEmision'] }}
-              </small>
+              </s3s-aviso>
             </div>
           </div>
 
@@ -152,9 +152,9 @@
             </div>
           </div>
 
-          <div *ngIf="cargandoSiguienteComprobante" class="auto-number-help">
+          <s3s-aviso *ngIf="cargandoSiguienteComprobante" tipo="info" [compacto]="true">
             Generando número automático...
-          </div>
+          </s3s-aviso>
 
           <div class="field">
             <label for="s3s-ventas-187">Observación de venta</label>
@@ -206,9 +206,9 @@
             </div>
           </div>
 
-          <small class="field-error" *ngIf="erroresCampo['elementoDetalle']">
+          <s3s-aviso *ngIf="erroresCampo['elementoDetalle']" tipo="error" [compacto]="true">
             {{ erroresCampo['elementoDetalle'] }}
-          </small>
+          </s3s-aviso>
 
           <div class="result-list" *ngIf="tipoElementoFormulario === 'Producto' && productos.length > 0">
             <button type="button" class="result-item" *ngFor="let producto of productos"
@@ -256,9 +256,9 @@
               <input id="s3s-ventas-282" type="number" [(ngModel)]="detalleFormulario.cantidad" name="cantidadDetalle" min="1" step="1"
                 placeholder="Cantidad" (input)="limpiarErrorCampo('cantidadDetalle')" />
 
-              <small class="field-error" *ngIf="erroresCampo['cantidadDetalle']">
+              <s3s-aviso *ngIf="erroresCampo['cantidadDetalle']" tipo="error" [compacto]="true">
                 {{ erroresCampo['cantidadDetalle'] }}
-              </small>
+              </s3s-aviso>
             </div>
 
             <div class="field">
@@ -267,9 +267,9 @@
               <input id="s3s-ventas-293" type="number" [(ngModel)]="detalleFormulario.precioUnitario" name="precioDetalle" min="0"
                 step="0.01" placeholder="S/ 0.00" (input)="limpiarErrorCampo('precioDetalle')" />
 
-              <small class="field-error" *ngIf="erroresCampo['precioDetalle']">
+              <s3s-aviso *ngIf="erroresCampo['precioDetalle']" tipo="error" [compacto]="true">
                 {{ erroresCampo['precioDetalle'] }}
-              </small>
+              </s3s-aviso>
             </div>
           </div>
 
@@ -277,9 +277,9 @@
             Agregar a venta
           </button>
 
-          <small class="field-error" *ngIf="erroresCampo['detalles']">
+          <s3s-aviso *ngIf="erroresCampo['detalles']" tipo="error" [compacto]="true">
             {{ erroresCampo['detalles'] }}
-          </small>
+          </s3s-aviso>
           <div class="detail-list" *ngIf="venta.detalles.length > 0">
             <article class="detail-card detail-card-editable" *ngFor="let detalle of venta.detalles; let i = index">
               <div class="detail-product">
@@ -336,9 +336,9 @@
                 </option>
               </select>
 
-              <small class="field-error" *ngIf="erroresCampo['tipoPago']">
+              <s3s-aviso *ngIf="erroresCampo['tipoPago']" tipo="error" [compacto]="true">
                 {{ erroresCampo['tipoPago'] }}
-              </small>
+              </s3s-aviso>
             </div>
 
             <div class="field">
@@ -352,9 +352,9 @@
                 </option>
               </select>
 
-              <small class="field-error" *ngIf="erroresCampo['metodoPago']">
+              <s3s-aviso *ngIf="erroresCampo['metodoPago']" tipo="error" [compacto]="true">
                 {{ erroresCampo['metodoPago'] }}
-              </small>
+              </s3s-aviso>
             </div>
           </div>
 
@@ -365,9 +365,9 @@
               <input id="s3s-ventas-407" type="number" [(ngModel)]="venta.montoPagado" name="montoPagado" min="0" step="0.01"
                 [readonly]="venta.tipoPago === 'Total'" (input)="cambiarMontoPagado()" />
 
-              <small class="field-error" *ngIf="erroresCampo['montoPagado']">
+              <s3s-aviso *ngIf="erroresCampo['montoPagado']" tipo="error" [compacto]="true">
                 {{ erroresCampo['montoPagado'] }}
-              </small>
+              </s3s-aviso>
             </div>
 
             <div class="field readonly-field">
@@ -384,9 +384,9 @@
               <input id="s3s-ventas-429" type="number" [(ngModel)]="venta.numeroCuotas" name="numeroCuotas" min="1" max="24" step="1"
                 placeholder="Ej. 4" (input)="cambiarNumeroCuotas()" />
 
-              <small class="field-error" *ngIf="erroresCampo['numeroCuotas']">
+              <s3s-aviso *ngIf="erroresCampo['numeroCuotas']" tipo="error" [compacto]="true">
                 {{ erroresCampo['numeroCuotas'] }}
-              </small>
+              </s3s-aviso>
             </div>
 
             <div class="field">
@@ -395,9 +395,9 @@
               <input id="s3s-ventas-440" type="date" [(ngModel)]="venta.fechaPrimerVencimiento" name="fechaPrimerVencimiento"
                 (input)="cambiarFechaPrimerVencimiento()" />
 
-              <small class="field-error" *ngIf="erroresCampo['fechaPrimerVencimiento']">
+              <s3s-aviso *ngIf="erroresCampo['fechaPrimerVencimiento']" tipo="error" [compacto]="true">
                 {{ erroresCampo['fechaPrimerVencimiento'] }}
-              </small>
+              </s3s-aviso>
             </div>
           </div>
 
@@ -416,18 +416,18 @@
               </div>
             </div>
 
-            <small class="field-error" *ngIf="erroresCampo['cronogramaCuotas']">
+            <s3s-aviso *ngIf="erroresCampo['cronogramaCuotas']" tipo="error" [compacto]="true">
               {{ erroresCampo['cronogramaCuotas'] }}
-            </small>
+            </s3s-aviso>
 
-            <div class="empty-box" *ngIf="!venta.numeroCuotas || !venta.fechaPrimerVencimiento">
+            <s3s-aviso *ngIf="!venta.numeroCuotas || !venta.fechaPrimerVencimiento" tipo="info">
               Ingresa el número de cuotas y el primer vencimiento para generar el cronograma.
-            </div>
+            </s3s-aviso>
 
-            <div class="empty-box"
-              *ngIf="venta.numeroCuotas && venta.fechaPrimerVencimiento && venta.cuotas.length === 0">
+            <s3s-aviso
+              *ngIf="venta.numeroCuotas && venta.fechaPrimerVencimiento && venta.cuotas.length === 0" tipo="info">
               No se pudo generar el cronograma. Revisa que exista saldo por cobrar y que el número de cuotas sea válido.
-            </div>
+            </s3s-aviso>
 
             <div class="cuotas-table" *ngIf="venta.cuotas.length > 0">
               <div class="cuotas-row cuotas-row-head">
@@ -445,9 +445,9 @@
                   <input type="date" [(ngModel)]="cuota.fechaVencimiento" [name]="'fechaCuota' + i"
                     (input)="cambiarFechaCuota(i)" />
 
-                  <small class="field-error" *ngIf="erroresCampo['fechaCuota' + i]">
+                  <s3s-aviso *ngIf="erroresCampo['fechaCuota' + i]" tipo="error" [compacto]="true">
                     {{ erroresCampo['fechaCuota' + i] }}
-                  </small>
+                  </s3s-aviso>
                 </div>
 
                 <div class="cuota-monto">
@@ -594,13 +594,13 @@
         </div>
       </div>
 
-      <div *ngIf="cargando" class="empty-box">
+      <s3s-aviso *ngIf="cargando" tipo="info">
         Cargando ventas...
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="!cargando && ventas.length === 0" class="empty-box">
+      <s3s-aviso *ngIf="!cargando && ventas.length === 0" tipo="info">
         No hay ventas registradas.
-      </div>
+      </s3s-aviso>
 
       <div class="sale-list" *ngIf="!cargando && ventas.length > 0">
         <article class="sale-card" *ngFor="let item of ventas">
@@ -724,12 +724,12 @@
           </option>
         </select>
 
-        <small class="field-error" *ngIf="erroresCampo['metodoPagoPago']">
+        <s3s-aviso *ngIf="erroresCampo['metodoPagoPago']" tipo="error" [compacto]="true">
           {{ erroresCampo['metodoPagoPago'] }}
-        </small>
+        </s3s-aviso>
       </div>
 
-      <div class="payment-info-box" *ngIf="!esCobroEnCuotas()">
+      <s3s-aviso *ngIf="!esCobroEnCuotas()" tipo="info" [mostrarTitulo]="false">
         <strong>Cobro restante completo</strong>
 
         <p>
@@ -741,7 +741,7 @@
           <span>Monto a cobrar</span>
           <strong>S/ {{ pago.montoPagado | number:'1.2-2' }}</strong>
         </div>
-      </div>
+      </s3s-aviso>
 
       <div class="payment-installments" *ngIf="esCobroEnCuotas()">
         <div class="installments-title">
@@ -764,17 +764,17 @@
           </div>
         </div>
 
-        <div class="empty-box" *ngIf="cargandoDetallePago">
+        <s3s-aviso *ngIf="cargandoDetallePago" tipo="info">
           Cargando cuotas pendientes...
-        </div>
+        </s3s-aviso>
 
-        <small class="field-error" *ngIf="erroresCampo['cuotasCobro']">
+        <s3s-aviso *ngIf="erroresCampo['cuotasCobro']" tipo="error" [compacto]="true">
           {{ erroresCampo['cuotasCobro'] }}
-        </small>
+        </s3s-aviso>
 
-        <div class="empty-box" *ngIf="!cargandoDetallePago && cuotasPendientesCobro().length === 0">
+        <s3s-aviso *ngIf="!cargandoDetallePago && cuotasPendientesCobro().length === 0" tipo="info">
           No hay cuotas pendientes para esta venta.
-        </div>
+        </s3s-aviso>
 
         <div class="installment-payment-list" *ngIf="!cargandoDetallePago && cuotasPendientesCobro().length > 0">
           <button type="button" class="installment-payment-item" *ngFor="let cuota of cuotasPendientesCobro()"
@@ -813,9 +813,9 @@
 
         <input id="s3s-ventas-968" type="number" [(ngModel)]="pago.montoPagado" name="montoPagoModal" min="0" step="0.01" readonly />
 
-        <small class="field-error" *ngIf="erroresCampo['montoPago']">
+        <s3s-aviso *ngIf="erroresCampo['montoPago']" tipo="error" [compacto]="true">
           {{ erroresCampo['montoPago'] }}
-        </small>
+        </s3s-aviso>
       </div>
 
       <div class="field">
@@ -853,9 +853,9 @@
         <textarea id="s3s-ventas-1011" [(ngModel)]="anularDto.motivo" name="motivoAnulacion" rows="4" placeholder="Ingresa el motivo..."
           (input)="limpiarErrorCampo('motivoAnulacion')"></textarea>
 
-        <small class="field-error" *ngIf="erroresCampo['motivoAnulacion']">
+        <s3s-aviso *ngIf="erroresCampo['motivoAnulacion']" tipo="error" [compacto]="true">
           {{ erroresCampo['motivoAnulacion'] }}
-        </small>
+        </s3s-aviso>
       </div>
 
       <div class="modal-actions">

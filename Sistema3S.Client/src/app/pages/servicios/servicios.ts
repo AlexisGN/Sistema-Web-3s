@@ -1,3 +1,5 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
+import { MensajesService } from '../../shared/mensajes/mensajes.service';
 import { inject } from '@angular/core';
 import { SessionService } from '../../core/services/session.service';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
@@ -16,11 +18,12 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-servicios',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './servicios.html',
   styleUrl: './servicios.scss'
 })
 export class ServiciosComponent implements OnInit {
+  private readonly mensajes = inject(MensajesService);
   readonly permisos = inject(SessionService);
   servicios: ServicioListado[] = [];
 
@@ -268,9 +271,9 @@ export class ServiciosComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  eliminarServicio(idServicio: number): void {
+  async eliminarServicio(idServicio: number): Promise<void> {
     if (!(this.permisos.tienePermiso('SERVICIOS_ELIMINAR'))) return;
-    const confirmar = confirm('¿Deseas eliminar este servicio?');
+    const confirmar = (await this.mensajes.confirmar('¿Deseas eliminar este servicio?', {"titulo":"Eliminar servicio","aceptar":"Eliminar","tipo":"error","icono":"trash"}));
 
     if (!confirmar) {
       return;

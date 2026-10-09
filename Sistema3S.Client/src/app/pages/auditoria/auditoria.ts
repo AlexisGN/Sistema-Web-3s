@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
@@ -12,7 +13,7 @@ interface Actividad { id: number; fecha: string; responsable: string; modulo: st
 interface Opciones { modulos: string[]; responsables: {id: number; nombre: string; correo: string}[]; }
 
 @Component({
-  selector: 'app-auditoria', standalone: true, imports: [UiIconComponent, CommonModule, FormsModule],
+  selector: 'app-auditoria', standalone: true, imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './auditoria.html', styleUrl: './auditoria.scss', changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AuditoriaComponent implements OnInit, OnDestroy {

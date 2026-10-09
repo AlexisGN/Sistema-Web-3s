@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
 import { inject } from '@angular/core';
 import { SessionService } from '../../core/services/session.service';
 import { ImagenCatalogoComponent } from '../../shared/imagen-catalogo/imagen-catalogo';
@@ -17,7 +18,7 @@ import {
 @Component({
   selector: 'app-inventario',
   standalone: true,
-  imports: [ImagenCatalogoComponent, UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, ImagenCatalogoComponent, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './inventario.html',
   styleUrl: './inventario.scss'
 })

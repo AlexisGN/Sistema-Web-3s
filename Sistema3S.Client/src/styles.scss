@@ -2,6 +2,7 @@
 @use './styles/public-theme' as public;
 @use './styles/public-showcase' as showcase;
 @use './styles/public-about' as about;
+@use './styles/mensajes' as mensajes;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -44,6 +45,7 @@ a {
 @include public.theme;
 @include about.theme;
 @include showcase.theme;
+@include mensajes.theme;
 
 /* Prefijo fijo para los teléfonos, tanto en el panel como en el registro público. */
 .telefono-pe { display: flex; position: relative; width: 100%; min-width: 0; align-items: stretch; }

@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { PublicProductCardComponent } from '../../shared/product-card';
 import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
@@ -36,7 +37,7 @@ interface ProductoCarritoCotizacion {
 @Component({
   selector: 'app-productos-publico',
   standalone: true,
-  imports: [PublicProductCardComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, PublicProductCardComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './productos-publico.html',
   styleUrl: './productos-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

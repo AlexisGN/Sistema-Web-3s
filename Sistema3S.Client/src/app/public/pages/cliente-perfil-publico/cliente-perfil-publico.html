@@ -1,16 +1,16 @@
 <s3s-account-nav />
 <section class="history-hero"><div><span class="eyebrow">Mi cuenta</span><h1>Mi perfil</h1><p>Revisa tu información y mantén tus datos de contacto al día.</p></div><button type="button" class="btn-secondary" (click)="cerrarSesion()"><s3s-icon name="logout" /> Cerrar sesión</button></section>
-<div class="public-status" *ngIf="cargando" role="status">Cargando tu perfil…</div>
-<div class="auth-error" *ngIf="error" role="alert">{{ error }} <button *ngIf="!perfil" type="button" (click)="cargar()">Reintentar</button></div>
-<div class="auth-success" *ngIf="mensaje" role="status">{{ mensaje }}</div>
+<s3s-aviso *ngIf="cargando" tipo="info">Cargando tu perfil…</s3s-aviso>
+<s3s-aviso *ngIf="error" tipo="error">{{ error }} <button *ngIf="!perfil" type="button" (click)="cargar()">Reintentar</button></s3s-aviso>
+<s3s-aviso *ngIf="mensaje" tipo="success">{{ mensaje }}</s3s-aviso>
 <section class="profile-layout" *ngIf="perfil && !cargando">
   <aside class="profile-card"><span class="eyebrow">Identidad de la cuenta</span><h2>{{ perfil.nombreCliente }}</h2>
     <dl><dt>{{ perfil.tipoDocumento }}</dt><dd>{{ perfil.numeroDocumento }}</dd><dt>Correo de acceso</dt><dd>{{ perfil.correo }}</dd><dt>Tipo de cliente</dt><dd>{{ perfil.esEmpresa ? 'Empresa' : 'Persona natural' }}</dd></dl>
-    <p class="field-help">Los datos de identidad están protegidos. Para corregirlos, contacta al equipo 3S.</p>
+    <s3s-aviso tipo="info" [compacto]="true">Los datos de identidad están protegidos. Para corregirlos, contacta al equipo 3S.</s3s-aviso>
   </aside>
   <form #form="ngForm" class="profile-card" (ngSubmit)="guardar(form)" novalidate><div class="section-heading"><h2>Datos de contacto</h2><button *ngIf="!editando" type="button" class="btn-secondary" (click)="editar()"><s3s-icon name="edit" /> Editar datos</button></div>
     <div class="form-grid">
-      <div><label for="perfil-telefono">Teléfono / WhatsApp</label><div class="telefono-pe"><span aria-hidden="true">+51</span><input id="perfil-telefono" s3sTelefonoPe name="telefono" [(ngModel)]="perfil.telefono" [disabled]="!editando || guardando" required #telefono="ngModel" /></div><p class="field-error" *ngIf="telefono.touched && telefono.invalid">Ingresa tu teléfono.</p></div>
+      <div><label for="perfil-telefono">Teléfono / WhatsApp</label><div class="telefono-pe"><span aria-hidden="true">+51</span><input id="perfil-telefono" s3sTelefonoPe name="telefono" [(ngModel)]="perfil.telefono" [disabled]="!editando || guardando" required #telefono="ngModel" /></div><s3s-aviso *ngIf="telefono.touched && telefono.invalid" tipo="error" [compacto]="true">Ingresa tu teléfono.</s3s-aviso></div>
       <div *ngIf="perfil.esEmpresa"><label for="perfil-comercial">Nombre comercial</label><input id="perfil-comercial" name="nombreComercial" [(ngModel)]="perfil.nombreComercial" [readonly]="!editando" [disabled]="guardando" maxlength="200" /></div>
       <div class="wide"><label for="perfil-direccion">Dirección</label><input id="perfil-direccion" name="direccion" [(ngModel)]="perfil.direccion" [readonly]="!editando" [disabled]="guardando" maxlength="250" autocomplete="street-address" /></div>
       <div class="wide"><label for="perfil-ubicacion">Ubicación</label><input id="perfil-ubicacion" [value]="perfil.ubicacion || 'Sin ubicación registrada'" readonly />

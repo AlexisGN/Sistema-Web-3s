@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { PublicDialogFocusDirective } from '../../shared/dialog-focus';
 import { PublicAccountNavComponent } from '../../shared/account-nav';
 import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
@@ -25,7 +26,7 @@ import { CarritoCotizacionService } from '../../../core/services/carrito-cotizac
 @Component({
   selector: 'app-cliente-carrito-publico',
   standalone: true,
-  imports: [PublicDialogFocusDirective, PublicAccountNavComponent, UiIconComponent, ImagenCatalogoComponent, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, PublicDialogFocusDirective, PublicAccountNavComponent, UiIconComponent, ImagenCatalogoComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './cliente-carrito-publico.html',
   styleUrl: './cliente-carrito-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

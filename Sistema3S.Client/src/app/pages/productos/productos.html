@@ -49,9 +49,9 @@
             (input)="limpiarErrorCampo('nombre')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['nombre']">
+          <s3s-aviso *ngIf="erroresCampo['nombre']" tipo="error" [compacto]="true">
             {{ erroresCampo['nombre'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field">
@@ -66,9 +66,9 @@
             (input)="limpiarErrorCampo('codigoProducto')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['codigoProducto']">
+          <s3s-aviso *ngIf="erroresCampo['codigoProducto']" tipo="error" [compacto]="true">
             {{ erroresCampo['codigoProducto'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field">
@@ -85,9 +85,9 @@
             (input)="limpiarErrorCampo('precioReferencial')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['precioReferencial']">
+          <s3s-aviso *ngIf="erroresCampo['precioReferencial']" tipo="error" [compacto]="true">
             {{ erroresCampo['precioReferencial'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full field-description">
@@ -102,9 +102,9 @@
             (input)="limpiarErrorCampo('descripcion')"
           ></textarea>
 
-          <small class="field-error" *ngIf="erroresCampo['descripcion']">
+          <s3s-aviso *ngIf="erroresCampo['descripcion']" tipo="error" [compacto]="true">
             {{ erroresCampo['descripcion'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-third">
@@ -123,9 +123,9 @@
             </option>
           </select>
 
-          <small class="field-error" *ngIf="erroresCampo['idCategoria']">
+          <s3s-aviso *ngIf="erroresCampo['idCategoria']" tipo="error" [compacto]="true">
             {{ erroresCampo['idCategoria'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-third">
@@ -157,9 +157,9 @@
             </option>
           </select>
 
-          <small class="field-error" *ngIf="erroresCampo['idUnidadMedida']">
+          <s3s-aviso *ngIf="erroresCampo['idUnidadMedida']" tipo="error" [compacto]="true">
             {{ erroresCampo['idUnidadMedida'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-media">
@@ -194,9 +194,9 @@
             </div>
           </div>
 
-          <small class="field-error" *ngIf="erroresCampo['imagenUrl']">
+          <s3s-aviso *ngIf="erroresCampo['imagenUrl']" tipo="error" [compacto]="true">
             {{ erroresCampo['imagenUrl'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-media">
@@ -238,16 +238,16 @@
             </div>
           </div>
 
-          <small class="field-error" *ngIf="erroresCampo['fichaTecnicaPdf']">
+          <s3s-aviso *ngIf="erroresCampo['fichaTecnicaPdf']" tipo="error" [compacto]="true">
             {{ erroresCampo['fichaTecnicaPdf'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
-        <div class="field field-full stock-note">
+        <s3s-aviso class="field field-full" tipo="info">
           <span>
             El stock ingresa mediante compras. El stock mínimo se configura en Inventario.
           </span>
-        </div>
+        </s3s-aviso>
 
         <div class="field field-full form-actions">
           <button
@@ -268,13 +268,13 @@
         </div>
       </form>
 
-      <div *ngIf="mensaje" class="alert success">
+      <s3s-aviso *ngIf="mensaje" tipo="success">
         {{ mensaje }}
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="error" class="alert error">
+      <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
-      </div>
+      </s3s-aviso>
     </article>
 
     <article class="panel panel-list">
@@ -311,13 +311,13 @@
         <span role="status">{{ verInactivos ? 'Mostrando solo inactivos' : 'Activos primero · Inactivos al final' }}</span>
       </div>
 
-      <div *ngIf="cargando" class="estado-box">
+      <s3s-aviso *ngIf="cargando" tipo="info">
         Cargando productos...
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="!cargando && productos.length === 0" class="estado-box">
+      <s3s-aviso *ngIf="!cargando && productos.length === 0" tipo="info">
         {{ verInactivos ? 'No se encontraron productos inactivos con esta búsqueda.' : 'No se encontraron productos con esta búsqueda.' }}
-      </div>
+      </s3s-aviso>
 
       <div class="productos-list" *ngIf="!cargando && productos.length > 0">
         <div class="producto-card" *ngFor="let item of productos">

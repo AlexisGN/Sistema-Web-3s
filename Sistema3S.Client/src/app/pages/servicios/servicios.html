@@ -49,9 +49,9 @@
             (input)="limpiarErrorCampo('nombre')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['nombre']">
+          <s3s-aviso *ngIf="erroresCampo['nombre']" tipo="error" [compacto]="true">
             {{ erroresCampo['nombre'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field">
@@ -66,9 +66,9 @@
             (input)="limpiarErrorCampo('sectorAplicacion')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['sectorAplicacion']">
+          <s3s-aviso *ngIf="erroresCampo['sectorAplicacion']" tipo="error" [compacto]="true">
             {{ erroresCampo['sectorAplicacion'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field">
@@ -85,9 +85,9 @@
             (input)="limpiarErrorCampo('precioReferencial')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['precioReferencial']">
+          <s3s-aviso *ngIf="erroresCampo['precioReferencial']" tipo="error" [compacto]="true">
             {{ erroresCampo['precioReferencial'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="s3s-form-heading"><s3s-icon name="upload"></s3s-icon><h3>Contenido del servicio</h3></div>
@@ -123,9 +123,9 @@
             </div>
           </div>
 
-          <small class="field-error" *ngIf="erroresCampo['imagenUrl']">
+          <s3s-aviso *ngIf="erroresCampo['imagenUrl']" tipo="error" [compacto]="true">
             {{ erroresCampo['imagenUrl'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full">
@@ -140,9 +140,9 @@
             (input)="limpiarErrorCampo('descripcion')"
           ></textarea>
 
-          <small class="field-error" *ngIf="erroresCampo['descripcion']">
+          <s3s-aviso *ngIf="erroresCampo['descripcion']" tipo="error" [compacto]="true">
             {{ erroresCampo['descripcion'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full">
@@ -170,11 +170,11 @@
           </label>
         </div>
 
-        <div class="field field-full stock-note">
+        <s3s-aviso class="field field-full" tipo="info">
           <span>
             Los servicios no manejan inventario ni stock. Se usarán para catálogo y cotización comercial.
           </span>
-        </div>
+        </s3s-aviso>
 
         <div class="field field-full form-actions">
           <button
@@ -195,13 +195,13 @@
         </div>
       </form>
 
-      <div *ngIf="mensaje" class="alert success">
+      <s3s-aviso *ngIf="mensaje" tipo="success">
         {{ mensaje }}
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="error" class="alert error">
+      <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
-      </div>
+      </s3s-aviso>
     </article>
 
     <article class="panel panel-list">
@@ -238,13 +238,13 @@
         <span role="status">{{ verInactivos ? 'Mostrando solo inactivos' : 'Activos primero · Inactivos al final' }}</span>
       </div>
 
-      <div *ngIf="cargando" class="estado-box">
+      <s3s-aviso *ngIf="cargando" tipo="info">
         Cargando servicios...
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="!cargando && servicios.length === 0" class="estado-box">
+      <s3s-aviso *ngIf="!cargando && servicios.length === 0" tipo="info">
         {{ verInactivos ? 'No se encontraron servicios inactivos con esta búsqueda.' : 'No se encontraron servicios con esta búsqueda.' }}
-      </div>
+      </s3s-aviso>
 
       <div class="servicios-list" *ngIf="!cargando && servicios.length > 0">
         <div class="servicio-card" *ngFor="let item of servicios">

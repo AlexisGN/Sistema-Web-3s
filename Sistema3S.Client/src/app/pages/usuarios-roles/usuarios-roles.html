@@ -18,13 +18,13 @@
     </div>
   </section>
 
-  <div class="alert success" *ngIf="mensaje">
+  <s3s-aviso *ngIf="mensaje" tipo="success">
     {{ mensaje }}
-  </div>
+  </s3s-aviso>
 
-  <div class="alert error" *ngIf="error">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }}
-  </div>
+  </s3s-aviso>
 
   <section class="tabs-card" aria-label="Secciones de usuarios y roles">
     <button
@@ -63,7 +63,7 @@
           <div class="field" *ngIf="!usuarioForm.editando"><label for="personal-clave">Contraseña inicial</label><input id="personal-clave" type="password" [(ngModel)]="usuarioForm.contrasena" name="usuarioContrasena" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required minlength="8" /></div>
           <div class="field" *ngIf="usuarioForm.editando"><label for="personal-estado">Acceso al sistema</label><select id="personal-estado" [(ngModel)]="usuarioForm.estado" name="usuarioEstado" [disabled]="usuarioForm.idUsuario === 1"><option [ngValue]="true">Activo</option><option [ngValue]="false">Inactivo</option></select></div>
         </div>
-        <p class="hint-box" *ngIf="!usuarioForm.editando">La contraseña debe incluir mayúscula, minúscula, número y carácter especial.</p>
+        <s3s-aviso *ngIf="!usuarioForm.editando" tipo="info">La contraseña debe incluir mayúscula, minúscula, número y carácter especial.</s3s-aviso>
         <div class="actions-row"><button type="submit" class="btn btn-primary" [disabled]="procesando"><s3s-icon name="check"></s3s-icon>{{ procesando ? 'Guardando…' : (usuarioForm.editando ? 'Guardar cambios' : 'Crear usuario') }}</button><button type="button" class="btn btn-light" (click)="cerrarFormulario()" [disabled]="procesando">Cancelar</button></div>
       </form>
     </article>
@@ -82,7 +82,7 @@
         <select [(ngModel)]="filtroSoloActivos" name="filtroSoloActivos" aria-label="Estado del acceso"><option [ngValue]="null">Todos los accesos</option><option [ngValue]="true">Activos</option><option [ngValue]="false">Inactivos</option></select>
         <button type="submit" class="btn btn-dark" [disabled]="cargando"><s3s-icon name="search"></s3s-icon>Buscar</button><button type="button" class="btn btn-light" (click)="limpiarBusquedaUsuarios()" [disabled]="cargando"><s3s-icon name="refresh"></s3s-icon>Limpiar</button>
       </form>
-      <p role="status" *ngIf="cargando">Cargando cuentas…</p>
+      <s3s-aviso *ngIf="cargando" tipo="info">Cargando cuentas…</s3s-aviso>
       <div class="user-list" *ngIf="!cargando">
         <article class="user-card account-card" *ngFor="let usuario of usuariosVisibles">
           <div class="user-main"><div class="avatar" aria-hidden="true">{{ (usuario.nombreCliente || usuario.correo).charAt(0).toUpperCase() }}</div><div>
@@ -99,7 +99,7 @@
             <button type="button" class="btn btn-danger" (click)="desactivarUsuario(usuario)" [disabled]="!usuario.estado || usuario.idUsuario === 1 || procesando" *ngIf="permisos.tienePermiso('USUARIOS_DESACTIVAR')"><s3s-icon name="trash"></s3s-icon>Desactivar</button>
           </div>
         </article>
-        <div class="empty-state" *ngIf="!usuarios.length && !error">No se encontraron cuentas. Prueba otro nombre o limpia los filtros.</div>
+        <s3s-aviso *ngIf="!usuarios.length && !error" tipo="info">No se encontraron cuentas. Prueba otro nombre o limpia los filtros.</s3s-aviso>
       </div>
       <nav class="account-pagination" aria-label="Páginas de cuentas" *ngIf="!cargando && usuarios.length"><span>{{ usuarios.length }} cuentas · Página {{ paginaUsuarios }} de {{ paginasUsuarios }}</span><div><button type="button" class="btn btn-light" [disabled]="paginaUsuarios <= 1" (click)="paginaUsuarios=paginaUsuarios-1">Anterior</button><button type="button" class="btn btn-light" [disabled]="paginaUsuarios >= paginasUsuarios" (click)="paginaUsuarios=paginaUsuarios+1">Siguiente</button></div></nav>
     </article>
@@ -233,9 +233,9 @@
       </div>
     </div>
 
-    <div class="admin-warning" *ngIf="rolSeleccionadoEsAdministrador()">
+    <s3s-aviso *ngIf="rolSeleccionadoEsAdministrador()" tipo="warning">
       El rol Administrador mantiene todos los permisos activos y no puede quedar limitado.
-    </div>
+    </s3s-aviso>
 
     <div class="permissions-grid">
       <article class="permission-group" *ngFor="let grupo of gruposPermisos(); trackBy: identificarGrupoPermisos">
@@ -246,7 +246,8 @@
           type="button"
           class="permission-item"
           [class.active]="permiso.asignado"
-          [disabled]="rolSeleccionadoEsAdministrador()"
+          [disabled]="rolSeleccionadoEsAdministrador() || procesando || permisoSinBase(permiso)"
+          [attr.title]="mensajeDependencia(permiso) || null"
           (click)="togglePermiso(permiso)"
          *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
           <span>{{ permiso.nombre }}</span>

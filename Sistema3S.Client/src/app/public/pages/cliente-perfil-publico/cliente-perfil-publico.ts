@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -9,7 +10,7 @@ import { TelefonoPeDirective, telefonoCompletoPeru } from '../../../shared/telef
 import { PublicAccountNavComponent } from '../../shared/account-nav';
 import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 @Component({selector:'app-cliente-perfil-publico', standalone:true,
- imports:[CommonModule, FormsModule, TelefonoPeDirective, PublicAccountNavComponent, UiIconComponent],
+ imports: [AvisoComponent, CommonModule, FormsModule, TelefonoPeDirective, PublicAccountNavComponent, UiIconComponent],
  templateUrl:'./cliente-perfil-publico.html', styleUrl:'./cliente-perfil-publico.scss'})
 export class ClientePerfilPublicoComponent implements OnInit {
   perfil: ClientePerfil | null = null; original: ClientePerfil | null = null;

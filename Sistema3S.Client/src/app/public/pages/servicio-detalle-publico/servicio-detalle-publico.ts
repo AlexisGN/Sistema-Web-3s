@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { ImagenCatalogoComponent } from '../../../shared/imagen-catalogo/imagen-catalogo';
 import { CommonModule } from '@angular/common';
 import {
@@ -20,7 +21,7 @@ import { PublicoService } from '../../../core/services/publico.service';
 @Component({
   selector: 'app-servicio-detalle-publico',
   standalone: true,
-  imports: [ImagenCatalogoComponent, CommonModule, RouterLink],
+  imports: [AvisoComponent, ImagenCatalogoComponent, CommonModule, RouterLink],
   templateUrl: './servicio-detalle-publico.html',
   styleUrl: './servicio-detalle-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

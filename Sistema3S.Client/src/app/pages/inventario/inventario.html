@@ -107,13 +107,13 @@
         </button>
       </div>
 
-      <div *ngIf="cargando" class="estado-box">
+      <s3s-aviso *ngIf="cargando" tipo="info">
         Cargando inventario...
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="!cargando && inventarios.length === 0" class="estado-box">
+      <s3s-aviso *ngIf="!cargando && inventarios.length === 0" tipo="info">
         No hay productos en inventario.
-      </div>
+      </s3s-aviso>
 
       <div class="stock-list" *ngIf="!cargando && inventarios.length > 0">
         <button
@@ -159,9 +159,9 @@
               </div>
             </div>
 
-            <p class="alert-message" *ngIf="item.tieneAlertaPendiente">
+            <s3s-aviso *ngIf="item.tieneAlertaPendiente" tipo="warning">
               {{ item.mensajeAlerta }}
-            </p>
+            </s3s-aviso>
           </div>
         </button>
       </div>
@@ -213,9 +213,9 @@
         </div>
       </div>
 
-      <div *ngIf="!productoSeleccionado" class="estado-box">
+      <s3s-aviso *ngIf="!productoSeleccionado" tipo="info">
         Selecciona un producto del listado para gestionar su stock.
-      </div>
+      </s3s-aviso>
 
       <ng-container *ngIf="productoSeleccionado">
         <div class="selected-product">
@@ -229,9 +229,9 @@
           </p>
         </div>
 
-        <small class="field-error" *ngIf="erroresCampo['producto']">
+        <s3s-aviso *ngIf="erroresCampo['producto']" tipo="error" [compacto]="true">
           {{ erroresCampo['producto'] }}
-        </small>
+        </s3s-aviso>
 
         <form class="action-form" (ngSubmit)="guardarStockMinimo()" *ngIf="permisos.tienePermiso('INVENTARIO_AJUSTAR')">
           <div class="section-title"><s3s-icon name="layers"></s3s-icon>
@@ -251,9 +251,9 @@
               (input)="limpiarErrorCampo('stockMinimo')"
             />
 
-            <small class="field-error" *ngIf="erroresCampo['stockMinimo']">
+            <s3s-aviso *ngIf="erroresCampo['stockMinimo']" tipo="error" [compacto]="true">
               {{ erroresCampo['stockMinimo'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <button
@@ -283,9 +283,9 @@
               <option value="Ajuste">Ajuste</option>
             </select>
 
-            <small class="field-error" *ngIf="erroresCampo['tipoMovimiento']">
+            <s3s-aviso *ngIf="erroresCampo['tipoMovimiento']" tipo="error" [compacto]="true">
               {{ erroresCampo['tipoMovimiento'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div
@@ -304,9 +304,9 @@
               (input)="limpiarErrorCampo('cantidad')"
             />
 
-            <small class="field-error" *ngIf="erroresCampo['cantidad']">
+            <s3s-aviso *ngIf="erroresCampo['cantidad']" tipo="error" [compacto]="true">
               {{ erroresCampo['cantidad'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field" *ngIf="movimiento.tipoMovimiento === 'Ajuste'">
@@ -322,9 +322,9 @@
               (input)="limpiarErrorCampo('nuevoStock')"
             />
 
-            <small class="field-error" *ngIf="erroresCampo['nuevoStock']">
+            <s3s-aviso *ngIf="erroresCampo['nuevoStock']" tipo="error" [compacto]="true">
               {{ erroresCampo['nuevoStock'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field">
@@ -338,9 +338,9 @@
               (input)="limpiarErrorCampo('motivo')"
             ></textarea>
 
-            <small class="field-error" *ngIf="erroresCampo['motivo']">
+            <s3s-aviso *ngIf="erroresCampo['motivo']" tipo="error" [compacto]="true">
               {{ erroresCampo['motivo'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <button
@@ -352,24 +352,24 @@
           </button>
         </form>
 
-        <div *ngIf="mensaje" class="alert success">
+        <s3s-aviso *ngIf="mensaje" tipo="success">
           {{ mensaje }}
-        </div>
+        </s3s-aviso>
 
-        <div *ngIf="error" class="alert error">
+        <s3s-aviso *ngIf="error" tipo="error">
           {{ error }}
-        </div>
+        </s3s-aviso>
 
         <div class="history-box" *ngIf="permisos.tienePermiso('INVENTARIO_REPORTE')">
           <h3>Historial del producto</h3>
 
-          <div *ngIf="cargandoMovimientos" class="estado-box small">
+          <s3s-aviso *ngIf="cargandoMovimientos" tipo="info">
             Cargando movimientos...
-          </div>
+          </s3s-aviso>
 
-          <div *ngIf="!cargandoMovimientos && movimientosProducto.length === 0" class="estado-box small">
+          <s3s-aviso *ngIf="!cargandoMovimientos && movimientosProducto.length === 0" tipo="info">
             Este producto aún no tiene movimientos.
-          </div>
+          </s3s-aviso>
 
           <div
             class="movement-item"
@@ -401,9 +401,9 @@
       </div>
     </div>
 
-    <div *ngIf="movimientosRecientes.length === 0" class="estado-box">
+    <s3s-aviso *ngIf="movimientosRecientes.length === 0" tipo="info">
       Aún no hay movimientos registrados.
-    </div>
+    </s3s-aviso>
 
     <div class="recent-list" *ngIf="movimientosRecientes.length > 0">
       <div class="movement-item" *ngFor="let mov of movimientosRecientes">

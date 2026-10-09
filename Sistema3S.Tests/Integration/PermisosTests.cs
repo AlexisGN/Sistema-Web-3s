@@ -183,7 +183,7 @@ public sealed class PermisosTests
         var dto=new{idRol=2,correo="compras-editado@example.test",estado=true};
         await Evidence("Personal sólo ver","PUT /api/usuario/2",403,await api.Http.PutAsJsonAsync("/api/usuario/2",dto));
         Assert.Equal(0,await q.Scalar("SELECT COUNT(*) FROM Usuario WHERE Correo='compras-editado@example.test'"));
-        await Grants(q,"USUARIOS_EDITAR");await Evidence("Personal editar","PUT /api/usuario/2",200,await api.Http.PutAsJsonAsync("/api/usuario/2",dto));
+        await Grants(q,"USUARIOS_VER","USUARIOS_EDITAR");await Evidence("Personal editar","PUT /api/usuario/2",200,await api.Http.PutAsJsonAsync("/api/usuario/2",dto));
         Assert.Equal(1,await q.Scalar("SELECT COUNT(*) FROM Usuario WHERE IdUsuario=2 AND Correo='compras-editado@example.test'"));
         Assert.True(await q.Scalar("SELECT COUNT(*) FROM AuditoriaLog WHERE IdUsuario=2 AND TablaAfectada='Usuario' AND Accion='ACTUALIZAR' AND IdRegistro=2 AND DatosAntes LIKE '%compras@example.test%' AND DatosDespues LIKE '%compras-editado@example.test%'")>0);
     }

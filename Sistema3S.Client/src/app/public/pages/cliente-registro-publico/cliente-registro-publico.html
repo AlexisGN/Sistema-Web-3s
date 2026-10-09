@@ -37,25 +37,25 @@
           [maxlength]="longitudDocumento"
           [placeholder]="esEmpresa ? 'Ingresa 11 dígitos' : 'Ingresa 8 dígitos'"
         required inputmode="numeric" [pattern]="esEmpresa ? '[0-9]{11}' : '[0-9]{8}'" #numeroDocumentoControl="ngModel" [attr.aria-invalid]="numeroDocumentoControl.invalid && (numeroDocumentoControl.touched || registroForm.submitted)" aria-describedby="numeroDocumento-error" />
-        <small id="numeroDocumento-error" class="field-error" *ngIf="numeroDocumentoControl.invalid && (numeroDocumentoControl.touched || registroForm.submitted)">Ingresa {{ longitudDocumento }} dígitos.</small>
+        <s3s-aviso id="numeroDocumento-error" *ngIf="numeroDocumentoControl.invalid && (numeroDocumentoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa {{ longitudDocumento }} dígitos.</s3s-aviso>
       </div>
 
-      <div class="document-status" *ngIf="consultandoDocumento">
+      <s3s-aviso *ngIf="consultandoDocumento" tipo="info">
         Consultando documento...
-      </div>
+      </s3s-aviso>
 
-      <div
-        class="document-status"
-        [class.success]="documentoConsultado && !cuentaWebVinculada"
-        [class.danger]="cuentaWebVinculada"
+      <s3s-aviso
+       
+       
+       
         *ngIf="avisoDocumento && !consultandoDocumento"
-      >
+       [tipo]="cuentaWebVinculada ? 'error' : (documentoConsultado ? 'success' : 'info')">
         <span>{{ avisoDocumento }}</span>
 
         <button type="button" *ngIf="cuentaWebVinculada" (click)="irLogin()">
           Iniciar sesión
         </button>
-      </div>
+      </s3s-aviso>
     </div>
 
     <ng-container *ngIf="!esEmpresa">
@@ -70,7 +70,7 @@
             [(ngModel)]="data.nombres"
             placeholder="Nombres"
           required pattern=".*\S.*" autocomplete="given-name" #nombresControl="ngModel" [attr.aria-invalid]="nombresControl.invalid && (nombresControl.touched || registroForm.submitted)" aria-describedby="nombres-error" />
-        <small id="nombres-error" class="field-error" *ngIf="nombresControl.invalid && (nombresControl.touched || registroForm.submitted)">Ingresa tus nombres.</small>
+        <s3s-aviso id="nombres-error" *ngIf="nombresControl.invalid && (nombresControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa tus nombres.</s3s-aviso>
         </div>
 
         <div class="form-group">
@@ -81,7 +81,7 @@
             [(ngModel)]="data.apellidoPaterno"
             placeholder="Apellido paterno"
           required pattern=".*\S.*" autocomplete="family-name" #apellidoPaternoControl="ngModel" [attr.aria-invalid]="apellidoPaternoControl.invalid && (apellidoPaternoControl.touched || registroForm.submitted)" aria-describedby="apellidoPaterno-error" />
-        <small id="apellidoPaterno-error" class="field-error" *ngIf="apellidoPaternoControl.invalid && (apellidoPaternoControl.touched || registroForm.submitted)">Ingresa tu apellido paterno.</small>
+        <s3s-aviso id="apellidoPaterno-error" *ngIf="apellidoPaternoControl.invalid && (apellidoPaternoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa tu apellido paterno.</s3s-aviso>
         </div>
 
         <div class="form-group">
@@ -108,7 +108,7 @@
             [(ngModel)]="data.razonSocial"
             placeholder="Razón social"
           required pattern=".*\S.*" autocomplete="organization" #razonSocialControl="ngModel" [attr.aria-invalid]="razonSocialControl.invalid && (razonSocialControl.touched || registroForm.submitted)" aria-describedby="razonSocial-error" />
-        <small id="razonSocial-error" class="field-error" *ngIf="razonSocialControl.invalid && (razonSocialControl.touched || registroForm.submitted)">Ingresa la razón social.</small>
+        <s3s-aviso id="razonSocial-error" *ngIf="razonSocialControl.invalid && (razonSocialControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa la razón social.</s3s-aviso>
         </div>
 
         <div class="form-group wide">
@@ -134,7 +134,7 @@
           [(ngModel)]="data.correo"
           placeholder="cliente@empresa.com"
         required email autocomplete="email" #correoControl="ngModel" [attr.aria-invalid]="correoControl.invalid && (correoControl.touched || registroForm.submitted)" aria-describedby="correo-error" />
-        <small id="correo-error" class="field-error" *ngIf="correoControl.invalid && (correoControl.touched || registroForm.submitted)">Ingresa un correo electrónico válido.</small>
+        <s3s-aviso id="correo-error" *ngIf="correoControl.invalid && (correoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa un correo electrónico válido.</s3s-aviso>
       </div>
 
       <div class="form-group">
@@ -144,7 +144,7 @@
           name="telefono"
           [(ngModel)]="data.telefono"
           placeholder="999999999" required pattern="[+]51[0-9]{9}" #telefonoControl="ngModel" [attr.aria-invalid]="telefonoControl.invalid && (telefonoControl.touched || registroForm.submitted)" aria-describedby="telefono-error"
-        /></div><small id="telefono-error" class="field-error" *ngIf="telefonoControl.invalid && (telefonoControl.touched || registroForm.submitted)">Ingresa los nueve dígitos. +51 ya está incluido.</small>
+        /></div><s3s-aviso id="telefono-error" *ngIf="telefonoControl.invalid && (telefonoControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Ingresa los nueve dígitos. +51 ya está incluido.</s3s-aviso>
       </div>
 
       <div class="form-group wide">
@@ -170,7 +170,7 @@
           placeholder="Mínimo 8 caracteres"
           autocomplete="new-password"
         required minlength="8" #contrasenaControl="ngModel" [attr.aria-invalid]="contrasenaControl.invalid && (contrasenaControl.touched || registroForm.submitted)" aria-describedby="contrasena-error" />
-        <small id="contrasena-error" class="field-error" *ngIf="contrasenaControl.invalid && (contrasenaControl.touched || registroForm.submitted)">Usa al menos 8 caracteres.</small>
+        <s3s-aviso id="contrasena-error" *ngIf="contrasenaControl.invalid && (contrasenaControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Usa al menos 8 caracteres.</s3s-aviso>
       </div>
 
       <div class="form-group">
@@ -182,18 +182,18 @@
           placeholder="Repite tu contraseña"
           autocomplete="new-password"
         required #confirmarContrasenaControl="ngModel" [attr.aria-invalid]="confirmarContrasenaControl.invalid && (confirmarContrasenaControl.touched || registroForm.submitted)" aria-describedby="confirmarContrasena-error" />
-        <small id="confirmarContrasena-error" class="field-error" *ngIf="confirmarContrasenaControl.invalid && (confirmarContrasenaControl.touched || registroForm.submitted)">Confirma tu contraseña.</small>
+        <s3s-aviso id="confirmarContrasena-error" *ngIf="confirmarContrasenaControl.invalid && (confirmarContrasenaControl.touched || registroForm.submitted)" tipo="error" [compacto]="true">Confirma tu contraseña.</s3s-aviso>
       </div>
     </div>
 
-    <p class="field-error" *ngIf="data.confirmarContrasena && data.contrasena !== data.confirmarContrasena">Las contraseñas no coinciden.</p>
-    <div class="auth-error" *ngIf="error" role="alert">
+    <s3s-aviso *ngIf="data.confirmarContrasena && data.contrasena !== data.confirmarContrasena" tipo="error" [compacto]="true">Las contraseñas no coinciden.</s3s-aviso>
+    <s3s-aviso *ngIf="error" tipo="error">
       {{ error }}
-    </div>
+    </s3s-aviso>
 
-    <div class="auth-success" *ngIf="mensaje" role="status">
+    <s3s-aviso *ngIf="mensaje" tipo="success">
       {{ mensaje }}
-    </div>
+    </s3s-aviso>
 
     <div class="register-actions">
       <button type="submit" [disabled]="cargando || consultandoDocumento || cuentaWebVinculada">

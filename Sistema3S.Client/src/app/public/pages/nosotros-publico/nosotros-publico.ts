@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import {
@@ -22,7 +23,7 @@ type MvHover = 'mision' | 'vision' | null;
 @Component({
   selector: 'app-nosotros-publico',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, RouterLink],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, RouterLink],
   templateUrl: './nosotros-publico.html',
   styleUrl: './nosotros-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

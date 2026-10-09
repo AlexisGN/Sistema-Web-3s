@@ -1,9 +1,9 @@
 <section class="home-section latest-section" id="inicio">
   <div class="section-heading"><div><span class="eyebrow">Nuevos ingresos</span><h1>Últimos productos agregados</h1><p>Explora los nuevos ingresos del catálogo 3S y cotiza lo que tu operación necesita.</p></div><a routerLink="/productos">Ver catálogo <s3s-icon name="arrow" /></a></div>
-<div class="public-status" *ngIf="cargandoInicio" role="status">Cargando catálogo público…</div>
-<div class="public-status error" *ngIf="errorInicio" role="alert">{{ errorInicio }} <button type="button" (click)="cargarInicio()">Reintentar</button></div>
-<div class="operation-message" *ngIf="mensajeOperacion" role="status">{{ mensajeOperacion }}</div>
-  <div class="empty-state" *ngIf="!cargandoInicio && !errorInicio && !productosNuevos.length">Pronto encontrarás nuevos productos en esta sección. <a routerLink="/productos">Explorar catálogo</a></div>
+<s3s-aviso *ngIf="cargandoInicio" tipo="info">Cargando catálogo público…</s3s-aviso>
+<s3s-aviso *ngIf="errorInicio" tipo="error">{{ errorInicio }} <button type="button" (click)="cargarInicio()">Reintentar</button></s3s-aviso>
+<s3s-aviso *ngIf="mensajeOperacion" tipo="success">{{ mensajeOperacion }}</s3s-aviso>
+  <s3s-aviso *ngIf="!cargandoInicio && !errorInicio && !productosNuevos.length" tipo="info">Pronto encontrarás nuevos productos en esta sección. <a routerLink="/productos">Explorar catálogo</a></s3s-aviso>
   <s3s-public-carousel *ngIf="productosNuevos.length" label="Productos nuevos"><ng-template><s3s-product-card *ngFor="let producto of productosNuevos; trackBy: trackByProducto" [producto]="producto" [logueado]="clienteLogueado" (cotizar)="accionCotizarProducto($event)" /></ng-template></s3s-public-carousel>
 </section>
 <section class="home-section brand-section" *ngIf="marcas.length" id="marcas">

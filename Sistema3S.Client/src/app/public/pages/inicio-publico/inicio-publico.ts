@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { PublicCarouselComponent } from '../../shared/public-carousel';
 import { PublicProductCardComponent } from '../../shared/product-card';
 import { ImagenCatalogoComponent } from '../../../shared/imagen-catalogo/imagen-catalogo';
@@ -44,7 +45,7 @@ interface ProductoCarritoCotizacion {
 @Component({
   selector: 'app-inicio-publico',
   standalone: true,
-  imports: [PublicCarouselComponent, PublicProductCardComponent, ImagenCatalogoComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, PublicCarouselComponent, PublicProductCardComponent, ImagenCatalogoComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './inicio-publico.html',
   styleUrl: './inicio-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

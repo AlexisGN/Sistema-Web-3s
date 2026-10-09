@@ -1,15 +1,15 @@
 <section class="detail-shell">
-  <div class="public-status" *ngIf="cargando" role="status">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Cargando información del servicio...
-  </div>
+  </s3s-aviso>
 
-  <div class="public-status error" *ngIf="error" role="status">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }}
 
     <button type="button" (click)="volverServicios()">
       Volver a servicios
     </button>
-  </div>
+  </s3s-aviso>
 
   <ng-container *ngIf="servicio && !cargando">
     <nav class="breadcrumb">
@@ -72,13 +72,13 @@
           </button>
         </div>
 
-        <div class="account-note">
+        <s3s-aviso tipo="info" [mostrarTitulo]="false">
           <strong>Servicio atendido uno por uno</strong>
           <p>
             Para asegurar una atención adecuada, cada servicio se revisa de forma individual
             con el área comercial y técnica de 3S.
           </p>
-        </div>
+        </s3s-aviso>
       </div>
     </section>
 

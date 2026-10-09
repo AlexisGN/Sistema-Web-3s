@@ -26,22 +26,22 @@
     </form>
   </section>
 
-  <div class="status-box" *ngIf="cargando" role="status">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Buscando resultados...
-  </div>
+  </s3s-aviso>
 
-  <div class="status-box error" *ngIf="error" role="status">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }} <button type="button" (click)="buscar()">Reintentar</button>
-  </div>
+  </s3s-aviso>
 
-  <section class="empty-state" *ngIf="!cargando && !error && !q"><div class="empty-icon"><s3s-icon name="search" /></div>
+  <s3s-aviso *ngIf="!cargando && !error && !q" tipo="info" [mostrarTitulo]="false">
     <h2>Escribe una palabra para buscar</h2>
     <p>
       Puedes buscar por producto, código, servicio, categoría o marca.
     </p>
-  </section>
+  </s3s-aviso>
 
-  <section class="empty-state" *ngIf="!cargando && !error && q && resultado && !hayResultados"><div class="empty-icon"><s3s-icon name="search" /></div>
+  <s3s-aviso *ngIf="!cargando && !error && q && resultado && !hayResultados" tipo="info" [mostrarTitulo]="false">
     <h2>No encontramos resultados para “{{ q }}”</h2>
     <p>
       Intenta con otro nombre, código, marca o categoría.
@@ -50,7 +50,7 @@
     <a routerLink="/productos">
       Ver catálogo completo
     </a>
-  </section>
+  </s3s-aviso>
 
   <ng-container *ngIf="!cargando && !error && resultado && hayResultados">
     <div class="result-title">

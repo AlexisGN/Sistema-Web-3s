@@ -79,9 +79,9 @@
           </div>
         </div>
 
-        <div class="login-error" *ngIf="error">
+        <s3s-aviso *ngIf="error" tipo="error">
           {{ error }}
-        </div>
+        </s3s-aviso>
 
         <button type="submit" class="login-button" [disabled]="cargando">
           {{ cargando ? 'Verificando acceso...' : 'Iniciar sesión' }}

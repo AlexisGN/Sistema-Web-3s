@@ -1,3 +1,5 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
+import { MensajesService } from '../../shared/mensajes/mensajes.service';
 import { inject } from '@angular/core';
 import { SessionService } from '../../core/services/session.service';
 import { TelefonoPeDirective } from '../../shared/telefono-pe/telefono-pe';
@@ -18,11 +20,12 @@ import {
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [TelefonoPeDirective, UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, TelefonoPeDirective, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './proveedores.html',
   styleUrl: './proveedores.scss'
 })
 export class ProveedoresComponent implements OnInit {
+  private readonly mensajes = inject(MensajesService);
   readonly permisos = inject(SessionService);
   proveedores: ProveedorListado[] = [];
   ubigeos: Ubigeo[] = [];
@@ -230,9 +233,9 @@ export class ProveedoresComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  eliminarProveedor(idProveedor: number): void {
+  async eliminarProveedor(idProveedor: number): Promise<void> {
     if (!(this.permisos.tienePermiso('PROVEEDORES_DESACTIVAR'))) return;
-    const confirmar = confirm('¿Deseas eliminar este proveedor?');
+    const confirmar = (await this.mensajes.confirmar('¿Deseas eliminar este proveedor?', {"titulo":"Eliminar proveedor","aceptar":"Eliminar","tipo":"error","icono":"trash"}));
 
     if (!confirmar) {
       return;

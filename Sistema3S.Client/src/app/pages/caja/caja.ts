@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
 import { inject } from '@angular/core';
 import { SessionService } from '../../core/services/session.service';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
@@ -29,7 +30,7 @@ interface ResumenMetodoPago {
 @Component({
   selector: 'app-caja',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './caja.html',
   styleUrls: ['./caja.scss']
 })

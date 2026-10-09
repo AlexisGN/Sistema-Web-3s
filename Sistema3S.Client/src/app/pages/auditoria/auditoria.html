@@ -10,11 +10,11 @@
     <label>Desde<input type="date" name="desde" [(ngModel)]="desde" [max]="hasta || ''" /></label>
     <label>Hasta<input type="date" name="hasta" [(ngModel)]="hasta" [min]="desde || ''" /></label>
     <div class="filter-actions"><button type="submit" [disabled]="cargando"><s3s-icon name="search"></s3s-icon>Buscar</button><button type="button" class="secondary" (click)="limpiar()" [disabled]="cargando"><s3s-icon name="refresh"></s3s-icon>Limpiar</button></div>
-    <p class="option-error" role="alert" *ngIf="errorOpciones">{{ errorOpciones }} <button type="button" class="text-button" (click)="cargarOpciones()">Reintentar</button></p>
+    <s3s-aviso *ngIf="errorOpciones" tipo="error">{{ errorOpciones }} <button type="button" class="text-button" (click)="cargarOpciones()">Reintentar</button></s3s-aviso>
   </form>
-  <div class="notice" role="alert" *ngIf="error">{{ error }} <button class="text-button" type="button" (click)="cargar()">Reintentar</button></div>
+  <s3s-aviso *ngIf="error" tipo="error">{{ error }} <button class="text-button" type="button" (click)="cargar()">Reintentar</button></s3s-aviso>
   <div class="activity-summary" aria-live="polite"><strong>{{ cargando ? 'Cargando actividad…' : total + (total === 1 ? ' operación encontrada' : ' operaciones encontradas') }}</strong><span>Más recientes primero</span></div>
-  <div class="empty" *ngIf="!cargando && !error && !items.length"><h2>No hay actividad con estos filtros</h2><p>Prueba otro período o consulta todos los módulos.</p><button type="button" class="secondary" (click)="limpiar()"><s3s-icon name="refresh"></s3s-icon>Limpiar filtros</button></div>
+  <s3s-aviso *ngIf="!cargando && !error && !items.length" tipo="info" [mostrarTitulo]="false"><h2>No hay actividad con estos filtros</h2><p>Prueba otro período o consulta todos los módulos.</p><button type="button" class="secondary" (click)="limpiar()"><s3s-icon name="refresh"></s3s-icon>Limpiar filtros</button></s3s-aviso>
   <article class="activity" *ngFor="let item of items">
     <div class="activity-top"><span class="module">{{ item.modulo }}</span><time>{{ item.fecha | date:'dd/MM/yyyy · HH:mm:ss' }}</time><span class="outcome" [class.failed]="item.resultado === 'error'" [class.denied]="item.resultado === 'denegado'">{{ item.resultado === 'completado' ? 'Completado' : item.resultado === 'error' ? 'No se completó' : 'Acceso denegado' }}</span></div>
     <h2>{{ item.titulo }}</h2><p class="actor"><span>Responsable:</span> <strong>{{ item.responsable }}</strong></p><p class="summary">{{ item.resumen }}</p>

@@ -40,9 +40,9 @@
               <strong>{{ cliente.cliente }}</strong><span>{{ cliente.tipoDocumento }} {{ cliente.numeroDocumento }}</span>
             </button>
           </div>
-          <p class="field-help" *ngIf="!cargandoCombos && !clientesFiltrados().length">No se encontraron clientes.</p>
+          <s3s-aviso *ngIf="!cargandoCombos && !clientesFiltrados().length" tipo="info" [compacto]="true">No se encontraron clientes.</s3s-aviso>
           <div class="selected-box" *ngIf="clienteSeleccionado() as cliente"><strong>Cliente seleccionado</strong><span>{{ cliente.textoMostrar }}</span></div>
-          <p class="field-help" *ngIf="!cotizacion.idCliente">Selecciona el cliente que recibirá la propuesta.</p>
+          <s3s-aviso *ngIf="!cotizacion.idCliente" tipo="info" [compacto]="true">Selecciona el cliente que recibirá la propuesta.</s3s-aviso>
         </div>
         <div class="form-section s3s-items">
           <div class="section-title"><s3s-icon name="box"></s3s-icon>2. Productos y servicios</div>
@@ -53,7 +53,7 @@
           <div class="result-list" aria-label="Elementos encontrados">
             <button type="button" class="result-item" *ngFor="let elemento of elementosCotizablesFiltrados()" [class.selected]="detalleTemporal.idElementoCatalogo === elemento.idElementoCatalogo" [attr.aria-pressed]="detalleTemporal.idElementoCatalogo === elemento.idElementoCatalogo" (click)="detalleTemporal.idElementoCatalogo = elemento.idElementoCatalogo; seleccionarElementoDetalle()"><strong>{{ elemento.nombre }}</strong><span>Precio referencial: S/ {{ (elemento.precioReferencial || 0) | number:'1.2-2' }}</span></button>
           </div>
-          <p class="field-help" *ngIf="!cargandoCombos && !elementosCotizablesFiltrados().length">No se encontraron {{ tipoElementoDetalle === 'Producto' ? 'productos' : 'servicios' }}.</p>
+          <s3s-aviso *ngIf="!cargandoCombos && !elementosCotizablesFiltrados().length" tipo="info" [compacto]="true">No se encontraron {{ tipoElementoDetalle === 'Producto' ? 'productos' : 'servicios' }}.</s3s-aviso>
           <div class="selected-box" *ngIf="obtenerElementoSeleccionadoDetalle() as elemento"><strong>{{ elemento.nombre }}</strong><span>Subtotal: S/ {{ calcularSubtotalTemporal() | number:'1.2-2' }}</span></div>
           <div class="form-grid two">
             <div class="field"><label for="cot-cantidad">Cantidad</label><input id="cot-cantidad" type="number" [(ngModel)]="detalleTemporal.cantidad" name="cantidadDetalle" min="1" /></div>
@@ -67,7 +67,7 @@
               <button type="button" class="remove-btn" (click)="quitarDetalle(i)" [attr.aria-label]="'Quitar ' + obtenerNombreElemento(detalle.idElementoCatalogo)"><s3s-icon name="trash"></s3s-icon></button>
             </div>
           </div>
-          <p class="empty-box" *ngIf="!cotizacion.detalles.length">Agrega los productos o servicios de la propuesta.</p>
+          <s3s-aviso *ngIf="!cotizacion.detalles.length" tipo="info">Agrega los productos o servicios de la propuesta.</s3s-aviso>
         </div>
         <div class="totals-card">
           <div class="s3s-form-heading"><s3s-icon name="receipt"></s3s-icon><h3>Resumen de cotización</h3></div>
@@ -81,13 +81,13 @@
         </div>
       </form>
 
-      <div *ngIf="mensaje" class="alert success">
+      <s3s-aviso *ngIf="mensaje" tipo="success">
         {{ mensaje }}
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="error" class="alert error">
+      <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
-      </div>
+      </s3s-aviso>
     </article>
 
     <article class="panel panel-list">
@@ -147,13 +147,13 @@
         </div>
       </div>
 
-      <div *ngIf="cargando" class="estado-box">
+      <s3s-aviso *ngIf="cargando" tipo="info">
         Cargando cotizaciones...
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="!cargando && cotizaciones.length === 0" class="estado-box">
+      <s3s-aviso *ngIf="!cargando && cotizaciones.length === 0" tipo="info">
         No hay cotizaciones registradas.
-      </div>
+      </s3s-aviso>
 
       <div class="cotizaciones-list" *ngIf="!cargando && cotizaciones.length > 0">
         <div
@@ -416,9 +416,9 @@
           </div>
         </div>
 
-        <div class="detail-empty" *ngIf="seleccionada.detalles.length === 0">
+        <s3s-aviso *ngIf="seleccionada.detalles.length === 0" tipo="info">
           Esta cotización no tiene detalles registrados.
-        </div>
+        </s3s-aviso>
       </div>
 
       <div class="modal-actions" *ngIf="cotizacionSeleccionada as seleccionada">

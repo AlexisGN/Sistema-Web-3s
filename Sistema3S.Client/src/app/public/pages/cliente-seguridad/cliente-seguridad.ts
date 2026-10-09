@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { CommonModule, Location } from '@angular/common';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
@@ -9,7 +10,7 @@ import { PublicAccountNavComponent } from '../../shared/account-nav';
 import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 
 @Component({ selector: 'app-cliente-seguridad', standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, PublicAccountNavComponent, UiIconComponent],
+  imports: [AvisoComponent, CommonModule, FormsModule, RouterLink, PublicAccountNavComponent, UiIconComponent],
   templateUrl: './cliente-seguridad.html' })
 export class ClienteSeguridadComponent {
   modo: 'recuperar' | 'restablecer' | 'cambiar';
