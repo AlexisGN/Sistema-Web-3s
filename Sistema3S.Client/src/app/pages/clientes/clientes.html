@@ -48,9 +48,9 @@
             </option>
           </select>
 
-          <small class="field-error" *ngIf="erroresCampo['idTipoCliente']">
+          <s3s-aviso *ngIf="erroresCampo['idTipoCliente']" tipo="error" [compacto]="true">
             {{ erroresCampo['idTipoCliente'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-quarter">
@@ -65,9 +65,9 @@
             </option>
           </select>
 
-          <small class="field-error" *ngIf="erroresCampo['idTipoDocumento']">
+          <s3s-aviso *ngIf="erroresCampo['idTipoDocumento']" tipo="error" [compacto]="true">
             {{ erroresCampo['idTipoDocumento'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-documento field-full">
@@ -91,17 +91,17 @@
             </button>
           </div>
 
-          <small class="documento-help" *ngIf="esPersonaNatural()">
+          <s3s-aviso *ngIf="esPersonaNatural()" tipo="info" [compacto]="true">
             Ingresa el DNI y consulta RENIEC para completar nombres y apellidos.
-          </small>
+          </s3s-aviso>
 
-          <small class="documento-help" *ngIf="esEmpresa()">
+          <s3s-aviso *ngIf="esEmpresa()" tipo="info" [compacto]="true">
             Ingresa el RUC y consulta SUNAT para completar razón social, dirección y ubicación.
-          </small>
+          </s3s-aviso>
 
-          <small class="field-error" *ngIf="erroresCampo['numeroDocumento']">
+          <s3s-aviso *ngIf="erroresCampo['numeroDocumento']" tipo="error" [compacto]="true">
             {{ erroresCampo['numeroDocumento'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-ubigeo field-full">
@@ -125,9 +125,9 @@
           <small class="ubigeo-seleccionado" *ngIf="cliente.idUbigeo">
             Seleccionado: {{ ubicacionSeleccionada || ubigeoBuscar }}
           </small>
-          <small class="field-error" *ngIf="erroresCampo['idUbigeo']">
+          <s3s-aviso *ngIf="erroresCampo['idUbigeo']" tipo="error" [compacto]="true">
             {{ erroresCampo['idUbigeo'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <ng-container *ngIf="esPersonaNatural()">
@@ -141,9 +141,9 @@
             <input id="s3s-clientes-151" type="text" [(ngModel)]="cliente.nombres" name="nombres" placeholder="Ej. Juan Carlos"
               (input)="limpiarErrorCampo('nombres')" />
 
-            <small class="field-error" *ngIf="erroresCampo['nombres']">
+            <s3s-aviso *ngIf="erroresCampo['nombres']" tipo="error" [compacto]="true">
               {{ erroresCampo['nombres'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field">
@@ -152,9 +152,9 @@
             <input id="s3s-clientes-162" type="text" [(ngModel)]="cliente.apellidoPaterno" name="apellidoPaterno" placeholder="Ej. Ramírez"
               (input)="limpiarErrorCampo('apellidoPaterno')" />
 
-            <small class="field-error" *ngIf="erroresCampo['apellidoPaterno']">
+            <s3s-aviso *ngIf="erroresCampo['apellidoPaterno']" tipo="error" [compacto]="true">
               {{ erroresCampo['apellidoPaterno'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field">
@@ -163,9 +163,9 @@
             <input id="s3s-clientes-173" type="text" [(ngModel)]="cliente.apellidoMaterno" name="apellidoMaterno" placeholder="Opcional"
               (input)="limpiarErrorCampo('apellidoMaterno')" />
 
-            <small class="field-error" *ngIf="erroresCampo['apellidoMaterno']">
+            <s3s-aviso *ngIf="erroresCampo['apellidoMaterno']" tipo="error" [compacto]="true">
               {{ erroresCampo['apellidoMaterno'] }}
-            </small>
+            </s3s-aviso>
           </div>
         </ng-container>
 
@@ -180,9 +180,9 @@
             <input id="s3s-clientes-193" type="text" [(ngModel)]="cliente.razonSocial" name="razonSocial"
               placeholder="Ej. Agroindustrial La Esperanza S.A.C." (input)="limpiarErrorCampo('razonSocial')" />
 
-            <small class="field-error" *ngIf="erroresCampo['razonSocial']">
+            <s3s-aviso *ngIf="erroresCampo['razonSocial']" tipo="error" [compacto]="true">
               {{ erroresCampo['razonSocial'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field field-full">
@@ -201,9 +201,9 @@
           <input id="s3s-clientes-219" type="email" [(ngModel)]="cliente.correo" name="correo" placeholder="correo@empresa.com"
             (input)="limpiarErrorCampo('correo')" />
 
-          <small class="field-error" *ngIf="erroresCampo['correo']">
+          <s3s-aviso *ngIf="erroresCampo['correo']" tipo="error" [compacto]="true">
             {{ erroresCampo['correo'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field">
@@ -212,13 +212,13 @@
           <div class="telefono-pe"><span aria-hidden="true">+51</span><input s3sTelefonoPe id="s3s-clientes-230" type="tel" [(ngModel)]="cliente.telefono" name="telefono" placeholder="999999999" 
              (input)="limpiarErrorCampo('telefono')" /></div>
 
-          <small class="field-error" *ngIf="erroresCampo['telefono']">
+          <s3s-aviso *ngIf="erroresCampo['telefono']" tipo="error" [compacto]="true">
             {{ erroresCampo['telefono'] }}
-          </small>
+          </s3s-aviso>
 
-          <small class="field-help">
+          <s3s-aviso tipo="info" [compacto]="true">
             Ingresa los 9 dígitos. El prefijo +51 ya está incluido.
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full">
@@ -227,9 +227,9 @@
           <input id="s3s-clientes-244" type="text" [(ngModel)]="cliente.direccion" name="direccion" placeholder="Dirección fiscal o comercial"
             (input)="limpiarErrorCampo('direccion')" />
 
-          <small class="field-error" *ngIf="erroresCampo['direccion']">
+          <s3s-aviso *ngIf="erroresCampo['direccion']" tipo="error" [compacto]="true">
             {{ erroresCampo['direccion'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <ng-container *ngIf="esEmpresa()">
@@ -256,9 +256,9 @@
                 <input aria-label="Ej. Luis Alberto" type="text" [(ngModel)]="contacto.nombres" name="contactoNombres" placeholder="Ej. Luis Alberto"
                   (input)="limpiarErrorCampo('contactoNombres')" />
 
-                <small class="field-error" *ngIf="erroresCampo['contactoNombres']">
+                <s3s-aviso *ngIf="erroresCampo['contactoNombres']" tipo="error" [compacto]="true">
                   {{ erroresCampo['contactoNombres'] }}
-                </small>
+                </s3s-aviso>
               </div>
 
               <div class="field">
@@ -267,9 +267,9 @@
                 <input aria-label="Ej. Ramírez" type="text" [(ngModel)]="contacto.apellidoPaterno" name="contactoApellidoPaterno"
                   placeholder="Ej. Ramírez" (input)="limpiarErrorCampo('contactoApellidoPaterno')" />
 
-                <small class="field-error" *ngIf="erroresCampo['contactoApellidoPaterno']">
+                <s3s-aviso *ngIf="erroresCampo['contactoApellidoPaterno']" tipo="error" [compacto]="true">
                   {{ erroresCampo['contactoApellidoPaterno'] }}
-                </small>
+                </s3s-aviso>
               </div>
 
               <div class="field">
@@ -278,9 +278,9 @@
                 <input aria-label="Opcional" type="text" [(ngModel)]="contacto.apellidoMaterno" name="contactoApellidoMaterno"
                   placeholder="Opcional" (input)="limpiarErrorCampo('contactoApellidoMaterno')" />
 
-                <small class="field-error" *ngIf="erroresCampo['contactoApellidoMaterno']">
+                <s3s-aviso *ngIf="erroresCampo['contactoApellidoMaterno']" tipo="error" [compacto]="true">
                   {{ erroresCampo['contactoApellidoMaterno'] }}
-                </small>
+                </s3s-aviso>
               </div>
 
               <div class="field">
@@ -296,9 +296,9 @@
                 <input aria-label="contacto@empresa.com" type="email" [(ngModel)]="contacto.correo" name="contactoCorreo"
                   placeholder="contacto@empresa.com" (input)="limpiarErrorCampo('contactoCorreo')" />
 
-                <small class="field-error" *ngIf="erroresCampo['contactoCorreo']">
+                <s3s-aviso *ngIf="erroresCampo['contactoCorreo']" tipo="error" [compacto]="true">
                   {{ erroresCampo['contactoCorreo'] }}
-                </small>
+                </s3s-aviso>
               </div>
 
               <div class="field">
@@ -307,13 +307,13 @@
                 <div class="telefono-pe"><span aria-hidden="true">+51</span><input s3sTelefonoPe  type="tel" [(ngModel)]="contacto.telefono" name="contactoTelefono" placeholder="999999999"
                     (input)="limpiarErrorCampo('contactoTelefono')" /></div>
 
-                <small class="field-error" *ngIf="erroresCampo['contactoTelefono']">
+                <s3s-aviso *ngIf="erroresCampo['contactoTelefono']" tipo="error" [compacto]="true">
                   {{ erroresCampo['contactoTelefono'] }}
-                </small>
+                </s3s-aviso>
 
-                <small class="field-help">
+                <s3s-aviso tipo="info" [compacto]="true">
                   Ingresa los 9 dígitos. El prefijo +51 ya está incluido.
-                </small>
+                </s3s-aviso>
               </div>
             </div>
           </div>
@@ -342,13 +342,13 @@
         </div>
       </form>
 
-      <div *ngIf="mensaje" class="alert success">
+      <s3s-aviso *ngIf="mensaje" tipo="success">
         {{ mensaje }}
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="error" class="alert error">
+      <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
-      </div>
+      </s3s-aviso>
     </article>
 
     <article class="panel panel-list">
@@ -371,13 +371,13 @@
         </button>
       </div>
 
-      <div *ngIf="cargando" class="estado-box">
+      <s3s-aviso *ngIf="cargando" tipo="info">
         Cargando clientes...
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="!cargando && clientes.length === 0" class="estado-box">
+      <s3s-aviso *ngIf="!cargando && clientes.length === 0" tipo="info">
         No hay clientes registrados.
-      </div>
+      </s3s-aviso>
 
       <div class="clientes-list" *ngIf="!cargando && clientes.length > 0">
         <div class="cliente-card" *ngFor="let item of clientes">

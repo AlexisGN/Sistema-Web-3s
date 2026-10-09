@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { TelefonoPeDirective, telefonoCompletoPeru } from '../../../shared/telefono-pe/telefono-pe';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy } from '@angular/core';
@@ -13,7 +14,7 @@ import { ClienteWebService } from '../../../core/services/cliente-web.service';
 @Component({
   selector: 'app-cliente-registro-publico',
   standalone: true,
-  imports: [TelefonoPeDirective, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, TelefonoPeDirective, CommonModule, FormsModule, RouterLink],
   templateUrl: './cliente-registro-publico.html',
   styleUrl: './cliente-registro-publico.scss'
 })

@@ -8,13 +8,13 @@
     <strong>Solicitud</strong>
   </nav>
 
-  <div class="public-status" *ngIf="cargando" role="status">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Cargando detalle de solicitud...
-  </div>
+  </s3s-aviso>
 
-  <div class="public-status error" *ngIf="error" role="status">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }}
-  </div>
+  </s3s-aviso>
 
   <ng-container *ngIf="cotizacion && !cargando">
     <section class="detail-hero">
@@ -117,18 +117,18 @@
           <strong>{{ obtenerEstadoCliente(cotizacion.estadoCotizacion) }}</strong>
         </div>
 
-        <div class="request-note" *ngIf="cotizacion.observacion">
+        <s3s-aviso *ngIf="cotizacion.observacion" tipo="info" [mostrarTitulo]="false">
           <strong>Observación general</strong>
           <p>{{ cotizacion.observacion }}</p>
-        </div>
+        </s3s-aviso>
 
-        <div class="request-note">
+        <s3s-aviso tipo="info" [mostrarTitulo]="false">
           <strong>Atención comercial</strong>
           <p>
             Los precios y condiciones serán revisados internamente por el equipo 3S.
             La web no muestra información administrativa.
           </p>
-        </div>
+        </s3s-aviso>
       </aside>
     </section>
   </ng-container>

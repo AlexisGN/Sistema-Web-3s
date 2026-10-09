@@ -15,23 +15,23 @@
 </div>
 <section class="products-results">
   <div class="results-head compact-results"><h2>{{ totalRegistros }} producto{{ totalRegistros === 1 ? '' : 's' }}</h2><span>Selecciona un producto para ver su ficha o cotizar.</span></div>
-  <div class="operation-message" *ngIf="busqueda.trim()" role="status">
+  <s3s-aviso *ngIf="busqueda.trim()" tipo="info">
     Resultados relacionados con: “{{ busqueda }}”
-  </div>
+  </s3s-aviso>
 
-  <div class="public-status" *ngIf="cargando" role="status">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Cargando productos industriales...
-  </div>
+  </s3s-aviso>
 
-  <div class="public-status error" *ngIf="error" role="status">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }} <button type="button" (click)="reiniciarYCargarProductos()">Reintentar</button>
-  </div>
+  </s3s-aviso>
 
-  <div class="operation-message" *ngIf="mensajeOperacion" role="status">
+  <s3s-aviso *ngIf="mensajeOperacion" tipo="success">
     {{ mensajeOperacion }}
-  </div>
+  </s3s-aviso>
 
-  <div class="empty-state" *ngIf="!cargando && productos.length === 0 && !error"><div class="empty-icon"><s3s-icon name="box" /></div>
+  <s3s-aviso *ngIf="!cargando && productos.length === 0 && !error" tipo="info" [mostrarTitulo]="false">
     <strong>No encontramos productos con los filtros seleccionados.</strong>
     <p>
       Ajusta la búsqueda o revisa el catálogo completo para encontrar la solución industrial que necesitas.
@@ -40,7 +40,7 @@
     <button type="button" (click)="limpiarFiltros()">
       Ver catálogo completo
     </button>
-  </div>
+  </s3s-aviso>
 
   <div class="products-grid" *ngIf="productos.length > 0">
     <s3s-product-card *ngFor="let producto of productos; trackBy: trackByProducto" [producto]="producto" [logueado]="clienteLogueado" [cantidad]="true" [descripcion]="true" [ficha]="true" (cotizar)="accionCotizar($event)" (normalizar)="normalizarCantidad($event)" (verFicha)="abrirFichaTecnica($event)" />

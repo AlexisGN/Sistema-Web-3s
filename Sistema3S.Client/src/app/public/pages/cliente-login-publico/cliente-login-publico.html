@@ -58,9 +58,9 @@
       </div>
 
       <a class="recovery-link" routerLink="/cliente/recuperar">¿Olvidaste tu contraseña?</a>
-      <div class="auth-error" *ngIf="error" role="status">
+      <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
-      </div>
+      </s3s-aviso>
 
       <button type="submit" class="main-auth-btn" [disabled]="cargando">
         {{ cargando ? 'Ingresando...' : 'Iniciar sesión' }}

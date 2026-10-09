@@ -18,6 +18,7 @@
     <Using Include="Xunit" />
     <ProjectReference Include="../Sistema3S.Web/Sistema3S.Web.csproj" />
     <None Update="Fixtures/*.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/permisos-catalogo.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

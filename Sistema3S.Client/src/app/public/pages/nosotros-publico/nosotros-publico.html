@@ -1,11 +1,11 @@
 <section class="about-page">
-  <section class="about-loading" *ngIf="cargando">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Cargando información de la empresa...
-  </section>
+  </s3s-aviso>
 
-  <section class="about-error" *ngIf="error">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }}
-  </section>
+  </s3s-aviso>
 
   <ng-container *ngIf="!cargando && !error && nosotros">
     <section class="about-hero">

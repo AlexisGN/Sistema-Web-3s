@@ -540,6 +540,8 @@ namespace Sistema3S.Web.Services.Implementations
             {
                 throw new InvalidOperationException("Selecciona un rol activo del personal interno.");
             }
+
+            await ReglasSeleccionPermisos.ValidarRolAsignableAsync(connection, transaction, idRol);
         }
 
         private static async Task ValidarCorreoDisponibleAsync(

@@ -1,3 +1,5 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
+import { MensajesService } from '../../shared/mensajes/mensajes.service';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { SessionService } from '../../core/services/session.service';
 import { CommonModule } from '@angular/common';
@@ -20,11 +22,12 @@ import {
 @Component({
   selector: 'app-cotizaciones',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './cotizaciones.html',
   styleUrl: './cotizaciones.scss'
 })
 export class CotizacionesComponent implements OnInit {
+  private readonly mensajes = inject(MensajesService);
   readonly permisos = inject(SessionService);
   private readonly sesionAnulacion = inject(SessionService);
   private readonly rutaModuloVentas = '/admin/ventas';
@@ -301,7 +304,7 @@ export class CotizacionesComponent implements OnInit {
     document.body.removeChild(link);
   }
 
-  enviarCorreo(item: CotizacionListado): void {
+  async enviarCorreo(item: CotizacionListado): Promise<void> {
     if (!(this.permisos.tienePermiso('COTIZACIONES_ENVIAR_CORREO'))) return;
     this.mensaje = '';
     this.error = '';
@@ -316,9 +319,7 @@ export class CotizacionesComponent implements OnInit {
       return;
     }
 
-    const confirmar = confirm(
-      `Se enviará ${this.obtenerCodigoCotizacion(item)} al correo ${item.correoCliente} con el PDF adjunto. ¿Deseas continuar?`
-    );
+    const confirmar = (await this.mensajes.confirmar(`Se enviará ${this.obtenerCodigoCotizacion(item)} al correo ${item.correoCliente} con el PDF adjunto. ¿Deseas continuar?`, {"titulo":"Enviar cotización por correo","aceptar":"Enviar cotización","tipo":"info","icono":"mail"}));
 
     if (!confirmar) {
       return;
@@ -420,7 +421,7 @@ export class CotizacionesComponent implements OnInit {
     });
   }
 
-  confirmarWhatsAppEnviado(): void {
+  async confirmarWhatsAppEnviado(): Promise<void> {
     if (!(this.permisos.tienePermiso('COTIZACIONES_EDITAR'))) return;
     if (!this.cotizacionWhatsAppPendiente) {
       this.error = 'No hay una cotización pendiente de confirmación por WhatsApp.';
@@ -429,9 +430,7 @@ export class CotizacionesComponent implements OnInit {
 
     const item = this.cotizacionWhatsAppPendiente;
 
-    const confirmar = confirm(
-      `Confirma solo si ya enviaste ${this.obtenerCodigoCotizacion(item)} por WhatsApp y adjuntaste el PDF al cliente.`
-    );
+    const confirmar = (await this.mensajes.confirmar(`Confirma solo si ya enviaste ${this.obtenerCodigoCotizacion(item)} por WhatsApp y adjuntaste el PDF al cliente.`, {"titulo":"Confirmar envío por WhatsApp","aceptar":"Confirmar envío","tipo":"info","icono":"check"}));
 
     if (!confirmar) {
       return;
@@ -465,7 +464,7 @@ export class CotizacionesComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  aprobarCotizacion(item: CotizacionListado): void {
+  async aprobarCotizacion(item: CotizacionListado): Promise<void> {
     if (!(this.permisos.tienePermiso('COTIZACIONES_APROBAR'))) return;
     this.mensaje = '';
     this.error = '';
@@ -475,9 +474,7 @@ export class CotizacionesComponent implements OnInit {
       return;
     }
 
-    const confirmar = confirm(
-      `¿Confirmas que el cliente aprobó ${this.obtenerCodigoCotizacion(item)}?`
-    );
+    const confirmar = (await this.mensajes.confirmar(`¿Confirmas que el cliente aprobó ${this.obtenerCodigoCotizacion(item)}?`, {"titulo":"Confirmar aprobación","aceptar":"Aprobar cotización","tipo":"success","icono":"check"}));
 
     if (!confirmar) {
       return;
@@ -501,7 +498,7 @@ export class CotizacionesComponent implements OnInit {
     });
   }
 
-  cancelarCotizacion(item: CotizacionListado): void {
+  async cancelarCotizacion(item: CotizacionListado): Promise<void> {
     if (!(this.permisos.tienePermiso('COTIZACIONES_CANCELAR'))) return;
     if (!this.sesionAnulacion.esAdministrador()) return;
     this.mensaje = '';
@@ -512,9 +509,7 @@ export class CotizacionesComponent implements OnInit {
       return;
     }
 
-    const confirmar = confirm(
-      `¿Deseas cancelar ${this.obtenerCodigoCotizacion(item)}? Esta acción cambiará su estado a Cancelada.`
-    );
+    const confirmar = (await this.mensajes.confirmar(`¿Deseas cancelar ${this.obtenerCodigoCotizacion(item)}? Esta acción cambiará su estado a Cancelada.`, {"titulo":"Cancelar cotización","aceptar":"Cancelar cotización","tipo":"warning","icono":"warning"}));
 
     if (!confirmar) {
       return;
@@ -655,7 +650,7 @@ export class CotizacionesComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  agregarDetalle(): void {
+  async agregarDetalle(): Promise<void> {
     this.mensaje = '';
     this.error = '';
 
@@ -692,9 +687,7 @@ export class CotizacionesComponent implements OnInit {
     );
 
     if (yaExiste) {
-      const confirmar = confirm(
-        'Este producto o servicio ya fue agregado. ¿Deseas agregarlo nuevamente como otra línea?'
-      );
+      const confirmar = (await this.mensajes.confirmar('Este producto o servicio ya fue agregado. ¿Deseas agregarlo nuevamente como otra línea?', {"titulo":"Producto o servicio repetido","aceptar":"Agregar otra línea","tipo":"info","icono":"plus"}));
 
       if (!confirmar) {
         return;

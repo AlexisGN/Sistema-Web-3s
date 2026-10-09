@@ -18,8 +18,8 @@
     </div>
   </section>
 
-  <div class="cart-empty" *ngIf="items.length === 0 && !cotizacionRegistrada">
-    <div class="empty-icon"><s3s-icon name="cart" /></div>
+  <s3s-aviso *ngIf="items.length === 0 && !cotizacionRegistrada" tipo="info" [mostrarTitulo]="false">
+    
     <h2>Tu carrito de cotización está vacío</h2>
     <p>
       Explora el catálogo industrial y agrega los productos que deseas cotizar.
@@ -29,7 +29,7 @@
       <a routerLink="/productos">Ver productos</a>
       <a routerLink="/cliente/historial-cotizaciones" class="secondary">Ver historial</a>
     </div>
-  </div>
+  </s3s-aviso>
 
   <section class="cart-layout" *ngIf="items.length > 0">
     <div class="cart-list">
@@ -100,20 +100,20 @@
         <strong>{{ cantidadTotal }}</strong>
       </div>
 
-      <div class="summary-note">
+      <s3s-aviso tipo="info" [mostrarTitulo]="false">
         <strong>Importante</strong>
         <p>
           Recibirás una propuesta personalizada con precios y condiciones revisados por nuestro equipo comercial.
         </p>
-      </div>
+      </s3s-aviso>
 
       <label>Observación general</label>
       <textarea aria-label="Observación general" rows="4" [(ngModel)]="observacionGeneral"
         placeholder="Describe tu requerimiento general, urgencia, aplicación o datos adicionales."></textarea>
 
-      <div class="auth-error" *ngIf="error" role="status">
+      <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
-      </div>
+      </s3s-aviso>
 
       <button type="button" class="send-btn" (click)="enviarCotizacion()" [disabled]="enviando">
         {{ enviando ? 'Enviando solicitud...' : 'Enviar solicitud de cotización' }}
@@ -127,7 +127,7 @@
 
   <section class="success-overlay" *ngIf="cotizacionRegistrada">
     <div class="success-card" s3sDialogFocus aria-labelledby="solicitud-confirmacion" (dialogEscape)="cerrarResultado()">
-      <button type="button" class="close-success" aria-label="Cerrar confirmación" (click)="cerrarResultado()">×</button>
+      <button type="button" class="close-success" aria-label="Cerrar confirmación" (click)="cerrarResultado()"><s3s-icon name="close" /></button>
 
       <div class="success-icon"><s3s-icon name="check" /></div>
 

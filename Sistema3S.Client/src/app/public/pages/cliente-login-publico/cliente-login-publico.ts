@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
@@ -9,7 +10,7 @@ import { ClienteWebService } from '../../../core/services/cliente-web.service';
 @Component({
   selector: 'app-cliente-login-publico',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './cliente-login-publico.html',
   styleUrl: './cliente-login-publico.scss'
 })

@@ -36,6 +36,9 @@ const PATHS: Record<string, string[]> = {
   truck: ['M2 5h12v12H2ZM14 9h5l3 4v4h-8M5 17a2 2 0 1 0 4 0M16 17a2 2 0 1 0 4 0'],
   key: ['M8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10M12 12l9 9M16 16l3-3M19 19l3-3'],
   info: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M12 11v6M12 7h.01'],
+  warning: ['M12 3 2 21h20ZM12 9v5M12 17h.01'],
+  error: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M12 7v6M12 17h.01'],
+  help: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01'],
   minus: ['M5 12h14']
 };
 const ALIASES: Record<string, string> = {

@@ -26,20 +26,20 @@
     <div><label for="history-date">Fecha de envío</label><input id="history-date" type="date" [(ngModel)]="fechaFiltro" /></div>
     <div><label for="history-order">Ordenar</label><select id="history-order" [(ngModel)]="orden"><option value="recientes">Más recientes</option><option value="antiguas">Más antiguas</option></select></div>
   </section>
-  <p class="field-help" *ngIf="hayMas">Los filtros se aplican a las {{ cotizaciones.length }} solicitudes cargadas. Usa «Ver más solicitudes» para incluir las anteriores.</p>
-  <div class="empty-state" *ngIf="cotizaciones.length && !cotizacionesFiltradas.length"><s3s-icon name="search" /><h2>Sin coincidencias</h2><p>Prueba otra fecha o código de solicitud.</p><button type="button" (click)="limpiarFiltros()">Limpiar filtros</button></div>
+  <s3s-aviso *ngIf="hayMas" tipo="info" [compacto]="true">Los filtros se aplican a las {{ cotizaciones.length }} solicitudes cargadas. Usa «Ver más solicitudes» para incluir las anteriores.</s3s-aviso>
+  <s3s-aviso *ngIf="cotizaciones.length && !cotizacionesFiltradas.length" tipo="info" [mostrarTitulo]="false"><h2>Sin coincidencias</h2><p>Prueba otra fecha o código de solicitud.</p><button type="button" (click)="limpiarFiltros()">Limpiar filtros</button></s3s-aviso>
 
 
-  <div class="public-status" *ngIf="cargando" role="status">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Cargando historial de solicitudes...
-  </div>
+  </s3s-aviso>
 
-  <div class="public-status error" *ngIf="error" role="status">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }} <button type="button" (click)="cargarHistorial(true)">Reintentar</button>
-  </div>
+  </s3s-aviso>
 
-  <section class="empty-state" *ngIf="!cargando && cotizaciones.length === 0 && !error">
-    <div class="empty-icon"><s3s-icon name="file" /></div>
+  <s3s-aviso *ngIf="!cargando && cotizaciones.length === 0 && !error" tipo="info" [mostrarTitulo]="false">
+    
 
     <h2>Aún no tienes solicitudes enviadas</h2>
 
@@ -50,7 +50,7 @@
     <a routerLink="/productos">
       Ver productos
     </a>
-  </section>
+  </s3s-aviso>
 
   <section class="history-list" *ngIf="cotizaciones.length > 0">
     <article

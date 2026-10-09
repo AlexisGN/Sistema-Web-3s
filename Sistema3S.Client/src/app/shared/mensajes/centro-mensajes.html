@@ -1,0 +1,21 @@
+<dialog #dialogo class="s3s-dialogo" aria-labelledby="s3s-dialogo-titulo" aria-describedby="s3s-dialogo-texto" (cancel)="cancelarDialogo($event)">
+  @if (mensajes.dialogo(); as actual) {
+    <div class="dialogo-contenido" [attr.data-tipo]="actual.tipo">
+      <div class="dialogo-cabecera">
+        <span class="dialogo-icono"><s3s-icon [name]="actual.icono" /></span>
+        <h2 id="s3s-dialogo-titulo">{{ actual.titulo }}</h2>
+        <button type="button" class="dialogo-cerrar" aria-label="Cerrar confirmación" (click)="mensajes.resolver(false)"><s3s-icon name="close" /></button>
+      </div>
+      <p id="s3s-dialogo-texto">{{ actual.mensaje }}</p>
+      <div class="dialogo-acciones">
+        <button #cancelar autofocus type="button" class="dialogo-secundario" (click)="mensajes.resolver(false)">Cancelar</button>
+        <button type="button" class="dialogo-principal" (click)="mensajes.resolver(true)">{{ actual.aceptar }}</button>
+      </div>
+    </div>
+  }
+</dialog>
+<div class="s3s-avisos" aria-label="Mensajes del sistema">
+  @for (aviso of mensajes.avisos(); track aviso.id) {
+    <s3s-aviso [tipo]="aviso.tipo" [titulo]="aviso.titulo || ''" [cerrable]="true" (cerrar)="mensajes.cerrarAviso(aviso.id)">{{ aviso.mensaje }}</s3s-aviso>
+  }
+</div>

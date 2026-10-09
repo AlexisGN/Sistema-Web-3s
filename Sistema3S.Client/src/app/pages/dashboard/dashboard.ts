@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -37,7 +38,7 @@ interface QuickAction {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, RouterLink],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })

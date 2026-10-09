@@ -527,7 +527,6 @@ namespace Sistema3S.Web.Services.Implementations
             dto.IdsPermisos ??= new List<int>();
 
             var idsPermisos = dto.IdsPermisos
-                .Where(id => id > 0)
                 .Distinct()
                 .ToList();
 
@@ -571,6 +570,9 @@ namespace Sistema3S.Web.Services.Implementations
                 {
                     throw new InvalidOperationException("El rol Administrador mantiene todos los permisos activos.");
                 }
+
+                var catalogo = await ReglasSeleccionPermisos.LeerCatalogoAsync(connection, transaction);
+                ReglasSeleccionPermisos.Validar(catalogo, idsPermisos);
 
                 await using (var eliminar = connection.CreateCommand())
                 {

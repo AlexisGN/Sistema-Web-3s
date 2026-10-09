@@ -1,3 +1,5 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
+import { MensajesService } from '../../shared/mensajes/mensajes.service';
 import { inject } from '@angular/core';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { RouterLink } from '@angular/router';
@@ -7,6 +9,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { Permiso } from '../../core/models/permiso.model';
+import { baseRequerida, validarSeleccionPermisos } from '../../core/models/reglas-seleccion-permisos';
 import { RolListado } from '../../core/models/rol.model';
 import { UsuarioListado } from '../../core/models/usuario.model';
 import { RolService } from '../../core/services/rol.service';
@@ -24,11 +27,12 @@ interface GrupoPermisos {
 @Component({
   selector: 'app-usuarios-roles',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './usuarios-roles.html',
   styleUrl: './usuarios-roles.scss'
 })
 export class UsuariosRolesComponent implements OnInit, OnDestroy {
+  private readonly mensajes = inject(MensajesService);
   readonly permisos = inject(SessionService);
   mostrarFormulario = false;
   paginaUsuarios = 1;
@@ -352,7 +356,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
     });
   }
 
-  desactivarUsuario(usuario: UsuarioListado): void {
+  async desactivarUsuario(usuario: UsuarioListado): Promise<void> {
     if (!(this.permisos.tienePermiso('USUARIOS_DESACTIVAR'))) return;
     this.limpiarMensajes();
 
@@ -361,7 +365,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const confirmar = window.confirm(`¿Deseas desactivar el usuario ${usuario.correo}?`);
+    const confirmar = (await this.mensajes.confirmar(`¿Deseas desactivar el usuario ${usuario.correo}?`, {"titulo":"Desactivar usuario","aceptar":"Desactivar","tipo":"warning","icono":"warning"}));
 
     if (!confirmar) {
       return;
@@ -465,11 +469,11 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
     });
   }
 
-  desactivarRol(rol: RolListado): void {
+  async desactivarRol(rol: RolListado): Promise<void> {
     if (!(this.permisos.tienePermiso('ROLES_DESACTIVAR'))) return;
     this.limpiarMensajes();
 
-    const confirmar = window.confirm(`¿Deseas desactivar el rol ${rol.nombre}?`);
+    const confirmar = (await this.mensajes.confirmar(`¿Deseas desactivar el rol ${rol.nombre}?`, {"titulo":"Desactivar rol","aceptar":"Desactivar","tipo":"warning","icono":"warning"}));
 
     if (!confirmar) {
       return;
@@ -492,13 +496,38 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
     });
   }
 
-  togglePermiso(permiso: Permiso): void {
+  async togglePermiso(permiso: Permiso): Promise<void> {
     if (!(this.permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS'))) return;
-    if (this.rolSeleccionadoEsAdministrador()) {
+    if (this.rolSeleccionadoEsAdministrador() || this.procesando) {
       return;
     }
 
+    if (!permiso.asignado && this.permisoSinBase(permiso)) {
+      this.mensajes.advertir(this.mensajeDependencia(permiso));
+      return;
+    }
+
+    if (permiso.asignado) {
+      const codigo = permiso.nombre.trim().toUpperCase();
+      const dependientes = this.permisosRol.filter(p => p.asignado && baseRequerida(p.nombre) === codigo);
+      if (dependientes.length > 0) {
+        const modulo = this.tituloModuloPermiso(this.obtenerModuloPermiso(codigo));
+        if (!(await this.mensajes.confirmar(`Al desactivar ${codigo} también se desactivarán los demás permisos del módulo ${modulo}. ¿Desea continuar?`, {"titulo":"Desactivar permisos del módulo","aceptar":"Desactivar permisos","tipo":"warning","icono":"warning"}))) return;
+        dependientes.forEach(p => p.asignado = false);
+      }
+    }
     permiso.asignado = !permiso.asignado;
+    this.cdr.markForCheck();
+  }
+
+  permisoSinBase(permiso: Permiso): boolean {
+    const requerido = baseRequerida(permiso.nombre);
+    return !!requerido && !this.permisosRol.some(p => p.estado && p.asignado && p.nombre.trim().toUpperCase() === requerido);
+  }
+
+  mensajeDependencia(permiso: Permiso): string {
+    return this.permisoSinBase(permiso)
+      ? `Debe activar ${baseRequerida(permiso.nombre)} antes de asignar otros permisos del módulo.` : '';
   }
 
   guardarPermisosRol(): void {
@@ -507,6 +536,12 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
 
     if (!this.idRolPermisosSeleccionado) {
       this.error = 'Selecciona un rol.';
+      return;
+    }
+
+    const errorSeleccion = validarSeleccionPermisos(this.permisosRol);
+    if (errorSeleccion) {
+      this.mensajes.advertir(errorSeleccion);
       return;
     }
 

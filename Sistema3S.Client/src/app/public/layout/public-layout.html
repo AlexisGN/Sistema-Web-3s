@@ -83,14 +83,9 @@
     </div>
   </footer>
 
-  <div role="status" aria-live="polite" class="cart-toast" [class.show]="toastCarritoVisible">
-    <div class="cart-toast-icon"><s3s-icon name="check" /></div>
-
-    <div>
-      <strong>{{ toastCarritoTitulo }}</strong>
-      <p>{{ toastCarritoMensaje }}</p>
-    </div>
-  </div>
+  <s3s-aviso aria-live="polite" class="cart-toast" [class.show]="toastCarritoVisible" tipo="success" [titulo]="toastCarritoTitulo">
+    {{ toastCarritoMensaje }}
+  </s3s-aviso>
 
   <button type="button" class="whatsapp-float" (click)="abrirWhatsAppGeneral()" aria-label="Cotizar por WhatsApp">
     <svg viewBox="0 0 32 32" aria-hidden="true">

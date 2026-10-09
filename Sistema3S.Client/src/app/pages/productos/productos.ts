@@ -1,3 +1,5 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
+import { MensajesService } from '../../shared/mensajes/mensajes.service';
 import { inject } from '@angular/core';
 import { SessionService } from '../../core/services/session.service';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
@@ -19,11 +21,12 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './productos.html',
   styleUrl: './productos.scss'
 })
 export class ProductosComponent implements OnInit {
+  private readonly mensajes = inject(MensajesService);
   readonly permisos = inject(SessionService);
   productos: ProductoListado[] = [];
 
@@ -359,9 +362,9 @@ export class ProductosComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  eliminarProducto(idProducto: number): void {
+  async eliminarProducto(idProducto: number): Promise<void> {
     if (!(this.permisos.tienePermiso('PRODUCTOS_ELIMINAR'))) return;
-    const confirmar = confirm('¿Deseas eliminar este producto?');
+    const confirmar = (await this.mensajes.confirmar('¿Deseas eliminar este producto?', {"titulo":"Eliminar producto","aceptar":"Eliminar","tipo":"error","icono":"trash"}));
 
     if (!confirmar) {
       return;

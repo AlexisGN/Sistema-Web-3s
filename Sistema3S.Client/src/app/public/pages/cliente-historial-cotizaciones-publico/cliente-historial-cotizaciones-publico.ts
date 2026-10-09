@@ -1,6 +1,6 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { FormsModule } from '@angular/forms';
 import { PublicAccountNavComponent } from '../../shared/account-nav';
-import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -18,7 +18,7 @@ import { CotizacionWebService } from '../../../core/services/cotizacion-web.serv
 @Component({
   selector: 'app-cliente-historial-cotizaciones-publico',
   standalone: true,
-  imports: [FormsModule, PublicAccountNavComponent, UiIconComponent, CommonModule, RouterLink],
+  imports: [AvisoComponent, FormsModule, PublicAccountNavComponent, CommonModule, RouterLink],
   templateUrl: './cliente-historial-cotizaciones-publico.html',
   styleUrl: './cliente-historial-cotizaciones-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

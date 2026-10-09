@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { PublicAccountNavComponent } from '../../shared/account-nav';
 import { ImagenCatalogoComponent } from '../../../shared/imagen-catalogo/imagen-catalogo';
 import { CommonModule } from '@angular/common';
@@ -20,7 +21,7 @@ import { CotizacionWebService } from '../../../core/services/cotizacion-web.serv
 @Component({
   selector: 'app-cliente-cotizacion-detalle-publico',
   standalone: true,
-  imports: [PublicAccountNavComponent, ImagenCatalogoComponent, CommonModule, RouterLink],
+  imports: [AvisoComponent, PublicAccountNavComponent, ImagenCatalogoComponent, CommonModule, RouterLink],
   templateUrl: './cliente-cotizacion-detalle-publico.html',
   styleUrl: './cliente-cotizacion-detalle-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

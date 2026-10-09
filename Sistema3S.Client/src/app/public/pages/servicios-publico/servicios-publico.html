@@ -6,15 +6,15 @@
 </div>
 <section class="services-results">
   <div class="results-head compact-results"><h2>{{ serviciosFiltrados.length }} servicio{{ serviciosFiltrados.length === 1 ? '' : 's' }}</h2><span>Atención técnica especializada para tu empresa.</span></div>
-  <div class="public-status" *ngIf="cargando" role="status">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Cargando servicios técnicos...
-  </div>
+  </s3s-aviso>
 
-  <div class="public-status error" *ngIf="error" role="status">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }} <button type="button" (click)="cargarServicios()">Reintentar</button>
-  </div>
+  </s3s-aviso>
 
-  <div class="empty-state" *ngIf="!cargando && serviciosFiltrados.length === 0 && !error"><div class="empty-icon"><s3s-icon name="tool" /></div>
+  <s3s-aviso *ngIf="!cargando && serviciosFiltrados.length === 0 && !error" tipo="info" [mostrarTitulo]="false">
     <strong>No encontramos servicios con los filtros seleccionados.</strong>
     <p>
       Ajusta la búsqueda o revisa todos los servicios disponibles para encontrar la atención técnica que necesitas.
@@ -23,7 +23,7 @@
     <button type="button" (click)="limpiarFiltros()">
       Ver todos los servicios
     </button>
-  </div>
+  </s3s-aviso>
 
   <div class="services-grid" *ngIf="serviciosFiltrados.length > 0">
     <article

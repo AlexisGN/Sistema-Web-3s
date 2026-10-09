@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { SessionService } from '../../core/services/session.service';
 import { CommonModule } from '@angular/common';
@@ -21,7 +22,7 @@ import {
 @Component({
   selector: 'app-compras',
   standalone: true,
-  imports: [UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './compras.html',
   styleUrl: './compras.scss'
 })

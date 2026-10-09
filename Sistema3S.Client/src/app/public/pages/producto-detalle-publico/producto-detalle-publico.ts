@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { ImagenCatalogoComponent } from '../../../shared/imagen-catalogo/imagen-catalogo';
 import { CommonModule } from '@angular/common';
 import {
@@ -35,7 +36,7 @@ interface ProductoCarritoCotizacion {
 @Component({
   selector: 'app-producto-detalle-publico',
   standalone: true,
-  imports: [ImagenCatalogoComponent, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, ImagenCatalogoComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './producto-detalle-publico.html',
   styleUrl: './producto-detalle-publico.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

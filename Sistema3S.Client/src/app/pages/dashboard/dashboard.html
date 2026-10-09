@@ -64,8 +64,8 @@
       </div>
 
       <div class="alert-list">
-        <div class="alert-item" *ngIf="sessionService.tienePermiso('INVENTARIO_VER')">
-          <span class="alert-dot danger"></span>
+        <s3s-aviso *ngIf="sessionService.tienePermiso('INVENTARIO_VER')" tipo="warning">
+          
 
           <div>
             <strong>Stock bajo</strong>
@@ -80,10 +80,10 @@
               Ver inventario
             </a>
           </div>
-        </div>
+        </s3s-aviso>
 
-        <div class="alert-item" *ngIf="sessionService.tienePermiso('COTIZACIONES_VER')">
-          <span class="alert-dot warning"></span>
+        <s3s-aviso *ngIf="sessionService.tienePermiso('COTIZACIONES_VER')" tipo="warning">
+          
 
           <div>
             <strong>Cotizaciones pendientes</strong>
@@ -98,10 +98,10 @@
               Ver cotizaciones
             </a>
           </div>
-        </div>
+        </s3s-aviso>
 
-        <div class="alert-item" *ngIf="sessionService.tienePermiso('COMPRAS_VER')">
-          <span class="alert-dot warning"></span>
+        <s3s-aviso *ngIf="sessionService.tienePermiso('COMPRAS_VER')" tipo="warning">
+          
 
           <div>
             <strong>Compras pendientes de pago</strong>
@@ -116,10 +116,10 @@
               Ver compras
             </a>
           </div>
-        </div>
+        </s3s-aviso>
 
-        <div class="alert-item" *ngIf="sessionService.tienePermiso('INVENTARIO_REPORTE')">
-          <span class="alert-dot neutral"></span>
+        <s3s-aviso *ngIf="sessionService.tienePermiso('INVENTARIO_REPORTE')" tipo="info">
+          
 
           <div>
             <strong>Movimientos recientes</strong>
@@ -146,7 +146,7 @@
               Ver movimientos
             </a>
           </div>
-        </div>
+        </s3s-aviso>
       </div>
     </article>
   </section>

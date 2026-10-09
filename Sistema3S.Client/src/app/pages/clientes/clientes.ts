@@ -1,3 +1,5 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
+import { MensajesService } from '../../shared/mensajes/mensajes.service';
 import { inject } from '@angular/core';
 import { SessionService } from '../../core/services/session.service';
 import { TelefonoPeDirective } from '../../shared/telefono-pe/telefono-pe';
@@ -23,11 +25,12 @@ import {
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [TelefonoPeDirective, UiIconComponent, CommonModule, FormsModule],
+  imports: [AvisoComponent, TelefonoPeDirective, UiIconComponent, CommonModule, FormsModule],
   templateUrl: './clientes.html',
   styleUrl: './clientes.scss'
 })
 export class ClientesComponent implements OnInit {
+  private readonly mensajes = inject(MensajesService);
   readonly permisos = inject(SessionService);
   clientes: ClienteListado[] = [];
 
@@ -265,9 +268,9 @@ export class ClientesComponent implements OnInit {
     });
   }
 
-  eliminarCliente(item: ClienteListado): void {
+  async eliminarCliente(item: ClienteListado): Promise<void> {
     if (!(this.permisos.tienePermiso('CLIENTES_DESACTIVAR'))) return;
-    const confirmar = confirm(`¿Deseas desactivar al cliente ${item.cliente}?`);
+    const confirmar = (await this.mensajes.confirmar(`¿Deseas desactivar al cliente ${item.cliente}?`, {"titulo":"Desactivar cliente","aceptar":"Desactivar","tipo":"warning","icono":"warning"}));
 
     if (!confirmar) {
       return;

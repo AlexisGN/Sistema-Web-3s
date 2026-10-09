@@ -61,9 +61,9 @@
             </button>
           </div>
 
-          <small class="field-error" *ngIf="erroresCampo['ruc']">
+          <s3s-aviso *ngIf="erroresCampo['ruc']" tipo="error" [compacto]="true">
             {{ erroresCampo['ruc'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full">
@@ -78,9 +78,9 @@
             (input)="limpiarErrorCampo('razonSocial')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['razonSocial']">
+          <s3s-aviso *ngIf="erroresCampo['razonSocial']" tipo="error" [compacto]="true">
             {{ erroresCampo['razonSocial'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full">
@@ -107,9 +107,9 @@
             (input)="limpiarErrorCampo('correo')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['correo']">
+          <s3s-aviso *ngIf="erroresCampo['correo']" tipo="error" [compacto]="true">
             {{ erroresCampo['correo'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field">
@@ -124,9 +124,9 @@
             (input)="limpiarErrorCampo('telefono')"
           /></div>
 
-          <small class="field-error" *ngIf="erroresCampo['telefono']">
+          <s3s-aviso *ngIf="erroresCampo['telefono']" tipo="error" [compacto]="true">
             {{ erroresCampo['telefono'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full">
@@ -141,9 +141,9 @@
             (input)="limpiarErrorCampo('direccion')"
           />
 
-          <small class="field-error" *ngIf="erroresCampo['direccion']">
+          <s3s-aviso *ngIf="erroresCampo['direccion']" tipo="error" [compacto]="true">
             {{ erroresCampo['direccion'] }}
-          </small>
+          </s3s-aviso>
         </div>
 
         <div class="field field-full ubigeo-field">
@@ -163,9 +163,9 @@
             Seleccionado: {{ ubicacionSeleccionada || ubigeoBuscar }}
           </small>
 
-          <small class="field-error" *ngIf="erroresCampo['idUbigeo']">
+          <s3s-aviso *ngIf="erroresCampo['idUbigeo']" tipo="error" [compacto]="true">
             {{ erroresCampo['idUbigeo'] }}
-          </small>
+          </s3s-aviso>
 
           <div class="ubigeo-results" *ngIf="ubigeos.length > 0">
             <button
@@ -212,9 +212,9 @@
               (input)="limpiarErrorCampo('contactoNombres')"
             />
 
-            <small class="field-error" *ngIf="erroresCampo['contactoNombres']">
+            <s3s-aviso *ngIf="erroresCampo['contactoNombres']" tipo="error" [compacto]="true">
               {{ erroresCampo['contactoNombres'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field">
@@ -229,9 +229,9 @@
               (input)="limpiarErrorCampo('contactoApellidoPaterno')"
             />
 
-            <small class="field-error" *ngIf="erroresCampo['contactoApellidoPaterno']">
+            <s3s-aviso *ngIf="erroresCampo['contactoApellidoPaterno']" tipo="error" [compacto]="true">
               {{ erroresCampo['contactoApellidoPaterno'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field">
@@ -245,9 +245,9 @@
               (input)="limpiarErrorCampo('contactoApellidoMaterno')"
             />
 
-            <small class="field-error" *ngIf="erroresCampo['contactoApellidoMaterno']">
+            <s3s-aviso *ngIf="erroresCampo['contactoApellidoMaterno']" tipo="error" [compacto]="true">
               {{ erroresCampo['contactoApellidoMaterno'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field">
@@ -272,9 +272,9 @@
               (input)="limpiarErrorCampo('contactoCorreo')"
             />
 
-            <small class="field-error" *ngIf="erroresCampo['contactoCorreo']">
+            <s3s-aviso *ngIf="erroresCampo['contactoCorreo']" tipo="error" [compacto]="true">
               {{ erroresCampo['contactoCorreo'] }}
-            </small>
+            </s3s-aviso>
           </div>
 
           <div class="field">
@@ -288,9 +288,9 @@
               (input)="limpiarErrorCampo('contactoTelefono')"
             /></div>
 
-            <small class="field-error" *ngIf="erroresCampo['contactoTelefono']">
+            <s3s-aviso *ngIf="erroresCampo['contactoTelefono']" tipo="error" [compacto]="true">
               {{ erroresCampo['contactoTelefono'] }}
-            </small>
+            </s3s-aviso>
           </div>
         </ng-container>
 
@@ -313,13 +313,13 @@
         </div>
       </form>
 
-      <div *ngIf="mensaje" class="alert success">
+      <s3s-aviso *ngIf="mensaje" tipo="success">
         {{ mensaje }}
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="error" class="alert error">
+      <s3s-aviso *ngIf="error" tipo="error">
         {{ error }}
-      </div>
+      </s3s-aviso>
     </article>
 
     <article class="panel panel-list">
@@ -347,13 +347,13 @@
         </button>
       </div>
 
-      <div *ngIf="cargando" class="estado-box">
+      <s3s-aviso *ngIf="cargando" tipo="info">
         Cargando proveedores...
-      </div>
+      </s3s-aviso>
 
-      <div *ngIf="!cargando && proveedores.length === 0" class="estado-box">
+      <s3s-aviso *ngIf="!cargando && proveedores.length === 0" tipo="info">
         No hay proveedores registrados.
-      </div>
+      </s3s-aviso>
 
       <div class="proveedores-list" *ngIf="!cargando && proveedores.length > 0">
         <div class="proveedor-card" *ngFor="let item of proveedores">

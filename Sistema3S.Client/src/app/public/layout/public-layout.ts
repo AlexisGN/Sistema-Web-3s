@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../shared/mensajes/aviso';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { Subscription, filter } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -12,7 +13,7 @@ import { CarritoCotizacionService } from '../../core/services/carrito-cotizacion
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, UiIconComponent],
+  imports: [AvisoComponent, CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, UiIconComponent],
   templateUrl: './public-layout.html',
   styleUrl: './public-layout.scss'
 })

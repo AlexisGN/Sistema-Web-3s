@@ -1,3 +1,4 @@
+import { AvisoComponent } from '../../../shared/mensajes/aviso';
 import { PublicProductCardComponent } from '../../shared/product-card';
 import { UiIconComponent } from '../../../shared/ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
@@ -24,7 +25,7 @@ import { PublicoService } from '../../../core/services/publico.service';
 @Component({
   selector: 'app-busqueda-publica',
   standalone: true,
-  imports: [PublicProductCardComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
+  imports: [AvisoComponent, PublicProductCardComponent, UiIconComponent, CommonModule, FormsModule, RouterLink],
   templateUrl: './busqueda-publica.html',
   styleUrl: './busqueda-publica.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

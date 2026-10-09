@@ -1,15 +1,15 @@
 <section class="detail-shell">
-  <div class="public-status" *ngIf="cargando" role="status">
+  <s3s-aviso *ngIf="cargando" tipo="info">
     Cargando información del producto...
-  </div>
+  </s3s-aviso>
 
-  <div class="public-status error" *ngIf="error" role="status">
+  <s3s-aviso *ngIf="error" tipo="error">
     {{ error }}
 
     <button type="button" (click)="volverCatalogo()">
       Volver al catálogo
     </button>
-  </div>
+  </s3s-aviso>
 
   <ng-container *ngIf="producto && !cargando">
     <nav class="breadcrumb">
@@ -93,11 +93,11 @@
           </button>
         </div>
 
-        <div class="operation-message" *ngIf="mensajeOperacion" role="status">
+        <s3s-aviso *ngIf="mensajeOperacion" tipo="success">
           {{ mensajeOperacion }}
-        </div>
+        </s3s-aviso>
 
-        <div class="account-note" *ngIf="!clienteLogueado">
+        <s3s-aviso *ngIf="!clienteLogueado" tipo="info" [mostrarTitulo]="false">
           <strong>¿Deseas cotizar varios productos?</strong>
           <p>
             Crea una cuenta de cliente para agregar productos al carrito y enviar una solicitud conjunta al equipo comercial.
@@ -106,7 +106,7 @@
           <a routerLink="/cliente/registro">
             Crear cuenta de cliente
           </a>
-        </div>
+        </s3s-aviso>
       </div>
     </section>
 
