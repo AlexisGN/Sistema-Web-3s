@@ -1,0 +1,78 @@
+<section class="bi-page">
+<header class="page-hero bi-hero">
+  <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="activity" /></span><span class="hero-chip">Gestión empresarial</span><h1>Inteligencia de Negocios</h1><p>Indicadores, tendencias y comparaciones para decidir.</p>@if(resultado();as r){<small>Actualizado {{r.generadoUtc|date:'dd/MM/yyyy HH:mm':'-0500'}}</small>}</div>
+  <div class="hero-actions"><button type="button" class="secondary" (click)="aplicar()" [disabled]="cargando()"><s3s-icon name="refresh" /> Actualizar</button>
+    @if(session.tienePermiso('BI_EXPORTAR')){}
+  </div>
+</header>
+
+
+@if(error()){<s3s-aviso tipo="error">{{error()}}</s3s-aviso>}
+@if(cargando()){<div class="bi-carga" role="status"><s3s-icon name="refresh" /> Consultando información…</div>}
+@if(resultado();as r){
+  <section class="bi-resultados" [attr.aria-busy]="cargando()" [class.actualizando]="cargando()">
+    <div class="periodo"><div><h2>{{titulo()}}</h2><p>{{r.filtros.desde|date:'dd/MM/yyyy':'UTC'}} al {{r.filtros.hasta|date:'dd/MM/yyyy':'UTC'}} @if(r.compararDesde){· Comparación {{r.compararDesde|date:'dd/MM/yyyy':'UTC'}} al {{r.compararHasta|date:'dd/MM/yyyy':'UTC'}}}</p></div></div>
+    @if(r.filtros.elemento){<div class="seleccion-activa"><span>Analizando: <strong>{{elementoAnalizado()}}</strong></span><button type="button" class="secondary volver-total" (click)="volverAlTotal()" [disabled]="cargando()">Volver al total</button></div>}
+    @if(r.filtros.cliente){<div class="seleccion-activa"><span>Cliente: <strong>{{terceroAnalizado('cliente')}}</strong></span><button type="button" class="secondary quitar-tercero" (click)="quitarTercero('cliente')" [disabled]="cargando()">Ver todos los clientes</button></div>}
+    @if(r.filtros.proveedor){<div class="seleccion-activa"><span>Proveedor: <strong>{{terceroAnalizado('proveedor')}}</strong></span><button type="button" class="secondary quitar-tercero" (click)="quitarTercero('proveedor')" [disabled]="cargando()">Ver todos los proveedores</button></div>}
+    @if(r.vista!=='productos'||!r.filtros.compararElemento){<div class="kpi-grid">@for(k of r.indicadores;track k.etiqueta){<article class="kpi"><span>{{k.etiqueta}}</span><strong>{{indicador(k)}}</strong><p>{{k.descripcion}}</p></article>}</div>}
+    @if(r.vista!=='inventario'){
+      @if(r.compararDesde){
+        
+      }
+      @if(r.vista==='resumen'){
+        @if(r.filtros.procedencia==='operativo'){}
+        
+        
+        
+      }
+      @if(r.vista==='resumen'){
+        
+      }
+      @if(r.vista==='ventas'){
+        
+        
+        <ng-container *ngTemplateOutlet="panelTabla;context:{key:'clientesIngresos',caption:'Clientes por ingresos',accion:'cliente'}" />
+      }
+      @if(r.vista==='productos'){
+        @if(comparacionElementos().length===2){
+          
+        }
+        @if(!r.filtros.compararElemento){
+        
+        @if(r.filtros.elemento&&!r.filtros.compararElemento){}
+        
+        <ng-container *ngTemplateOutlet="panelTabla;context:{key:'menoresVentas',caption:'Menores ventas entre elementos comercializados'}" />
+        <ng-container *ngTemplateOutlet="panelTabla;context:{key:'sinVentas',caption:'Elementos activos sin ventas en el periodo'}" />
+        <ng-container *ngTemplateOutlet="paginador;context:{key:'sinVentas'}" />
+        }
+      }
+      @if(r.vista==='clientes'){
+        
+        
+        
+        <ng-container *ngTemplateOutlet="panelTabla;context:{key:'clientesIngresos',caption:'Clientes con mayores ingresos',accion:'cliente'}" /><ng-container *ngTemplateOutlet="panelTabla;context:{key:'clientesFrecuencia',caption:'Clientes por frecuencia de compra',accion:'cliente'}" />
+      }
+      @if(r.vista==='compras'){
+        
+        
+        <ng-container *ngTemplateOutlet="panelTabla;context:{key:'productosComprados',caption:'Productos más comprados'}" /><ng-container *ngTemplateOutlet="panelTabla;context:{rows:porTipo('categorias','compra'),caption:'Compras por categoría'}" />
+      }
+      @if(r.vista==='ventas'||r.vista==='clientes'||r.vista==='compras'){
+        
+      }
+    }
+    @if(r.vista==='inventario'){
+      
+      <ng-container *ngTemplateOutlet="panelTabla;context:{key:'inventario',caption:'Existencias y movimientos por producto'}" /><ng-container *ngTemplateOutlet="paginador;context:{key:'inventario'}" /><ng-container *ngTemplateOutlet="panelTabla;context:{key:'mayorMovimiento',caption:'Productos con mayor movimiento'}" /><ng-container *ngTemplateOutlet="panelTabla;context:{key:'menorMovimiento',caption:'Menor movimiento y ausencia de movimiento'}" /><ng-container *ngTemplateOutlet="panelTabla;context:{key:'kardex',caption:'Movimientos físicos que explican el saldo'}" /><ng-container *ngTemplateOutlet="paginador;context:{key:'kardex'}" />
+    }
+    
+    @if(detalleAbierto()&&detalleContexto();as ctx){}
+  </section>
+}
+</section>
+<ng-template #tabla let-rows="rows" let-caption="caption" let-accion="accion">
+  @if(rows.length){<div class="table-scroll" tabindex="0" [attr.aria-label]="caption"><table><caption>{{caption}}</caption><thead><tr>@for(c of campos(rows);track c){<th scope="col">{{columnas[c]}}</th>}@if(accion==='comercial'){<th scope="col">Aporte al indicador</th>}@if(accion){<th scope="col">Análisis</th>}</tr></thead><tbody>@for(row of rows;track $index){<tr>@for(c of campos(rows);track c){<td [class.texto-largo]="['Nombre','Tercero','Categoria'].includes(c)">{{valor(row[c],c)}}</td>}@if(accion==='comercial'){<td class="texto-largo">{{aporte(row)}}</td><td>@if(puedeDetalle(row)){<button type="button" class="secondary" (click)="detalle(row)">{{detalleEtiqueta(row)}}</button>}</td>}@else if(accion==='elemento'){<td><button type="button" class="secondary" (click)="seleccionar(row)">Analizar</button></td>}@else if(accion==='cliente'){<td><button type="button" class="secondary" (click)="analizarCliente(row)">Analizar cliente</button></td>}</tr>}</tbody></table></div>}@else{<p class="empty">Sin información para los filtros seleccionados.</p>}
+</ng-template>
+<ng-template #panelTabla let-key="key" let-rows="rows" let-caption="caption" let-accion="accion"></ng-template>
+<ng-template #paginador let-key="key"><div class="paginador"><button class="secondary" type="button" (click)="pagina(-1)" [disabled]="!resultado() || (resultado()?.filtros?.pagina??1)<=1 || cargando()">Anterior</button><span>Página {{resultado()?.filtros?.pagina??1}}</span><button class="secondary" type="button" (click)="pagina(1)" [disabled]="(resultado()?.filtros?.pagina??1)*(resultado()?.filtros?.tamanio??20)>=totalTabla(key)||cargando()">Siguiente</button></div></ng-template>

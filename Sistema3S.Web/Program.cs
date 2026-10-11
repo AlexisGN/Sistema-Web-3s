@@ -100,6 +100,9 @@ builder.Services.AddRateLimiter(options => {
 builder.Services.AddScoped<PasswordHashService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiConexion>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Bi.IBiService, Sistema3S.Web.Services.Bi.BiService>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiExportacion>();
 
 
 // Servicios de negocio

@@ -146,8 +146,13 @@ export const routes: Routes = [
     children: [
       
       
-      
-      
+      {path:'bi',canActivate:[permissionGuard],data:{permisos:['BI_VER']},loadComponent:()=>import('./pages/bi/bi').then(m=>m.BiComponent)},
+      {
+        path: 'auditoria',
+        canActivate: [permissionGuard],
+        data: { permisos: ['AUDITORIA_VER'] },
+        loadComponent: () => import('./pages/auditoria/auditoria').then(m => m.AuditoriaComponent)
+      },
       {
         path: '',
         redirectTo: 'inicio',
