@@ -35,9 +35,21 @@
       Personal interno
     </button>
 
-    
+    <button
+      type="button"
+      [class.active]="tabActiva === 'roles'"
+      (click)="cambiarTab('roles')"
+     *ngIf="permisos.tienePermiso('ROLES_VER')">
+      Roles
+    </button>
 
-    
+    <button
+      type="button"
+      [class.active]="tabActiva === 'permisos'"
+      (click)="cambiarTab('permisos')"
+     *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
+      Permisos por rol
+    </button>
     <button type="button" class="clients-tab" [class.active]="tabActiva === 'clientes'" [attr.aria-pressed]="tabActiva === 'clientes'" (click)="cambiarTab('clientes')" *ngIf="permisos.tienePermiso('CLIENTES_VER')">Ver clientes</button>
   </section>
 
@@ -93,7 +105,167 @@
     </article>
   </section>
 
-  
+  <section class="content-grid" *ngIf="tabActiva === 'roles'">
+    <article class="panel form-panel" *ngIf="rolForm.editando ? permisos.tienePermiso('ROLES_EDITAR') : permisos.tienePermiso('ROLES_CREAR')">
+      <div class="panel-header">
+        <div>
+          <h2>{{ rolForm.editando ? 'Editar rol' : 'Nuevo rol' }}</h2>
+          <p>Define perfiles de acceso para los usuarios internos.</p>
+        </div>
+      </div>
 
-  
+      <div class="field">
+        <label for="s3s-usuarios-roles-239">Nombre del rol</label>
+        <input id="s3s-usuarios-roles-239"
+          type="text"
+          [(ngModel)]="rolForm.nombre"
+          name="rolNombre"
+          placeholder="Ej. Supervisor"
+        />
+      </div>
+
+      <div class="field">
+        <label for="s3s-usuarios-roles-247">Descripción</label>
+        <textarea id="s3s-usuarios-roles-247"
+          rows="4"
+          [(ngModel)]="rolForm.descripcion"
+          name="rolDescripcion"
+          placeholder="Describe el alcance del rol..."
+        ></textarea>
+      </div>
+
+      <div class="field">
+        <label for="s3s-usuarios-roles-255">Estado</label>
+        <select id="s3s-usuarios-roles-255" [(ngModel)]="rolForm.estado" name="rolEstado">
+          <option [ngValue]="true">Activo</option>
+          <option [ngValue]="false">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="actions-row">
+        <button type="button" class="btn btn-light" (click)="nuevoRol()" [disabled]="procesando" *ngIf="permisos.tienePermiso('ROLES_CREAR')">
+          Limpiar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="guardarRol()"
+          [disabled]="procesando"
+         *ngIf="rolForm.editando ? permisos.tienePermiso('ROLES_EDITAR') : permisos.tienePermiso('ROLES_CREAR')">
+          {{ rolForm.editando ? 'Actualizar rol' : 'Crear rol' }}
+        </button>
+      </div>
+    </article>
+
+    <article class="panel list-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Roles del sistema</h2>
+          <p>El rol Administrador está protegido y siempre mantiene todos los permisos.</p>
+        </div>
+      </div>
+
+      <div class="role-grid">
+        <article class="role-card" *ngFor="let rol of roles">
+          <div class="role-head">
+            <div>
+              <h3>{{ rol.nombre }}</h3>
+              <p>{{ rol.descripcion || 'Sin descripción.' }}</p>
+            </div>
+
+            <span class="status-pill" [class.inactive]="!rol.estado">
+              {{ rol.estado ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+
+          <div class="role-stats">
+            <div>
+              <span>Permisos</span>
+              <strong>{{ rol.totalPermisos }}</strong>
+            </div>
+
+            <div>
+              <span>Usuarios</span>
+              <strong>{{ rol.totalUsuarios }}</strong>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button type="button" class="btn btn-light" (click)="editarRol(rol)" *ngIf="permisos.tienePermiso('ROLES_EDITAR')"><s3s-icon name="edit"></s3s-icon>
+              Editar
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-danger"
+              (click)="desactivarRol(rol)"
+              [disabled]="!rol.estado || esRolAdministrador(rol) || procesando"
+             *ngIf="permisos.tienePermiso('ROLES_DESACTIVAR')"><s3s-icon name="trash"></s3s-icon>
+              Desactivar
+            </button>
+          </div>
+        </article>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel permissions-panel" *ngIf="tabActiva === 'permisos'">
+    <div class="panel-header">
+      <div>
+        <h2>Permisos por rol</h2>
+        <p>
+          Selecciona un rol y define qué módulos o acciones podrá utilizar.
+        </p>
+      </div>
+
+      <div class="role-select">
+        <label>Rol</label>
+        <select
+          [(ngModel)]="idRolPermisosSeleccionado"
+          name="idRolPermisosSeleccionado"
+          (ngModelChange)="cargarPermisosRol($event)"
+        >
+          <option *ngFor="let rol of roles; trackBy: identificarRol" [ngValue]="rol.idRol">
+            {{ rol.nombre }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <s3s-aviso *ngIf="rolSeleccionadoEsAdministrador()" tipo="warning">
+      El rol Administrador mantiene todos los permisos activos y no puede quedar limitado.
+    </s3s-aviso>
+
+    <div class="permissions-grid">
+      <article class="permission-group" *ngFor="let grupo of gruposPermisos(); trackBy: identificarGrupoPermisos">
+        <h3>{{ grupo.titulo }}</h3>
+
+        <ng-container *ngFor="let permiso of grupo.permisos; trackBy: identificarPermiso">
+        <button
+          type="button"
+          class="permission-item"
+          [class.active]="permiso.asignado"
+          [disabled]="rolSeleccionadoEsAdministrador() || procesando || permisoSinBase(permiso)"
+          [attr.title]="mensajeDependencia(permiso) || null"
+          (click)="togglePermiso(permiso)"
+         *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
+          <span>{{ permiso.nombre }}</span>
+          <small>{{ permiso.descripcion || 'Sin descripción.' }}</small>
+        </button>
+        </ng-container>
+      </article>
+    </div>
+
+    <div class="actions-row permissions-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="guardarPermisosRol()"
+        [disabled]="procesando || rolSeleccionadoEsAdministrador()"
+       *ngIf="permisos.tienePermiso('ROLES_GESTIONAR_PERMISOS')">
+        {{ procesando ? 'Guardando...' : 'Guardar permisos' }}
+      </button>
+    </div>
+  </section>
 </div>

@@ -146,7 +146,11 @@ export const routes: Routes = [
     children: [
       
       
+<<<<<<< HEAD
       {path:'bi',canActivate:[permissionGuard],data:{permisos:['BI_VER']},loadComponent:()=>import('./pages/bi/bi').then(m=>m.BiComponent)},
+=======
+      
+>>>>>>> 3eed08238efba4c9a2ddd889fa14f61b17db048d
       {
         path: 'auditoria',
         canActivate: [permissionGuard],

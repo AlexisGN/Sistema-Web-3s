@@ -1029,6 +1029,62 @@ END;
 
 GO
 /* =========================================================
+   19. PROCEDIMIENTO: ACTUALIZAR ROL
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ActualizarRol
+    @IdRol INT,
+    @Nombre NVARCHAR(100),
+    @Descripcion NVARCHAR(500) = NULL,
+    @Estado BIT = 1
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @RolActual NVARCHAR(100);
+
+    SET @Nombre = LTRIM(RTRIM(ISNULL(@Nombre, '')));
+    SET @Descripcion = NULLIF(LTRIM(RTRIM(ISNULL(@Descripcion, ''))), '');
+
+    IF @IdRol <= 0 OR NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE IdRol = @IdRol)
+        THROW 72701, 'El rol seleccionado no existe.', 1;
+
+    SELECT @RolActual = Nombre
+    FROM dbo.Rol
+    WHERE IdRol = @IdRol;
+
+    IF UPPER(LTRIM(RTRIM(@RolActual))) IN ('ADMINISTRADOR', 'ADMIN')
+       AND (
+            UPPER(LTRIM(RTRIM(@Nombre))) NOT IN ('ADMINISTRADOR', 'ADMIN')
+            OR ISNULL(@Estado, 0) = 0
+       )
+    BEGIN
+        THROW 72702, 'No puedes renombrar ni desactivar el rol Administrador.', 1;
+    END;
+
+    IF @Nombre = ''
+        THROW 72703, 'Ingresa el nombre del rol.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.Rol
+        WHERE UPPER(Nombre) = UPPER(@Nombre)
+          AND IdRol <> @IdRol
+    )
+        THROW 72704, 'Ya existe otro rol registrado con ese nombre.', 1;
+
+    UPDATE dbo.Rol
+    SET
+        Nombre = @Nombre,
+        Descripcion = @Descripcion,
+        Estado = ISNULL(@Estado, 1)
+    WHERE IdRol = @IdRol;
+
+    EXEC dbo.sp_ListarRoles @SoloActivos = NULL;
+END;
+
+GO
+/* =========================================================
    14. PROCEDIMIENTO: ACTUALIZAR USUARIO
    ========================================================= */
 
@@ -1344,6 +1400,95 @@ END;
 
 GO
 /* =========================================================
+   23. PROCEDIMIENTO: ASIGNAR PERMISOS A ROL
+   @PermisosJson admite:
+   [1,2,3]
+   o
+   [{"idPermiso":1},{"idPermiso":2}]
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_AsignarPermisosRol
+    @IdRol INT,
+    @PermisosJson NVARCHAR(MAX)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @NombreRol NVARCHAR(100);
+
+    DECLARE @PermisosSeleccionados TABLE (
+        IdPermiso INT NOT NULL PRIMARY KEY
+    );
+
+    SELECT @NombreRol = Nombre
+    FROM dbo.Rol
+    WHERE IdRol = @IdRol
+      AND Estado = 1;
+
+    IF @NombreRol IS NULL
+        THROW 73001, 'El rol seleccionado no existe o está inactivo.', 1;
+
+    IF UPPER(LTRIM(RTRIM(@NombreRol))) IN ('ADMINISTRADOR', 'ADMIN')
+    BEGIN
+        INSERT INTO dbo.RolPermiso (IdRol, IdPermiso)
+        SELECT @IdRol, p.IdPermiso
+        FROM dbo.Permiso p
+        WHERE p.Estado = 1
+          AND NOT EXISTS (
+              SELECT 1
+              FROM dbo.RolPermiso rp
+              WHERE rp.IdRol = @IdRol
+                AND rp.IdPermiso = p.IdPermiso
+          );
+
+        SELECT
+            'El rol Administrador mantiene todos los permisos activos.' AS Mensaje,
+            @IdRol AS IdRol;
+
+        RETURN;
+    END;
+
+    SET @PermisosJson = NULLIF(LTRIM(RTRIM(ISNULL(@PermisosJson, ''))), '');
+
+    IF @PermisosJson IS NULL OR ISJSON(@PermisosJson) <> 1
+        THROW 73002, 'La lista de permisos no tiene formato válido.', 1;
+
+    INSERT INTO @PermisosSeleccionados (IdPermiso)
+    SELECT DISTINCT
+        COALESCE(
+            TRY_CONVERT(INT, j.[value]),
+            TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.idPermiso')),
+            TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.IdPermiso'))
+        )
+    FROM OPENJSON(@PermisosJson) j
+    WHERE COALESCE(
+            TRY_CONVERT(INT, j.[value]),
+            TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.idPermiso')),
+            TRY_CONVERT(INT, JSON_VALUE(j.[value], '$.IdPermiso'))
+          ) IS NOT NULL;
+
+    IF EXISTS (
+        SELECT 1
+        FROM @PermisosSeleccionados ps
+        LEFT JOIN dbo.Permiso p ON p.IdPermiso = ps.IdPermiso AND p.Estado = 1
+        WHERE p.IdPermiso IS NULL
+    )
+        THROW 73003, 'Uno o más permisos seleccionados no son válidos.', 1;
+
+    DELETE FROM dbo.RolPermiso
+    WHERE IdRol = @IdRol;
+
+    INSERT INTO dbo.RolPermiso (IdRol, IdPermiso)
+    SELECT @IdRol, IdPermiso
+    FROM @PermisosSeleccionados;
+
+    SELECT
+        'Permisos actualizados correctamente.' AS Mensaje,
+        @IdRol AS IdRol;
+END;
+
+GO
+/* =========================================================
    15. PROCEDIMIENTO: CAMBIAR CONTRASEÑA DE USUARIO
    La contraseña llega como hash desde backend.
    ========================================================= */
@@ -1621,6 +1766,37 @@ BEGIN
 END;
 GO
 /* =========================================================
+   18. PROCEDIMIENTO: CREAR ROL
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_CrearRol
+    @Nombre NVARCHAR(100),
+    @Descripcion NVARCHAR(500) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @IdRol INT;
+
+    SET @Nombre = LTRIM(RTRIM(ISNULL(@Nombre, '')));
+    SET @Descripcion = NULLIF(LTRIM(RTRIM(ISNULL(@Descripcion, ''))), '');
+
+    IF @Nombre = ''
+        THROW 72601, 'Ingresa el nombre del rol.', 1;
+
+    IF EXISTS (SELECT 1 FROM dbo.Rol WHERE UPPER(Nombre) = UPPER(@Nombre))
+        THROW 72602, 'Ya existe un rol registrado con ese nombre.', 1;
+
+    INSERT INTO dbo.Rol (Nombre, Descripcion, Estado)
+    VALUES (@Nombre, @Descripcion, 1);
+
+    SET @IdRol = SCOPE_IDENTITY();
+
+    EXEC dbo.sp_ListarRoles @SoloActivos = NULL;
+END;
+
+GO
+/* =========================================================
    13. PROCEDIMIENTO: CREAR USUARIO
    La contraseña llega como hash desde backend.
    ========================================================= */
@@ -1669,6 +1845,46 @@ BEGIN
     SET @IdUsuario = SCOPE_IDENTITY();
 
     EXEC dbo.sp_ObtenerUsuarioPorId @IdUsuario = @IdUsuario;
+END;
+
+GO
+/* =========================================================
+   20. PROCEDIMIENTO: DESACTIVAR ROL
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_DesactivarRol
+    @IdRol INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Rol NVARCHAR(100);
+
+    IF @IdRol <= 0 OR NOT EXISTS (SELECT 1 FROM dbo.Rol WHERE IdRol = @IdRol)
+        THROW 72801, 'El rol seleccionado no existe.', 1;
+
+    SELECT @Rol = Nombre
+    FROM dbo.Rol
+    WHERE IdRol = @IdRol;
+
+    IF UPPER(LTRIM(RTRIM(@Rol))) IN ('ADMINISTRADOR', 'ADMIN')
+        THROW 72802, 'No puedes desactivar el rol Administrador.', 1;
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.Usuario
+        WHERE IdRol = @IdRol
+          AND Estado = 1
+    )
+        THROW 72803, 'No puedes desactivar un rol con usuarios activos asignados.', 1;
+
+    UPDATE dbo.Rol
+    SET Estado = 0
+    WHERE IdRol = @IdRol;
+
+    SELECT
+        'Rol desactivado correctamente.' AS Mensaje,
+        @IdRol AS IdRol;
 END;
 
 GO
@@ -1993,6 +2209,62 @@ BEGIN
       AND (@FechaFin IS NULL OR CONVERT(DATE, mc.FechaMovimiento) <= @FechaFin)
     ORDER BY mc.FechaMovimiento DESC, mc.IdMovimientoCaja DESC;
 END;
+GO
+/* =========================================================
+   21. PROCEDIMIENTO: LISTAR PERMISOS
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ListarPermisos
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        IdPermiso,
+        Nombre,
+        Descripcion,
+        Estado
+    FROM dbo.Permiso
+    WHERE Estado = 1
+    ORDER BY Nombre;
+END;
+
+GO
+CREATE   PROCEDURE dbo.sp_ListarRoles
+    @SoloActivos BIT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        r.IdRol,
+        r.Nombre,
+        r.Descripcion,
+        r.Estado,
+        COUNT(DISTINCT rp.IdPermiso) AS TotalPermisos,
+        COUNT(DISTINCT u.IdUsuario) AS TotalUsuarios
+    FROM dbo.Rol r
+    LEFT JOIN dbo.RolPermiso rp
+        ON rp.IdRol = r.IdRol
+    LEFT JOIN dbo.Usuario u
+        ON u.IdRol = r.IdRol
+       AND u.Estado = 1
+    WHERE
+        @SoloActivos IS NULL
+        OR r.Estado = @SoloActivos
+    GROUP BY
+        r.IdRol,
+        r.Nombre,
+        r.Descripcion,
+        r.Estado
+    ORDER BY
+        CASE
+            WHEN r.Nombre = 'Administrador' THEN 0
+            ELSE 1
+        END,
+        r.Nombre;
+END;
+
 GO
 /* =========================================================
    11. PROCEDIMIENTO: LISTAR USUARIOS
@@ -2626,6 +2898,57 @@ BEGIN
     LEFT JOIN Servicio s ON s.IdElementoCatalogo = e.IdElementoCatalogo
     WHERE dc.IdCotizacion = @IdCotizacion
     ORDER BY dc.IdDetalleCotizacion;
+END;
+
+GO
+/* =========================================================
+   22. PROCEDIMIENTO: OBTENER PERMISOS POR ROL
+   ========================================================= */
+
+CREATE   PROCEDURE dbo.sp_ObtenerPermisosPorRol
+    @IdRol INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @NombreRol NVARCHAR(100);
+
+    SELECT @NombreRol = Nombre
+    FROM dbo.Rol
+    WHERE IdRol = @IdRol
+      AND Estado = 1;
+
+    IF @NombreRol IS NULL
+        THROW 72901, 'El rol seleccionado no existe o está inactivo.', 1;
+
+    IF UPPER(LTRIM(RTRIM(@NombreRol))) IN ('ADMINISTRADOR', 'ADMIN')
+    BEGIN
+        SELECT
+            p.IdPermiso,
+            p.Nombre,
+            p.Descripcion,
+            CAST(1 AS BIT) AS Asignado
+        FROM dbo.Permiso p
+        WHERE p.Estado = 1
+        ORDER BY p.Nombre;
+
+        RETURN;
+    END;
+
+    SELECT
+        p.IdPermiso,
+        p.Nombre,
+        p.Descripcion,
+        CASE
+            WHEN rp.IdPermiso IS NULL THEN CAST(0 AS BIT)
+            ELSE CAST(1 AS BIT)
+        END AS Asignado
+    FROM dbo.Permiso p
+    LEFT JOIN dbo.RolPermiso rp
+        ON rp.IdPermiso = p.IdPermiso
+       AND rp.IdRol = @IdRol
+    WHERE p.Estado = 1
+    ORDER BY p.Nombre;
 END;
 
 GO
@@ -6434,6 +6757,22 @@ BEGIN
 END;
 
 GO
+CREATE   TRIGGER dbo.trg_Permiso_Auditoria ON dbo.[Permiso] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdPermiso] IS NULL THEN N'CREAR' WHEN i.[IdPermiso] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Permiso',
+ COALESCE(i.[IdPermiso],d.[IdPermiso]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdPermiso] IS NOT NULL THEN (SELECT d.[IdPermiso],d.[Nombre],d.[Descripcion],d.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdPermiso] IS NOT NULL THEN (SELECT i.[IdPermiso],i.[Nombre],i.[Descripcion],i.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdPermiso]=d.[IdPermiso];
+END;
+
+GO
 CREATE   TRIGGER dbo.trg_PersonalInterno_Auditoria ON dbo.[PersonalInterno] AFTER INSERT, UPDATE, DELETE AS
 BEGIN
  SET NOCOUNT ON;
@@ -6479,6 +6818,38 @@ BEGIN
  CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
  COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdProveedor]=d.[IdProveedor];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_Rol_Auditoria ON dbo.[Rol] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdRol] IS NULL THEN N'CREAR' WHEN i.[IdRol] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'Rol',
+ COALESCE(i.[IdRol],d.[IdRol]),GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdRol] IS NOT NULL THEN (SELECT d.[IdRol],d.[Nombre],d.[Descripcion],d.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdRol] IS NOT NULL THEN (SELECT i.[IdRol],i.[Nombre],i.[Descripcion],i.[Estado] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdRol]=d.[IdRol];
+END;
+
+GO
+CREATE   TRIGGER dbo.trg_RolPermiso_Auditoria ON dbo.[RolPermiso] AFTER INSERT, UPDATE, DELETE AS
+BEGIN
+ SET NOCOUNT ON;
+ INSERT dbo.AuditoriaLog(IdUsuario,Accion,TablaAfectada,IdRegistro,Fecha,Descripcion,DatosAntes,DatosDespues,Solicitud,Origen)
+ SELECT TRY_CONVERT(INT,SESSION_CONTEXT(N'IdUsuarioAuditoria')),
+ CASE WHEN d.[IdRol] IS NULL THEN N'CREAR' WHEN i.[IdRol] IS NULL THEN N'ELIMINAR' ELSE N'ACTUALIZAR' END,N'RolPermiso',
+ NULL,GETDATE(),
+ LEFT(COALESCE(CONVERT(NVARCHAR(500),SESSION_CONTEXT(N'AccionAuditoria')),N'Operación SQL'),500),
+ CASE WHEN d.[IdRol] IS NOT NULL THEN (SELECT d.[IdRol],d.[IdPermiso] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CASE WHEN i.[IdRol] IS NOT NULL THEN (SELECT i.[IdRol],i.[IdPermiso] FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES) END,
+ CONVERT(NVARCHAR(100),SESSION_CONTEXT(N'SolicitudAuditoria')),
+ COALESCE(CONVERT(NVARCHAR(128),SESSION_CONTEXT(N'OrigenAuditoria')),CONCAT(N'SQL: ',ORIGINAL_LOGIN()))
+ FROM inserted i FULL OUTER JOIN deleted d ON i.[IdRol]=d.[IdRol] AND i.[IdPermiso]=d.[IdPermiso];
 END;
 
 GO
