@@ -15,6 +15,12 @@ public sealed class BiController(IBiService service,BiExportacion exportacion,IL
     [HttpGet("{vista}")]
     public Task<IActionResult> Consultar(string vista,[FromQuery] BiFiltro filtro,CancellationToken ct)
         => Ejecutar(async()=>Ok(await service.ConsultarAsync(vista,filtro,ct)));
+    [HttpGet("opciones")]
+    public Task<IActionResult> Opciones([FromQuery]string procedencia="operativo",[FromQuery]string? buscar=null,CancellationToken ct=default)
+        => Ejecutar(async()=>Ok(await service.OpcionesAsync(procedencia,buscar,ct)));
+    [HttpGet("operaciones/{tipo}/{id:int}")]
+    public Task<IActionResult> Detalle(string tipo,int id,CancellationToken ct)
+        => Ejecutar(async()=>Ok(await service.DetalleAsync(tipo,id,ct)));
     private async Task<IActionResult> Ejecutar(Func<Task<IActionResult>> action)
     {
         try {return await action();}

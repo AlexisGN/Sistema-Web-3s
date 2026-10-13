@@ -36,7 +36,7 @@ export class BiComponent implements OnInit {
     Object.assign(this.columnas,{CostoUnitario:'Costo unitario ponderado con IGV',Proveedores:'Proveedores',Cotizaciones:'Cotizaciones',Oportunidades:'Oportunidades abiertas',ImportePendiente:'Importe de oportunidades',Convertidas:'Convertidas en venta'});
     this.solicitudes.pipe(tap(()=>{this.cargando.set(true);this.error.set('');}),switchMap(q=>this.api.consultar(q.vista,q.filtro).pipe(map(result=>({result,error:''})),catchError(e=>of({result:null,error:e.error?.mensaje||'No pudimos cargar el análisis. Intenta nuevamente.'})))),takeUntilDestroyed(this.destroy))
       .subscribe(r=>{this.cargando.set(false);if(r.result)this.resultado.set(r.result);this.error.set(r.error);});
-    this.aplicar();
+    this.cargarOpciones();this.aplicar();
   }
   filas(key:string):BiFila[]{return this.resultado()?.datos[key]??[];}
   porTipo(key:string,tipo:string):BiFila[]{return this.filas(key).filter(r=>r['Tipo']===tipo);}

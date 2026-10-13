@@ -6,7 +6,34 @@
   </div>
 </header>
 <nav class="bi-tabs" aria-label="Análisis de Inteligencia de Negocios">@for(v of vistas;track v.id){<button type="button" [class.active]="vista===v.id" [attr.aria-pressed]="vista===v.id" (click)="ir(v.id)">{{v.titulo}}</button>}</nav>
-
+<form class="bi-filtros" (ngSubmit)="filtro.pagina=1;aplicar()">
+  <div class="filtros-esenciales">
+    <div class="field"><label for="bi-desde">Desde</label><input id="bi-desde" name="desde" type="date" [(ngModel)]="filtro.desde" (ngModelChange)="periodoCambio()" required /></div>
+    <div class="field"><label for="bi-hasta">Hasta</label><input id="bi-hasta" name="hasta" type="date" [(ngModel)]="filtro.hasta" (ngModelChange)="periodoCambio()" required /></div>
+    <div class="field"><label for="bi-agrupacion">Agrupar por</label><select id="bi-agrupacion" name="agrupacion" [(ngModel)]="filtro.agrupacion"><option value="dia">Día</option><option value="semana">Semana</option><option value="mes">Mes</option><option value="anio">Año</option></select></div>
+    @if(vista!=='clientes'){<div class="field"><label for="bi-categoria">Categoría</label><select id="bi-categoria" name="categoria" [(ngModel)]="filtro.categoria"><option [ngValue]="undefined">Todas las categorías</option>@if(vista!=='inventario'&&vista!=='compras'){<option [ngValue]="0">Servicios</option>}@for(o of opciones()['categorias']??[];track o['Id']){<option [ngValue]="o['Id']">{{o['Nombre']}}</option>}</select></div>}
+    @if(vista==='inventario'){<div class="field"><label for="bi-producto">Producto</label><select id="bi-producto" name="elemento" [(ngModel)]="filtro.elemento"><option [ngValue]="undefined">Todos los productos</option>@for(o of opciones()['elementos']??[];track o['Id']){@if(o['TipoElemento']==='Producto'){<option [ngValue]="o['Id']">{{o['Nombre']}}</option>}}</select></div>}
+    <button class="primary aplicar" type="submit" [disabled]="cargando()">Aplicar filtros</button>
+  </div>
+  <div class="filtros-barra"><div class="rapidos" aria-label="Periodos rápidos"><button type="button" (click)="rapido('actual')">Mes actual</button><button type="button" (click)="rapido('anterior')">Mes anterior</button><button type="button" (click)="rapido('tres')">3 meses</button><button type="button" (click)="rapido('seis')">6 meses</button><button type="button" (click)="rapido('anio')">Año actual</button></div>
+    @if(vista!=='inventario'){<label class="check"><input name="comparar" type="checkbox" [(ngModel)]="comparar" (ngModelChange)="cambiarComparacion();aplicar()" /> Comparar periodos</label>}
+  </div>
+  @if(comparar&&vista!=='inventario'){
+    <div class="comparacion-controles">
+      <div class="field"><label for="bi-modo">Comparación</label><select id="bi-modo" name="modo" [(ngModel)]="modoComparacion" (ngModelChange)="periodoCambio()"><option value="anterior">Periodo anterior equivalente</option><option value="anioAnterior">Mismo inicio del año anterior</option><option value="personalizado">Periodo personalizado</option></select></div>
+      <div class="field"><label for="bi-comparar-desde">Comparación desde</label><input id="bi-comparar-desde" name="compararDesde" type="date" [(ngModel)]="filtro.compararDesde" (ngModelChange)="error.set('')" [readonly]="modoComparacion!=='personalizado'" required /></div>
+      <div class="field"><label for="bi-comparar-hasta">Comparación hasta</label><input id="bi-comparar-hasta" name="compararHasta" type="date" [(ngModel)]="filtro.compararHasta" (ngModelChange)="error.set('')" [readonly]="modoComparacion!=='personalizado'" required /></div>
+      <small>Duración equivalente, contando inicio y fin. En años bisiestos la fecha final se ajusta para conservar los días.</small>
+    </div>
+  }
+  @if(vista!=='inventario'){<div class="filtros-comerciales">
+    <div class="field"><label for="bi-producto">Producto o servicio</label><select id="bi-producto" name="elemento" [(ngModel)]="filtro.elemento" (ngModelChange)="productoCambio()"><option [ngValue]="undefined">Todos</option>@for(o of opciones()['elementos']??[];track o['Id']){<option [ngValue]="o['Id']">{{o['Nombre']}}</option>}</select></div>
+    @if(vista==='productos'){<div class="field"><label for="bi-producto-comparar">Comparar con producto o servicio</label><select id="bi-producto-comparar" name="compararElemento" [(ngModel)]="filtro.compararElemento" [disabled]="!filtro.elemento"><option [ngValue]="undefined">Sin comparación</option>@for(o of opciones()['elementos']??[];track o['Id']){@if(o['Id']!==filtro.elemento){<option [ngValue]="o['Id']">{{o['Nombre']}}</option>}}</select><small>Selecciona el primer elemento, elige otro y aplica los filtros.</small></div>}
+    @if(vista==='ventas'||vista==='clientes'){<div class="field"><label for="bi-cliente">Cliente</label><select id="bi-cliente" name="cliente" [(ngModel)]="filtro.cliente"><option [ngValue]="undefined">Todos los clientes</option>@for(o of opciones()['clientes']??[];track o['Id']){<option [ngValue]="o['Id']">{{o['Nombre']}}</option>}</select></div>}
+    @if(vista==='compras'){<div class="field"><label for="bi-proveedor">Proveedor</label><select id="bi-proveedor" name="proveedor" [(ngModel)]="filtro.proveedor"><option [ngValue]="undefined">Todos los proveedores</option>@for(o of opciones()['proveedores']??[];track o['Id']){<option [ngValue]="o['Id']">{{o['Nombre']}}</option>}</select></div>}
+    @if(vista==='ventas'||vista==='clientes'||vista==='compras'){<div class="field"><label for="bi-estado">Estado</label><select id="bi-estado" name="estado" [(ngModel)]="filtro.estado"><option [ngValue]="undefined">Todos los estados</option>@for(e of (vista==='clientes'?['Pendiente','Respondida','Aprobada','Cancelada','Convertida en venta','Convertida a venta']:['Registrada','Confirmada','Anulada']);track e){<option [ngValue]="e">{{e}}</option>}</select></div>}
+  </div>}
+</form>
 @if(error()){<s3s-aviso tipo="error">{{error()}}</s3s-aviso>}
 @if(cargando()){<div class="bi-carga" role="status"><s3s-icon name="refresh" /> Consultando información…</div>}
 @if(resultado();as r){
