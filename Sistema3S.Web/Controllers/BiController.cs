@@ -21,6 +21,12 @@ public sealed class BiController(IBiService service,BiExportacion exportacion,IL
     [HttpGet("operaciones/{tipo}/{id:int}")]
     public Task<IActionResult> Detalle(string tipo,int id,CancellationToken ct)
         => Ejecutar(async()=>Ok(await service.DetalleAsync(tipo,id,ct)));
+    [HttpGet("{vista}/excel")]
+    public Task<IActionResult> ExportarExcel(string vista,[FromQuery]BiFiltro filtro,CancellationToken ct)
+        => Ejecutar(async()=>File(exportacion.Excel(await service.ConsultarAsync(vista,filtro,ct)),"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",$"3S-BI-{vista}-{filtro.Desde:yyyyMMdd}.xlsx"));
+    [HttpGet("{vista}/pdf")]
+    public Task<IActionResult> ExportarPdf(string vista,[FromQuery]BiFiltro filtro,CancellationToken ct)
+        => Ejecutar(async()=>File(exportacion.Pdf(await service.ConsultarAsync(vista,filtro,ct)),"application/pdf",$"3S-BI-{vista}-{filtro.Desde:yyyyMMdd}.pdf"));
     private async Task<IActionResult> Ejecutar(Func<Task<IActionResult>> action)
     {
         try {return await action();}

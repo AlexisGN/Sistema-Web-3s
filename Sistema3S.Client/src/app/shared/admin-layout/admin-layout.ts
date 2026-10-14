@@ -115,7 +115,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
     },
     {
       title: 'Análisis',
-      items: []
+      items: [{label:'Inteligencia de Negocios',icon:'activity',route:'/admin/bi',permisos:['BI_VER']}]
     },
     {
       title: 'Finanzas',

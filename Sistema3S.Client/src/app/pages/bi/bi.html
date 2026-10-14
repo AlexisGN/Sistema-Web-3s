@@ -2,7 +2,7 @@
 <header class="page-hero bi-hero">
   <div class="s3s-hero-content"><span class="s3s-hero-icon"><s3s-icon name="activity" /></span><span class="hero-chip">Gestión empresarial</span><h1>Inteligencia de Negocios</h1><p>Indicadores, tendencias y comparaciones para decidir.</p>@if(resultado();as r){<small>Actualizado {{r.generadoUtc|date:'dd/MM/yyyy HH:mm':'-0500'}}</small>}</div>
   <div class="hero-actions"><button type="button" class="secondary" (click)="aplicar()" [disabled]="cargando()"><s3s-icon name="refresh" /> Actualizar</button>
-    @if(session.tienePermiso('BI_EXPORTAR')){}
+    @if(session.tienePermiso('BI_EXPORTAR')){<button type="button" class="secondary" (click)="exportar('excel')" [disabled]="!resultado()||exportando()||cargando()">Excel</button><button type="button" class="secondary" (click)="exportar('pdf')" [disabled]="!resultado()||exportando()||cargando()">PDF</button>}
   </div>
 </header>
 <nav class="bi-tabs" aria-label="Análisis de Inteligencia de Negocios">@for(v of vistas;track v.id){<button type="button" [class.active]="vista===v.id" [attr.aria-pressed]="vista===v.id" (click)="ir(v.id)">{{v.titulo}}</button>}</nav>
