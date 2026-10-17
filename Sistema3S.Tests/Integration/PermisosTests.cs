@@ -15,7 +15,7 @@ public sealed class PermisosTests
     private static async Task Evidence(string scenario, string route, int expected, HttpResponseMessage r)
     {
         Evidencia.Add(new { scenario, route, expected, actual=(int)r.StatusCode, pass=expected==(int)r.StatusCode });
-        var file=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../docs/testing/evidencias/permisos-v5.json"));
+        var file=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../se puede eliminar/docs/testing/evidencias/permisos-v5.json"));
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         await File.WriteAllTextAsync(file,JsonSerializer.Serialize(new { fechaUtc=DateTimeOffset.UtcNow,comprobaciones=Evidencia },new JsonSerializerOptions{WriteIndented=true}));
         Assert.True(expected==(int)r.StatusCode,$"{scenario} {route}: esperado {expected}, obtenido {(int)r.StatusCode}; {await r.Content.ReadAsStringAsync()}");

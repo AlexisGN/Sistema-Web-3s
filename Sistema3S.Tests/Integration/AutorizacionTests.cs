@@ -14,7 +14,7 @@ public sealed class AutorizacionTests
 {
     private static readonly string[] Rutas = ["/api/caja/resumen?idUsuario=1", "/api/compra", "/api/venta", "/api/cotizacion", "/api/producto", "/api/servicio", "/api/cliente", "/api/proveedor", "/api/inventario", "/api/usuario", "/api/rol", "/api/catalogo/categorias", "/api/auditoria", "/api/prueba/conexion"];
     private static readonly List<object> Evidencia = [];
-    private static readonly string Archivo = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../docs/testing/evidencias/authorize-matriz.json"));
+    private static readonly string Archivo = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../se puede eliminar/docs/testing/evidencias/authorize-matriz.json"));
     private static async Task Comprobar(ApiHost api, string escenario, HttpStatusCode esperado)
     {
         foreach(var ruta in Rutas) {
@@ -24,7 +24,7 @@ public sealed class AutorizacionTests
             Assert.True(r.StatusCode==esperado,$"{escenario}: {ruta}; esperado {(int)esperado}, obtenido {(int)r.StatusCode}");
         }
     }
-    private static Task Guardar()=>File.WriteAllTextAsync(Archivo,JsonSerializer.Serialize(new {fechaUtc=DateTimeOffset.UtcNow,comprobaciones=Evidencia},new JsonSerializerOptions{WriteIndented=true}));
+    private static Task Guardar(){ Directory.CreateDirectory(Path.GetDirectoryName(Archivo)!); return File.WriteAllTextAsync(Archivo,JsonSerializer.Serialize(new {fechaUtc=DateTimeOffset.UtcNow,comprobaciones=Evidencia},new JsonSerializerOptions{WriteIndented=true})); }
     [Fact(DisplayName="PS-AUTH-004 | Los catorce módulos internos rechazan solicitudes sin sesión")]
     public async Task SinSesion(){await using var q=await QaDatabase.CreateAsync();await using var api=await ApiHost.Start(q);await Comprobar(api,"Sin token",HttpStatusCode.Unauthorized);}
     [Fact(DisplayName="PS-AUTH-005 | JWT malformado, firma incorrecta y sesión expirada se rechazan")]

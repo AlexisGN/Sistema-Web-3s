@@ -14,6 +14,13 @@ public sealed class OperacionAuditadaFilter(Bd3sContext db, IAuthService auth, I
     // Permisos existentes; una lista permite cualquiera de sus permisos sólo en catálogos auxiliares.
     // No se expanden permisos antiguos "Gestionar ..." ni se infieren privilegios del nombre de un rol.
     internal static readonly IReadOnlyDictionary<string, string[]> PermisosPorOperacion = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase) {
+        ["Ia.Resumen"]=["IA_VER"], ["Ia.Productos"]=["IA_VER"], ["Ia.Pronostico"]=["IA_PRONOSTICOS_VER"], ["Ia.Proyeccion"]=["IA_PROYECCIONES_VER"],
+        ["Ia.Inventario"]=["IA_ALERTAS_VER"], ["Ia.Compras"]=["IA_COMPRAS_GESTIONAR"], ["Ia.Seguimiento"]=["IA_COMPRAS_GESTIONAR"],
+        ["Ia.Avisos"]=["IA_ALERTAS_VER"], ["Ia.Proveedores"]=["IA_CONFIGURAR_ABASTECIMIENTO","IA_BORRADORES_CREAR"],
+        ["Ia.Abastecimiento"]=["IA_CONFIGURAR_ABASTECIMIENTO"], ["Ia.PrevisualizarAbastecimiento"]=["IA_CONFIGURAR_ABASTECIMIENTO"], ["Ia.Revisar"]=["IA_RECOMENDACIONES_REVISAR"],
+        ["Ia.Solicitud"]=["IA_BORRADORES_CREAR"],
+        ["Ia.ObtenerSolicitud"]=["IA_BORRADORES_CREAR"], ["Ia.Vincular"]=["IA_BORRADORES_CREAR"],
+        ["Bi.Consultar"] = ["BI_VER"], ["Bi.Opciones"] = ["BI_VER"], ["Bi.Detalle"] = ["BI_VER"], ["Bi.ExportarExcel"] = ["BI_EXPORTAR"], ["Bi.ExportarPdf"] = ["BI_EXPORTAR"],
         ["Producto.Listar"] = ["PRODUCTOS_VER"], ["Producto.ObtenerPorId"] = ["PRODUCTOS_VER"], ["Producto.ContarActivos"] = ["PRODUCTOS_VER"],
         ["Producto.Crear"] = ["PRODUCTOS_CREAR"], ["Producto.Actualizar"] = ["PRODUCTOS_EDITAR"], ["Producto.EliminarLogico"] = ["PRODUCTOS_ELIMINAR"],
         ["Servicio.Listar"] = ["SERVICIOS_VER"], ["Servicio.ObtenerPorId"] = ["SERVICIOS_VER"], ["Servicio.ContarActivos"] = ["SERVICIOS_VER"],
@@ -63,7 +70,7 @@ public sealed class OperacionAuditadaFilter(Bd3sContext db, IAuthService auth, I
     };
     private static readonly HashSet<string> Internos = new(StringComparer.OrdinalIgnoreCase) {
         "Caja", "Compra", "Venta", "Cotizacion", "Producto", "Servicio", "Cliente",
-        "Proveedor", "Inventario", "Usuario", "Rol", "Catalogo", "Auditoria", "Prueba"
+        "Ia", "Bi", "Proveedor", "Inventario", "Usuario", "Rol", "Catalogo", "Auditoria", "Prueba"
     };
     private static readonly HashSet<string> Responsables = new(StringComparer.OrdinalIgnoreCase) {
         "IdUsuarioRegistro", "IdUsuarioAtencion", "IdUsuarioApertura", "IdUsuarioCierre"
@@ -131,6 +138,30 @@ public sealed class OperacionAuditadaFilter(Bd3sContext db, IAuthService auth, I
                     if (nombre?.Trim().StartsWith("Convertida", StringComparison.OrdinalIgnoreCase) == true) requeridos = ["COTIZACIONES_CONVERTIR_VENTA"];
                 }
                 var permisos = (await auth.ObtenerPermisosUsuarioAsync(id)).Where(p => p.Asignado).Select(p => p.Nombre.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (controlador == "Ia")
+                {
+                    var referencia = context.ActionArguments.TryGetValue("procedencia",out var origenIa) && origenIa?.ToString()=="referencia";
+                    var compra = accion is "Solicitud" or "ObtenerSolicitud" or "Vincular";
+                    if (!permisos.Contains("IA_VER") || (referencia && !permisos.Contains("BI_REFERENCIA"))
+                        || (compra && !permisos.Contains("COMPRAS_CREAR")))
+                    {
+                        context.Result = new ObjectResult(new { mensaje = "No tienes permiso para esta consulta o acción de IA." }) { StatusCode = 403 };
+                        await RegistrarSolicitud(auditoria, "DENEGADA", 403); return;
+                    }
+                }
+                if (controlador == "Bi")
+                {
+                    var referencia = http.Request.Query["procedencia"].ToString() == "referencia";
+                    var tipoDetalle = context.ActionArguments.TryGetValue("tipo",out var detalleTipo) ? detalleTipo?.ToString() : null;
+                    var permisoDetalle = tipoDetalle switch { "venta"=>"VENTAS_VER", "compra"=>"COMPRAS_VER", "cotizacion"=>"COTIZACIONES_VER", _=>"" };
+                    if (!permisos.Contains("BI_VER") || (referencia && !permisos.Contains("BI_REFERENCIA"))
+                        || (accion=="Detalle" && (permisoDetalle=="" || !permisos.Contains(permisoDetalle))))
+                    {
+                        context.Result = new ObjectResult(new { mensaje = "No tienes permiso para este análisis." }) { StatusCode = 403 };
+                        await RegistrarSolicitud(auditoria, "DENEGADA", 403);
+                        return;
+                    }
+                }
                 if (requeridos == null || (requeridos.Length > 0 && !requeridos.Any(permisos.Contains)))
                 {
                     context.Result = new ObjectResult(new { mensaje = "No tienes permiso para realizar esta acción." }) { StatusCode = 403 };
@@ -158,7 +189,7 @@ public sealed class OperacionAuditadaFilter(Bd3sContext db, IAuthService auth, I
             var resultado = await next();
             if (controlador == "Auth" && accion == "Login" && resultado.Result is OkObjectResult { Value: LoginResultadoDto login })
                 auditoria.IdUsuario = login.IdUsuario;
-            if (escritura)
+            if (escritura || controlador is "Bi" or "Ia")
             {
                 var status = resultado.Exception != null ? 500 : (resultado.Result as Microsoft.AspNetCore.Mvc.Infrastructure.IStatusCodeActionResult)?.StatusCode ?? http.Response.StatusCode;
                 await RegistrarSolicitud(auditoria, resultado.Exception != null || status >= 400 ? "ERROR" : "SOLICITUD", status);

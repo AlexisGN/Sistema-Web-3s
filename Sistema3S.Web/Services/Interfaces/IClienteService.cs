@@ -1,4 +1,4 @@
-﻿using Sistema3S.Web.DTOs.Cliente;
+using Sistema3S.Web.DTOs.Cliente;
 using Sistema3S.Web.DTOs.Comun;
 
 namespace Sistema3S.Web.Services.Interfaces
@@ -8,7 +8,8 @@ namespace Sistema3S.Web.Services.Interfaces
         Task<ResultadoPaginadoDto<ClienteListadoDto>> ListarAsync(
             string? buscar,
             int pagina,
-            int tamanioPagina
+            int tamanioPagina,
+            bool soloActivos = false
         );
 
         Task<ClienteListadoDto?> ObtenerPorIdAsync(int idCliente);

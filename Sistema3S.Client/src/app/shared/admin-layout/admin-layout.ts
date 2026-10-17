@@ -1,3 +1,4 @@
+
 import { UiIconComponent } from '../ui-icon/ui-icon';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
@@ -111,6 +112,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           permisos: ['INVENTARIO_VER']
         }
       ]
+    },
+    {
+      title: 'Análisis',
+      items: [{ label: 'Inteligencia de Negocios', icon: 'activity', route: '/admin/bi', permisos: ['BI_VER'] }, { label: 'Inteligencia Artificial', icon: 'activity', route: '/admin/ia', permisos: ['IA_VER'] }]
     },
     {
       title: 'Finanzas',

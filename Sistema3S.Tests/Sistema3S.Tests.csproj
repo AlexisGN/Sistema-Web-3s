@@ -19,6 +19,9 @@
     <ProjectReference Include="../Sistema3S.Web/Sistema3S.Web.csproj" />
     <None Update="Fixtures/*.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures/permisos-catalogo.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/bi-catalogo.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/bi-categorias.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/schema-columnas.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

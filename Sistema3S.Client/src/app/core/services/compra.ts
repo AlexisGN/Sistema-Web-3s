@@ -123,7 +123,8 @@ export class CompraService {
   ): Observable<ResultadoPaginado<ProveedorCompra>> {
     let params = new HttpParams()
       .set('pagina', pagina)
-      .set('tamanioPagina', tamanioPagina);
+      .set('tamanioPagina', tamanioPagina)
+      .set('soloActivos', true);
 
     if (buscar.trim().length > 0) {
       params = params.set('buscar', buscar.trim());
@@ -139,7 +140,8 @@ export class CompraService {
   ): Observable<ResultadoPaginado<ProductoCompraDisponible>> {
     let params = new HttpParams()
       .set('pagina', pagina)
-      .set('tamanioPagina', tamanioPagina);
+      .set('tamanioPagina', tamanioPagina)
+      .set('estado', true);
 
     if (buscar.trim().length > 0) {
       params = params.set('buscar', buscar.trim());

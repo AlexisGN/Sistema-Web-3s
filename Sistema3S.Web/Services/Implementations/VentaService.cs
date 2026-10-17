@@ -92,6 +92,7 @@ namespace Sistema3S.Web.Services.Implementations
         public async Task<VentaRegistroResultadoDto> RegistrarVentaCompletaAsync(VentaCrearDto dto)
         {
             ValidarVenta(dto);
+            await ValidarReglasCatalogoAsync(dto);
 
             await using var connection = new SqlConnection(_context.Database.GetConnectionString());
             await connection.AbrirAuditadaAsync();
@@ -417,6 +418,22 @@ namespace Sistema3S.Web.Services.Implementations
             }
 
             return ventas;
+        }
+
+        private async Task ValidarReglasCatalogoAsync(VentaCrearDto dto)
+        {
+            var esEmpresa = await _context.Cliente.AsNoTracking()
+                .AnyAsync(c => c.IdCliente == dto.IdCliente &&
+                    (c.ClienteEmpresa != null || c.NumeroDocumento.Length == 11 ||
+                     c.IdTipoDocumentoNavigation.Nombre == "RUC"));
+
+            var ids = dto.Detalles.Select(d => d.IdElementoCatalogo).Distinct().ToArray();
+            var servicios = await _context.Servicio.AsNoTracking()
+                .Where(s => ids.Contains(s.IdElementoCatalogo))
+                .Select(s => s.IdElementoCatalogo).ToListAsync();
+
+            // La clasificación proviene de SQL, no del TipoElemento enviado por el navegador.
+            VentaReglas.Validar(esEmpresa, dto.TipoComprobante, dto.Detalles, servicios.ToHashSet());
         }
 
         private static void ValidarVenta(VentaCrearDto dto)

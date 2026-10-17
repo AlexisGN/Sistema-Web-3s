@@ -50,6 +50,49 @@ describe('Usuarios y roles: continuidad del DOM al asignar permisos', () => {
 
   afterEach(() => { fixture.destroy(); localStorage.clear(); vi.restoreAllMocks(); });
 
+  it('FE-CATALOGO-001 | oculta permisos antiguos, conserva los actuales y mantiene las asignaciones al guardar', async () => {
+    const antiguos = ['Gestionar caja', 'Gestionar clientes', 'Gestionar compras', 'Gestionar cotizaciones',
+      'Gestionar inventario', 'Gestionar productos', 'Gestionar roles', 'Gestionar servicios',
+      'Gestionar usuarios', 'Gestionar ventas', 'Ver reportes'];
+    permisosGuardados.push(...antiguos.map((nombre, indice) => ({
+      idPermiso: 101 + indice, nombre: ` ${nombre.toUpperCase()} `, estado: true, asignado: nombre === 'Gestionar productos'
+    })), { idPermiso: 200, nombre: 'ROLES_GESTIONAR_PERMISOS', estado: true, asignado: false },
+    { idPermiso: 201, nombre: 'BI_VER', estado: true, asignado: false },
+    { idPermiso: 202, nombre: 'Gestionar integraciones', estado: true, asignado: false });
+    const c = fixture.componentInstance;
+    c.cargarPermisosRol(2); await actualizar();
+    const catalogo = c.permisosRol;
+    const visibles = Array.from(fixture.nativeElement.querySelectorAll('.permission-item span'))
+      .map((elemento: any) => elemento.textContent.trim());
+    antiguos.forEach(nombre => expect(visibles).not.toContain(nombre.toUpperCase()));
+    expect(visibles.slice().sort()).toEqual([...permisosGuardados.slice(0, 6).map(p => p.nombre),
+      'ROLES_GESTIONAR_PERMISOS', 'BI_VER', 'Gestionar integraciones'].sort());
+    expect(c.permisosRol).toBe(catalogo);
+    expect(c.permisosRol).toHaveLength(permisosGuardados.length);
+    expect(Array.from(fixture.nativeElement.querySelectorAll('.permission-group'))
+      .every((grupo: any) => grupo.querySelector('.permission-item'))).toBe(true);
+    const editar = boton('PRODUCTOS_EDITAR');
+    editar.click(); await actualizar();
+    fixture.nativeElement.querySelector('.permissions-actions button').click(); await actualizar();
+    expect(api.asignarPermisos).toHaveBeenCalledExactlyOnceWith(2, {
+      idsPermisos: [1, 2, 5, 6, 106]
+    });
+    permisosGuardados[1].asignado = true;
+    respuestaGuardado.next({ idRol: 2, mensaje: 'Permisos actualizados correctamente.' });
+    await actualizar();
+    expect(boton('PRODUCTOS_EDITAR')).toBe(editar);
+    expect(editar.classList.contains('active')).toBe(true);
+    expect(c.permisosRol.filter(p => p.idPermiso >= 101 && p.idPermiso <= 111)
+      .map(p => ({ idPermiso: p.idPermiso, asignado: p.asignado })))
+      .toEqual(permisosGuardados.filter(p => p.idPermiso >= 101 && p.idPermiso <= 111)
+        .map(p => ({ idPermiso: p.idPermiso, asignado: p.asignado })));
+    expect(fixture.nativeElement.querySelectorAll('.permission-item')).toHaveLength(9);
+    c.cargarPermisosRol(1); await actualizar();
+    expect(fixture.nativeElement.querySelectorAll('.permission-item')).toHaveLength(9);
+    expect(Array.from(fixture.nativeElement.querySelectorAll('.permission-item'))
+      .every((elemento: any) => elemento.disabled)).toBe(true);
+  });
+
   it('FE-SEL-001 | bloquea acción sin VER, informa la dependencia y no activa VER automáticamente', async () => {
     const aviso=vi.spyOn(TestBed.inject(MensajesService),'advertir').mockImplementation(()=>{});
     fixture.componentInstance.permisosRol.find(p=>p.nombre==='PRODUCTOS_VER')!.asignado=false;

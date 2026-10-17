@@ -51,7 +51,7 @@ namespace Sistema3S.Web.Services.Implementations
                         DibujarEncabezadoComprobante(container, venta, logoPath);
                     });
 
-                    page.Content().PaddingTop(14).Column(column =>
+                    page.Content().PaddingTop(8).Column(column =>
                     {
                         column.Spacing(14);
 
@@ -150,7 +150,7 @@ namespace Sistema3S.Web.Services.Implementations
                             DibujarEncabezadoComprobanteCompacto(container, venta, logoPath);
                         });
 
-                        page.Content().PaddingTop(10).Column(column =>
+                        page.Content().PaddingTop(8).Column(column =>
                         {
                             column.Spacing(10);
 
@@ -301,7 +301,7 @@ namespace Sistema3S.Web.Services.Implementations
 
                     page.Header().Element(c => PdfEstilo3S.Encabezado(c, logoPath, "Reporte de ventas", $"{lista.Count} registros", ObtenerTextoRango(fechaInicio, fechaFin)));
 
-                    page.Content().PaddingTop(14).Column(col =>
+                    page.Content().PaddingTop(8).Column(col =>
                     {
                         col.Spacing(10);
 

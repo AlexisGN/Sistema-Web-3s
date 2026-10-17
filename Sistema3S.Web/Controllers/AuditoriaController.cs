@@ -64,6 +64,7 @@ public class AuditoriaController(Bd3sContext db) : ControllerBase
                 WHEN Area IN ('Cliente','ClientePersonaNatural','ClienteEmpresa','ContactoCliente') THEN N'Clientes'
                 WHEN Area IN ('Proveedor','ContactoProveedor') THEN N'Proveedores'
                 WHEN Area IN ('Usuario','PersonalInterno','Rol','RolPermiso','Permiso') THEN N'Usuarios y roles'
+                WHEN Area IN ('Ia','IA_Abastecimiento','IA_Recomendacion','IA_SolicitudCompra') THEN N'Inteligencia Artificial'
                 ELSE N'Otros' END Modulo,
                 CASE WHEN EXISTS(SELECT 1 FROM Base b WHERE b.Grupo=Encabezados.Grupo AND b.Accion='DENEGADA') THEN 'denegado'
                   WHEN EXISTS(SELECT 1 FROM Base b WHERE b.Grupo=Encabezados.Grupo AND b.Accion='ERROR') THEN 'error' ELSE 'completado' END Resultado

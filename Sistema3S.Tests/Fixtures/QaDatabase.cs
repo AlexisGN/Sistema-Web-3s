@@ -28,7 +28,7 @@ public sealed class QaDatabase : IAsyncDisposable
         ["Jwt:Key"]="Only-QA-local-synthetic-signing-key-1234567890",["Jwt:Issuer"]="Sistema3S",["Jwt:Audience"]="Sistema3SAdmin",
         ["Decolecta:ApiKey"]="qa-mock-only",["Decolecta:BaseUrl"]="https://external.example.test/",["ClienteWeb:UrlPublica"]="http://localhost:4200"
     }).Build();
-    public static async Task<QaDatabase> CreateAsync()
+    public static async Task<QaDatabase> CreateAsync(bool incluirSemilla=true)
     {
         await EnsureServerAsync();
         var db = new QaDatabase();
@@ -36,7 +36,7 @@ public sealed class QaDatabase : IAsyncDisposable
             await c.OpenAsync(); await new SqlCommand($"CREATE DATABASE [{db.Name}]",c).ExecuteNonQueryAsync();
         }
         try {
-            await db.Script("schema.sql"); await db.Script("seed.sql");
+            await db.Script("schema.sql"); if(incluirSemilla)await db.Script("seed.sql");
             var hash = new PasswordHashService().CrearHash(Password);
             await using var sql = new SqlConnection(db.Connection); await sql.OpenAsync();
             await using var cmd = new SqlCommand("UPDATE dbo.Usuario SET ContrasenaHash=@h", sql);cmd.Parameters.AddWithValue("@h",hash);await cmd.ExecuteNonQueryAsync();

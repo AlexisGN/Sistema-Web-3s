@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +30,8 @@ namespace Sistema3S.Web.Services.Implementations
         public async Task<ResultadoPaginadoDto<ProveedorListadoDto>> ListarAsync(
             string? buscar,
             int pagina,
-            int tamanioPagina
+            int tamanioPagina,
+            bool soloActivos = false
         )
         {
             if (pagina <= 0)
@@ -52,6 +53,11 @@ namespace Sistema3S.Web.Services.Implementations
                 .AsNoTracking()
                 .Include(p => p.IdUbigeoNavigation)
                 .AsQueryable();
+
+            if (soloActivos)
+            {
+                query = query.Where(p => p.Estado);
+            }
 
             if (!string.IsNullOrWhiteSpace(buscar))
             {
