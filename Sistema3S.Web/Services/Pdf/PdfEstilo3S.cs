@@ -17,27 +17,27 @@ public static class PdfEstilo3S
     {
         container.Background("#FFFFFF").Column(column =>
         {
-            column.Spacing(4);
-            column.Item().AlignCenter().Width(72).Height(44).Element(mark =>
+            column.Spacing(2);
+            column.Item().AlignCenter().Width(60).Height(30).Element(mark =>
             {
                 if (!string.IsNullOrWhiteSpace(logo) && File.Exists(logo)) mark.Image(logo).FitArea();
                 else mark.AlignCenter().AlignMiddle().Text("3S").FontSize(28).Bold().FontColor(Rojo);
             });
             column.Item().AlignCenter().Text(string.IsNullOrWhiteSpace(empresa)
                 ? "3S (SERVICIO Y SOLUCIONES SUPERIORES S.A.C.)" : empresa)
-                .FontSize(11).SemiBold().FontColor(Texto);
+                .FontSize(10).SemiBold().FontColor(Texto);
             column.Item().AlignCenter().Text(contacto ?? "cevallosindustrial@gmail.com  |  +51 948 327 667  |  3s-omega.vercel.app")
                 .FontSize(7.5f).FontColor(Secundario);
             column.Item().AlignCenter().Text(direccion ?? "Av. Los Pinos 960 Urb. El Ermitaño, Independencia - Lima - Lima")
                 .FontSize(7.5f).FontColor(Secundario);
-            column.Item().PaddingTop(8).LineHorizontal(1.5f).LineColor(Rojo);
-            column.Item().PaddingTop(6).Row(row =>
+            column.Item().PaddingTop(3).LineHorizontal(1).LineColor(Rojo);
+            column.Item().PaddingTop(4).Row(row =>
             {
-                row.RelativeItem().Text(titulo.ToUpperInvariant()).FontSize(12).SemiBold().FontColor(Texto);
+                row.RelativeItem().Text(titulo.ToUpperInvariant()).FontSize(11).SemiBold().FontColor(Texto);
                 row.RelativeItem().AlignRight().Column(info =>
                 {
-                    info.Item().AlignRight().Text(numero).FontSize(12).SemiBold().FontColor(Texto);
-                    info.Item().PaddingTop(3).AlignRight().Text(fecha).FontSize(8).FontColor(Secundario);
+                    info.Item().AlignRight().Text(numero).FontSize(11).SemiBold().FontColor(Texto);
+                    info.Item().PaddingTop(2).AlignRight().Text(fecha).FontSize(8).FontColor(Secundario);
                 });
             });
         });
@@ -61,5 +61,5 @@ public static class PdfEstilo3S
         .DefaultTextStyle(style => style.FontSize(8).SemiBold().FontColor(Texto));
 
     public static IContainer CuerpoTabla(IContainer container) => container
-        .BorderBottom(0.5f).BorderColor(Borde).PaddingVertical(8).PaddingHorizontal(6);
+        .ShowEntire().BorderBottom(0.5f).BorderColor(Borde).PaddingVertical(6).PaddingHorizontal(6);
 }

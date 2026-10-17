@@ -21,7 +21,8 @@ namespace Sistema3S.Web.Controllers
         public async Task<IActionResult> Listar(
             [FromQuery] string? buscar,
             [FromQuery] int pagina = 1,
-            [FromQuery] int tamanioPagina = 5
+            [FromQuery] int tamanioPagina = 5,
+            [FromQuery] bool soloActivos = false
         )
         {
             try
@@ -29,7 +30,8 @@ namespace Sistema3S.Web.Controllers
                 var resultado = await _proveedorService.ListarAsync(
                     buscar,
                     pagina,
-                    tamanioPagina
+                    tamanioPagina,
+                    soloActivos
                 );
 
                 return Ok(resultado);

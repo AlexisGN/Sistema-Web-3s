@@ -1,4 +1,4 @@
-﻿using Sistema3S.Web.DTOs.Comun;
+using Sistema3S.Web.DTOs.Comun;
 using Sistema3S.Web.DTOs.Proveedor;
 
 namespace Sistema3S.Web.Services.Interfaces
@@ -8,7 +8,8 @@ namespace Sistema3S.Web.Services.Interfaces
         Task<ResultadoPaginadoDto<ProveedorListadoDto>> ListarAsync(
             string? buscar,
             int pagina,
-            int tamanioPagina
+            int tamanioPagina,
+            bool soloActivos = false
         );
 
         Task<ProveedorListadoDto?> ObtenerPorIdAsync(int idProveedor);

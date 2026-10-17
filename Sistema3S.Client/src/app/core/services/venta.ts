@@ -151,7 +151,8 @@ export class VentaService {
   ): Observable<ResultadoPaginado<ClienteVenta>> {
     let params = new HttpParams()
       .set('pagina', pagina)
-      .set('tamanioPagina', tamanioPagina);
+      .set('tamanioPagina', tamanioPagina)
+      .set('soloActivos', true);
 
     if (buscar.trim().length > 0) {
       params = params.set('buscar', buscar.trim());
@@ -167,7 +168,8 @@ export class VentaService {
   ): Observable<ResultadoPaginado<ElementoVentaDisponible>> {
     let params = new HttpParams()
       .set('pagina', pagina)
-      .set('tamanioPagina', tamanioPagina);
+      .set('tamanioPagina', tamanioPagina)
+      .set('estado', true);
 
     if (buscar.trim().length > 0) {
       params = params.set('buscar', buscar.trim());
@@ -183,7 +185,8 @@ export class VentaService {
   ): Observable<ResultadoPaginado<ElementoVentaDisponible>> {
     let params = new HttpParams()
       .set('pagina', pagina)
-      .set('tamanioPagina', tamanioPagina);
+      .set('tamanioPagina', tamanioPagina)
+      .set('estado', true);
 
     if (buscar.trim().length > 0) {
       params = params.set('buscar', buscar.trim());

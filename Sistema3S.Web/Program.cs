@@ -12,6 +12,7 @@ using Sistema3S.Web.Services.Pdf;
 using Sistema3S.Web.Services.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("ia.local.json", optional: true, reloadOnChange: false).AddEnvironmentVariables();
 
 // El entorno local comparte el origen Angular permitido por CORS. En producción
 // se exige configurar el dominio real; nunca se construyen enlaces desde Host/Origin.
@@ -79,9 +80,17 @@ builder.Services.AddHostedService<RecuperacionClienteWorker>();
 builder.Services.AddRateLimiter(options => {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, ct) => {
+        if (context.HttpContext.Request.Path.StartsWithSegments("/api/bi") || context.HttpContext.Request.Path.StartsWithSegments("/api/ia"))
+        {
+            context.HttpContext.Response.Headers.RetryAfter = "2";
+            await context.HttpContext.Response.WriteAsJsonAsync(new { mensaje = "Las consultas de análisis están ocupadas. Intenta nuevamente en unos segundos." }, ct);
+            return;
+        }
         context.HttpContext.Response.Headers.RetryAfter = "900";
         await context.HttpContext.Response.WriteAsJsonAsync(new { mensaje = "Has realizado varios intentos. Espera 15 minutos antes de volver a intentar." }, ct);
     };
+    options.AddConcurrencyLimiter("ia", x => { x.PermitLimit=4; x.QueueLimit=4; x.QueueProcessingOrder=QueueProcessingOrder.OldestFirst; });
+    options.AddConcurrencyLimiter("bi", options => { options.PermitLimit = Math.Clamp(builder.Configuration.GetValue("Bi:ConsultasConcurrentes",4),1,32); options.QueueLimit = Math.Clamp(builder.Configuration.GetValue("Bi:ConsultasEnEspera",4),0,64); options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst; });
     options.AddPolicy("cuenta-cliente", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "local",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(15), QueueLimit = 0, AutoReplenishment = true }));
@@ -90,6 +99,21 @@ builder.Services.AddRateLimiter(options => {
 // Servicios de seguridad / autenticación
 builder.Services.AddScoped<PasswordHashService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiConexion>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Bi.IBiService, Sistema3S.Web.Services.Bi.BiService>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiExportacion>();
+
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaDatos>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaMotor>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaProceso>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaService>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaCompras>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaDatosAdministrados>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaMotorAdministrado>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaAdministrador>();
+builder.Services.AddHostedService<Sistema3S.Web.Services.Ia.IaInferenciaWorker>();
+builder.Services.AddHostedService<Sistema3S.Web.Services.Ia.IaEntrenamientoWorker>();
 
 // Servicios de negocio
 builder.Services.AddScoped<IProductoService, ProductoService>();

@@ -25,10 +25,11 @@ namespace Sistema3S.Web.Controllers
         public async Task<IActionResult> Listar(
             [FromQuery] string? buscar,
             [FromQuery] int pagina = 1,
-            [FromQuery] int tamanioPagina = 5
+            [FromQuery] int tamanioPagina = 5,
+            [FromQuery] bool soloActivos = false
         )
         {
-            var resultado = await _clienteService.ListarAsync(buscar, pagina, tamanioPagina);
+            var resultado = await _clienteService.ListarAsync(buscar, pagina, tamanioPagina, soloActivos);
 
             return Ok(resultado);
         }

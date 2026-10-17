@@ -36,7 +36,11 @@ namespace Sistema3S.Web.Services.Implementations
                     r.Nombre,
                     r.Descripcion,
                     r.Estado,
-                    COUNT(DISTINCT rp.IdPermiso) AS TotalPermisos,
+                    CASE
+                        WHEN r.Estado = 1 AND UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+                            THEN (SELECT COUNT(*) FROM dbo.Permiso WHERE Estado = 1)
+                        ELSE COUNT(DISTINCT rp.IdPermiso)
+                    END AS TotalPermisos,
                     COUNT(DISTINCT u.IdUsuario) AS TotalUsuarios
                 FROM dbo.Rol r
                 LEFT JOIN dbo.RolPermiso rp
@@ -479,6 +483,11 @@ namespace Sistema3S.Web.Services.Implementations
                     p.Descripcion,
                     p.Estado,
                     CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM dbo.Rol r
+                            WHERE r.IdRol = @IdRol AND r.Estado = 1
+                              AND UPPER(LTRIM(RTRIM(r.Nombre))) IN ('ADMINISTRADOR', 'ADMIN')
+                        ) THEN CAST(1 AS BIT)
                         WHEN rp.IdRol IS NULL THEN CAST(0 AS BIT)
                         ELSE CAST(1 AS BIT)
                     END AS Asignado

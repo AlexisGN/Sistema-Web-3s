@@ -380,7 +380,7 @@ export class VentasComponent implements OnInit {
     delete this.erroresCampo['detalles'];
     delete this.erroresCampo['cotizacion'];
 
-    this.mensaje = `${codigoCotizacion} cargada en ventas internas. Puedes editar cantidades y precios antes de registrar la venta.`;
+    this.mensaje = `${codigoCotizacion} cargada en ventas internas. Puedes editar cantidades de productos y precios. Los servicios tienen cantidad fija de 1; revisa los importes antes de registrar la venta.`;
 
     this.cargandoCotizacion = false;
     this.cdr.detectChanges();
@@ -388,7 +388,10 @@ export class VentasComponent implements OnInit {
 
   private mapearDetalleCotizacionAVenta(detalle: any): VentaDetalleCrear {
     const idElementoCatalogo = this.extraerIdElementoCatalogo(detalle);
-    const cantidad = Number(detalle.cantidad ?? detalle.Cantidad ?? 1);
+    const tipoElemento = detalle.tipoElemento ?? detalle.TipoElemento ??
+      (detalle.idServicio || detalle.IdServicio ? 'Servicio' : 'Producto');
+    const cantidad = this.esServicio({ tipoElemento })
+      ? 1 : Number(detalle.cantidad ?? detalle.Cantidad ?? 1);
     const precioUnitario = this.extraerPrecioCotizacion(detalle);
     const stockActual = this.extraerStockElemento(detalle);
 
@@ -418,10 +421,7 @@ export class VentasComponent implements OnInit {
         detalle.descripcion ??
         detalle.Descripcion ??
         'Elemento cotizado',
-      tipoElemento:
-        detalle.tipoElemento ??
-        detalle.TipoElemento ??
-        (detalle.idServicio || detalle.IdServicio ? 'Servicio' : 'Producto'),
+      tipoElemento,
       stockActual,
       aplicaInventario:
         detalle.aplicaInventario ??
@@ -468,7 +468,7 @@ export class VentasComponent implements OnInit {
     }
 
     if (!this.comprobantePermitidoParaCliente(this.venta.tipoComprobante)) {
-      this.venta.tipoComprobante = 'Nota de venta';
+      this.venta.tipoComprobante = this.tiposComprobanteDisponibles()[0];
     }
 
     this.cambiarTipoComprobante();
@@ -490,7 +490,7 @@ export class VentasComponent implements OnInit {
     this.elementoSeleccionado = null;
 
     this.detalleFormulario = {
-      cantidad: null,
+      cantidad: this.tipoElementoFormulario === 'Servicio' ? 1 : null,
       precioUnitario: null
     };
 
@@ -508,6 +508,9 @@ export class VentasComponent implements OnInit {
     const precio = this.obtenerPrecioElemento(elementoNormalizado);
 
     this.elementoSeleccionado = elementoNormalizado;
+    if (this.tipoElementoFormulario === 'Servicio') {
+      this.detalleFormulario.cantidad = 1;
+    }
     this.detalleFormulario.precioUnitario = precio > 0 ? precio : null;
 
     if (this.tipoElementoFormulario === 'Producto') {
@@ -562,7 +565,7 @@ export class VentasComponent implements OnInit {
     this.buscarServicio = '';
 
     this.detalleFormulario = {
-      cantidad: null,
+      cantidad: this.tipoElementoFormulario === 'Servicio' ? 1 : null,
       precioUnitario: null
     };
 
@@ -589,7 +592,7 @@ export class VentasComponent implements OnInit {
       return;
     }
 
-    detalle.cantidad = Number(detalle.cantidad || 0);
+    detalle.cantidad = this.esServicio(detalle) ? 1 : Number(detalle.cantidad || 0);
 
     if (detalle.cantidad <= 0) {
       this.erroresCampo['detalles'] = 'La cantidad debe ser mayor a 0.';
@@ -1008,7 +1011,7 @@ export class VentasComponent implements OnInit {
     }
 
     if (!this.comprobantePermitidoParaCliente(this.venta.tipoComprobante)) {
-      this.erroresCampo['tipoComprobante'] = 'Para persona natural con DNI solo se permite Boleta o Nota de venta.';
+      this.erroresCampo['tipoComprobante'] = this.mensajeComprobanteNoPermitido();
       this.venta.tipoComprobante = '';
       this.venta.serie = '';
       this.venta.numero = '';
@@ -1211,6 +1214,10 @@ export class VentasComponent implements OnInit {
   }
 
   tiposComprobanteDisponibles(): string[] {
+    if (this.clienteEsEmpresaConRuc()) {
+      return ['Factura', 'Boleta'];
+    }
+
     if (this.clienteEsPersonaNaturalDni()) {
       return ['Boleta', 'Nota de venta'];
     }
@@ -1455,6 +1462,10 @@ export class VentasComponent implements OnInit {
       return this.marcarErrorCampo('cantidadDetalle', 'La cantidad debe ser mayor a 0.');
     }
 
+    if (this.tipoElementoFormulario === 'Servicio' && Number(this.detalleFormulario.cantidad) !== 1) {
+      return this.marcarErrorCampo('cantidadDetalle', 'Los servicios se registran con cantidad fija de 1.');
+    }
+
     if (this.tipoElementoFormulario === 'Producto') {
       const stockActual = this.obtenerStockElemento(this.elementoSeleccionado);
       const item = this.elementoSeleccionado as any;
@@ -1489,7 +1500,7 @@ export class VentasComponent implements OnInit {
     }
 
     if (!this.comprobantePermitidoParaCliente(this.venta.tipoComprobante)) {
-      return this.marcarErrorCampo('tipoComprobante', 'Para persona natural con DNI solo se permite Boleta o Nota de venta.');
+      return this.marcarErrorCampo('tipoComprobante', this.mensajeComprobanteNoPermitido());
     }
 
     if (this.venta.tipoComprobante === 'Factura' && !this.clienteEsEmpresaConRuc()) {
@@ -1512,6 +1523,9 @@ export class VentasComponent implements OnInit {
     }
 
     for (const detalle of this.venta.detalles) {
+      if (this.esServicio(detalle) && Number(detalle.cantidad) !== 1) {
+        return this.marcarErrorCampo('detalles', 'Los servicios se registran con cantidad fija de 1.');
+      }
       if (detalle.aplicaInventario && detalle.stockActual !== null && detalle.stockActual !== undefined) {
         if (detalle.cantidad > Number(detalle.stockActual)) {
           return this.marcarErrorCampo(
@@ -1676,7 +1690,7 @@ export class VentasComponent implements OnInit {
         }
 
         if (!this.comprobantePermitidoParaCliente(this.venta.tipoComprobante)) {
-          return 'Para persona natural con DNI solo se permite Boleta o Nota de venta.';
+          return this.mensajeComprobanteNoPermitido();
         }
 
         if (this.venta.tipoComprobante === 'Factura' && !this.clienteEsEmpresaConRuc()) {
@@ -2047,11 +2061,25 @@ export class VentasComponent implements OnInit {
       return true;
     }
 
+    if (this.clienteEsEmpresaConRuc()) {
+      return tipoComprobante === 'Factura' || tipoComprobante === 'Boleta';
+    }
+
     if (this.clienteEsPersonaNaturalDni()) {
       return tipoComprobante === 'Boleta' || tipoComprobante === 'Nota de venta';
     }
 
     return true;
+  }
+
+  private mensajeComprobanteNoPermitido(): string {
+    return this.clienteEsEmpresaConRuc()
+      ? 'Para clientes empresa solo se permite Factura o Boleta.'
+      : 'Para persona natural con DNI solo se permite Boleta o Nota de venta.';
+  }
+
+  esServicio(detalle: { tipoElemento?: string | null }): boolean {
+    return detalle.tipoElemento?.trim().toLowerCase() === 'servicio';
   }
 
   private normalizarTipoComprobantePorCliente(): void {
@@ -2063,7 +2091,7 @@ export class VentasComponent implements OnInit {
       this.venta.tipoComprobante = '';
       this.venta.serie = '';
       this.venta.numero = '';
-      this.erroresCampo['tipoComprobante'] = 'Para persona natural con DNI solo se permite Boleta o Nota de venta.';
+      this.erroresCampo['tipoComprobante'] = this.mensajeComprobanteNoPermitido();
     }
   }
 

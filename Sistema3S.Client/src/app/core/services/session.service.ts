@@ -214,6 +214,7 @@ export class SessionService {
       { permiso: 'USUARIOS_VER', ruta: '/admin/usuarios-roles' },
       { permiso: 'ROLES_VER', ruta: '/admin/usuarios-roles' },
       { permiso: 'ROLES_GESTIONAR_PERMISOS', ruta: '/admin/usuarios-roles' },
+      { permiso: 'BI_VER', ruta: '/admin/bi' },
       { permiso: 'INICIO_VER', ruta: '/admin/inicio' }
     ];
 

@@ -15,7 +15,7 @@ public sealed record ActividadAuditoria(int Id, DateTime Fecha, string Responsab
 public static class AuditoriaPresentacion
 {
     public static readonly string[] Modulos = ["Accesos", "Caja", "Clientes", "Compras", "Cotizaciones",
-        "Inventario", "Productos", "Proveedores", "Servicios", "Usuarios y roles", "Ventas", "Otros"];
+        "Inventario", "Productos", "Proveedores", "Servicios", "Usuarios y roles", "Ventas", "Inteligencia Artificial", "Otros"];
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-PE");
     private static readonly Dictionary<string, string> Entidades = new(StringComparer.OrdinalIgnoreCase) {
         ["Compra"]="Compra", ["DetalleCompra"]="Producto comprado", ["PagoCompra"]="Pago de compra",
@@ -31,7 +31,8 @@ public static class AuditoriaPresentacion
         ["RolPermiso"]="Permiso del rol", ["Comprobante"]="Comprobante", ["SerieComprobante"]="Serie de comprobantes",
         ["Categoria"]="Categoría", ["Marca"]="Marca", ["UnidadMedida"]="Unidad de medida",
         ["DocumentoLegal"]="Documento legal", ["AceptacionDocumentoLegal"]="Aceptación de condiciones",
-        ["Empresa"]="Datos de la empresa", ["ConsultaExterna"]="Consulta de documento"
+        ["Empresa"]="Datos de la empresa", ["ConsultaExterna"]="Consulta de documento",
+        ["IA_Abastecimiento"]="Configuración de abastecimiento", ["IA_Recomendacion"]="Recomendación de abastecimiento", ["IA_SolicitudCompra"]="Solicitud de compra"
     };
     private static readonly Dictionary<string, string> Campos = new(StringComparer.OrdinalIgnoreCase) {
         ["Nombre"]="Nombre", ["Nombres"]="Nombres", ["ApellidoPaterno"]="Apellido paterno", ["ApellidoMaterno"]="Apellido materno",
@@ -61,6 +62,10 @@ public static class AuditoriaPresentacion
         ["IdElementoCatalogo"]="Artículo", ["CodigoProducto"]="Código del producto", ["FichaTecnicaPdf"]="Ficha técnica",
         ["SaldoSistema"]="Saldo esperado", ["TipoPago"]="Condición de pago", ["NumeroCuotas"]="Número de cuotas",
         ["NumeroComprobante"]="Número de comprobante", ["SerieComprobante"]="Serie del comprobante",
+        ["PlazoDias"]="Plazo de entrega (días)", ["CoberturaDias"]="Cobertura adicional (días)", ["Seguridad"]="Reserva de seguridad",
+        ["Minimo"]="Compra mínima", ["Multiplo"]="Múltiplo de compra", ["Reservado"]="Unidades reservadas", ["EntradaConfirmada"]="Entrada confirmada",
+        ["FechaEntrada"]="Fecha de entrada", ["VerificadaHasta"]="Vigencia de verificación", ["Evidencia"]="Fuente de verificación",
+        ["Prioridad"]="Prioridad", ["FechaPedido"]="Fecha de pedido", ["Justificacion"]="Justificación", ["PrecioConIgv"]="Precio con IGV",
         ["TipoComprobanteProveedor"]="Comprobante del proveedor", ["MontoTotal"]="Importe total",
         ["MontoInicial"]="Pago inicial", ["EsIngreso"]="Es un ingreso", ["FechaEmisionComprobante"]="Emisión del comprobante"
     };
@@ -122,6 +127,7 @@ public static class AuditoriaPresentacion
         foreach (var campo in antes.Keys.Union(despues.Keys, StringComparer.OrdinalIgnoreCase))
         {
             if (!Campos.TryGetValue(campo, out var label) || campo.Equals("Id"+fila.Tabla, StringComparison.OrdinalIgnoreCase)) continue;
+            if(fila.Tabla.StartsWith("IA_",StringComparison.OrdinalIgnoreCase)&&campo=="Estado")label="Estado de la recomendación";
             var a=antes.GetValueOrDefault(campo); var d=despues.GetValueOrDefault(campo);
             if (a == d) continue;
             if (campo is "ImagenUrl" or "UrlImagen" or "FichaTecnicaUrl" or "FichaTecnicaPdf" or "ArchivoPdf")

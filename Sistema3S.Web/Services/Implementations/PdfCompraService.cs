@@ -45,7 +45,7 @@ namespace Sistema3S.Web.Services.Implementations
 
                     page.Header().Element(c => PdfEstilo3S.Encabezado(c, logoPath, "Registro de compra", $"{compra.SerieComprobante}-{compra.NumeroComprobante}", $"Fecha: {compra.FechaCompra:dd/MM/yyyy} · Compra n.º {compra.IdCompra}"));
 
-                    page.Content().PaddingTop(18).Column(col =>
+                    page.Content().PaddingTop(8).Column(col =>
                     {
                         col.Spacing(12);
 
@@ -153,7 +153,7 @@ namespace Sistema3S.Web.Services.Implementations
                         {
                             row.RelativeItem();
 
-                            row.ConstantItem(250).Column(totals =>
+                            row.ConstantItem(250).ShowEntire().Column(totals =>
                             {
                                 AgregarLineaTotal(totals, "Subtotal sin IGV", compra.Subtotal, false);
                                 AgregarLineaTotal(totals, "IGV 18%", compra.Igv, false);
@@ -284,7 +284,7 @@ namespace Sistema3S.Web.Services.Implementations
 
                     page.Header().Element(c => PdfEstilo3S.Encabezado(c, logoPath, "Reporte de compras", $"{lista.Count} registros", ObtenerTextoRango(fechaInicio, fechaFin)));
 
-                    page.Content().PaddingTop(14).Column(col =>
+                    page.Content().PaddingTop(8).Column(col =>
                     {
                         col.Spacing(10);
 

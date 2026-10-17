@@ -49,9 +49,9 @@
             <strong>{{ cotizacionOrigenTexto }}</strong>
 
             <p>
-              Los datos de la cotización se cargaron automáticamente. Puedes editar cantidades
-              y precios antes de registrar la venta. Antes de guardar, el sistema validará
-              el stock actualizado.
+              Los datos de la cotización se cargaron automáticamente. Puedes editar cantidades de productos
+              y precios; los servicios tienen cantidad fija de 1. Revisa los importes antes de registrar
+              la venta. Antes de guardar, el sistema validará el stock actualizado.
             </p>
           </div>
 
@@ -254,6 +254,7 @@
               <label for="s3s-ventas-282">Cantidad</label>
 
               <input id="s3s-ventas-282" type="number" [(ngModel)]="detalleFormulario.cantidad" name="cantidadDetalle" min="1" step="1"
+                [readOnly]="tipoElementoFormulario === 'Servicio'" [max]="tipoElementoFormulario === 'Servicio' ? 1 : null"
                 placeholder="Cantidad" (input)="limpiarErrorCampo('cantidadDetalle')" />
 
               <s3s-aviso *ngIf="erroresCampo['cantidadDetalle']" tipo="error" [compacto]="true">
@@ -301,6 +302,7 @@
                   <span>Cantidad</span>
 
                   <input aria-label="Cantidad" type="number" min="1" step="1" [(ngModel)]="detalle.cantidad"
+                    [readOnly]="esServicio(detalle)" [max]="esServicio(detalle) ? 1 : null"
                     [name]="'cantidadVentaDetalle' + i" (ngModelChange)="cambiarCantidadDetalleVenta(i)" />
                 </div>
 

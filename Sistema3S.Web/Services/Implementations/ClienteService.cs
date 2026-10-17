@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Sistema3S.Web.Data;
 using Sistema3S.Web.DTOs.Cliente;
 using Sistema3S.Web.DTOs.Comun;
@@ -23,7 +23,8 @@ namespace Sistema3S.Web.Services.Implementations
         public async Task<ResultadoPaginadoDto<ClienteListadoDto>> ListarAsync(
                 string? buscar,
                 int pagina,
-                int tamanioPagina
+                int tamanioPagina,
+            bool soloActivos = false
             )
         {
             if (pagina <= 0)
@@ -70,6 +71,11 @@ namespace Sistema3S.Web.Services.Implementations
                           ub.Provincia + " / " +
                           ub.Distrito
                 };
+
+            if (soloActivos)
+            {
+                query = query.Where(x => x.ClienteBase.Estado);
+            }
 
             if (!string.IsNullOrWhiteSpace(buscar))
             {

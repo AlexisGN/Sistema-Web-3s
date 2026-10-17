@@ -80,7 +80,7 @@ namespace Sistema3S.Web.Services.Pdf
 
                         page.Header().Element(container => ComponerCabecera(container, modelo, logoPath));
 
-                        page.Content().PaddingTop(14).Column(column =>
+                        page.Content().PaddingTop(8).Column(column =>
                         {
                             column.Spacing(12);
 

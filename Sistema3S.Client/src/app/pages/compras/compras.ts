@@ -1,8 +1,10 @@
+import { ActivatedRoute } from '@angular/router';
+import { IaService } from '../ia/ia.service';
 import { AvisoComponent } from '../../shared/mensajes/aviso';
 import { UiIconComponent } from '../../shared/ui-icon/ui-icon';
 import { SessionService } from '../../core/services/session.service';
 import { CommonModule } from '@angular/common';
-import { inject, Component, ChangeDetectorRef, OnInit } from '@angular/core';
+import { inject, Injector, Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { CompraService } from '../../core/services/compra';
@@ -28,6 +30,10 @@ import {
 })
 export class ComprasComponent implements OnInit {
   readonly permisos = inject(SessionService);
+  private readonly rutaIA=inject(ActivatedRoute,{optional:true});
+  private readonly injectorIA=inject(Injector);
+  private get ia(){return this.injectorIA.get(IaService);}
+  solicitudIA:number|null=null;
   private readonly sesionAnulacion = inject(SessionService);
   compras: CompraListado[] = [];
   proveedores: ProveedorCompra[] = [];
@@ -119,6 +125,22 @@ export class ComprasComponent implements OnInit {
     this.cargarCompras();
     this.cargarProveedores();
     this.cargarProductos();
+    this.cargarSolicitudIA();
+  }
+
+  private cargarSolicitudIA():void {
+    const id=Number(this.rutaIA?.snapshot.queryParamMap.get('solicitudIA'));
+    if(!Number.isSafeInteger(id)||id<=0||!this.permisos.tienePermiso('IA_VER')||!this.permisos.tienePermiso('IA_BORRADORES_CREAR')||!this.permisos.tienePermiso('COMPRAS_CREAR'))return;
+    this.ia.obtenerSolicitud(id).subscribe({next:s=>{
+      if(s.IdCompra){this.error='Esta solicitud ya tiene una compra vinculada.';this.cdr.detectChanges();return;}
+      this.solicitudIA=s.Id;this.compra.idProveedor=s.IdProveedor;
+      this.proveedorSeleccionado={idProveedor:s.IdProveedor,ruc:'',razonSocial:s.Proveedor};
+      this.compra.observacionCompra=`Solicitud de IA #${s.Id}. ${s.Justificacion}`;
+      if(s.PrecioConIgv!=null && s.PrecioConIgv>0){this.compra.detalles=[{idProducto:s.IdProducto,cantidad:s.Cantidad,precioCompra:s.PrecioConIgv,codigoProducto:s.CodigoProducto,producto:s.Producto,unidadMedida:s.Unidad}];}
+      else{this.productoSeleccionado={idProducto:s.IdProducto,codigoProducto:s.CodigoProducto,nombre:s.Producto,unidadMedida:s.Unidad};this.detalleFormulario.cantidad=s.Cantidad;}
+      this.mensaje='Solicitud preparada. Revisa cantidades, precio vigente y comprobante antes de registrar la compra.';
+      this.cdr.detectChanges();
+    },error:e=>{this.error=e.error?.mensaje??'No se pudo cargar la solicitud. El formulario de compra sigue disponible.';this.cdr.detectChanges();}});
   }
 
   cargarCompras(): void {
@@ -295,6 +317,12 @@ export class ComprasComponent implements OnInit {
 
     this.compraService.registrar(this.compra).subscribe({
       next: (data) => {
+        const solicitudIA=this.solicitudIA;
+        this.solicitudIA=null;
+        if(solicitudIA) this.ia.vincular(solicitudIA,data.idCompra).subscribe({
+          next:()=>{this.mensaje+=' Solicitud de IA vinculada.';this.cdr.detectChanges();},
+          error:()=>{this.mensaje+=' La compra se guardó; revisa la vinculación de la solicitud en Inteligencia Artificial.';this.cdr.detectChanges();}
+        });
         this.mensaje = data.mensaje || 'Compra registrada correctamente.';
         this.guardando = false;
 

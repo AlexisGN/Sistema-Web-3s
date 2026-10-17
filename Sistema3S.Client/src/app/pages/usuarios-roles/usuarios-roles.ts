@@ -18,6 +18,21 @@ import { SessionService } from '../../core/services/session.service';
 
 type TabUsuariosRoles = 'usuarios' | 'clientes' | 'roles' | 'permisos';
 
+// Se ocultan sólo en la presentación; el catálogo completo conserva sus asignaciones al guardar.
+const PERMISOS_ANTIGUOS_OCULTOS = new Set([
+  'GESTIONAR CAJA',
+  'GESTIONAR CLIENTES',
+  'GESTIONAR COMPRAS',
+  'GESTIONAR COTIZACIONES',
+  'GESTIONAR INVENTARIO',
+  'GESTIONAR PRODUCTOS',
+  'GESTIONAR ROLES',
+  'GESTIONAR SERVICIOS',
+  'GESTIONAR USUARIOS',
+  'GESTIONAR VENTAS',
+  'VER REPORTES'
+]);
+
 interface GrupoPermisos {
   modulo: string;
   titulo: string;
@@ -586,6 +601,7 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
     const mapa = new Map<string, Permiso[]>();
 
     for (const permiso of this.permisosRol) {
+      if (PERMISOS_ANTIGUOS_OCULTOS.has(permiso.nombre.trim().toUpperCase())) continue;
       const modulo = this.obtenerModuloPermiso(permiso.nombre);
 
       if (!mapa.has(modulo)) {
@@ -641,6 +657,8 @@ export class UsuariosRolesComponent implements OnInit, OnDestroy {
 
   private tituloModuloPermiso(modulo: string): string {
     const titulos: Record<string, string> = {
+      IA: 'Inteligencia Artificial',
+      BI: 'Inteligencia de Negocios',
       INICIO: 'Inicio',
       PRODUCTOS: 'Productos',
       SERVICIOS: 'Servicios',
