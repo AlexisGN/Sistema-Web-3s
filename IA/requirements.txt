@@ -1,0 +1,5 @@
+# Entorno portable Python 3.11. En Windows el preparador usa además el lock probado.
+tensorflow==2.15.1
+keras==2.15.0
+numpy==1.26.4
+pytest==8.3.5

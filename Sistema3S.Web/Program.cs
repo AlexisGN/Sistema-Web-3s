@@ -104,6 +104,7 @@ builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiConexion>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Bi.IBiService, Sistema3S.Web.Services.Bi.BiService>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiExportacion>();
 
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaDatos>();
 
 // Servicios de negocio
 builder.Services.AddScoped<IProductoService, ProductoService>();
