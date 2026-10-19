@@ -1,0 +1,20 @@
+{
+  "Ia": {
+    "Habilitada": true,
+    "Python": "../IA/.venv/Scripts/python.exe",
+    "DatosPrivados": "../IA/modelos",
+    "TimeoutSegundos": 600,
+    "HistorialOperativoVerificado": false,
+    "ReferenciaTecnica": false,
+    "BaseReferencia": "BD_3S",
+    "Automatizacion": {
+      "InstalarMetadatos": true,
+      "InferenciaHoras": 24,
+      "ReentrenamientoDias": 7,
+      "MinimoDiasNuevos": 7,
+      "RevisionSegundos": 60,
+      "Epocas": 30,
+      "EntrenamientoTimeoutSegundos": 1800
+    }
+  }
+}

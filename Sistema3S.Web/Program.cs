@@ -105,6 +105,14 @@ builder.Services.AddScoped<Sistema3S.Web.Services.Bi.IBiService, Sistema3S.Web.S
 builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiExportacion>();
 
 builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaDatos>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaMotor>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaProceso>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaService>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaDatosAdministrados>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaMotorAdministrado>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaAdministrador>();
+builder.Services.AddHostedService<Sistema3S.Web.Services.Ia.IaInferenciaWorker>();
+builder.Services.AddHostedService<Sistema3S.Web.Services.Ia.IaEntrenamientoWorker>();
 
 // Servicios de negocio
 builder.Services.AddScoped<IProductoService, ProductoService>();
