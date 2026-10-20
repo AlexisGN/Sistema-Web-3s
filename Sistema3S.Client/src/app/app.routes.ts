@@ -145,12 +145,8 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       
-      
-<<<<<<< HEAD
+      {path:'ia',canActivate:[permissionGuard],data:{permisos:['IA_VER']},loadComponent:()=>import('./pages/ia/ia').then(m=>m.IaComponent)},
       {path:'bi',canActivate:[permissionGuard],data:{permisos:['BI_VER']},loadComponent:()=>import('./pages/bi/bi').then(m=>m.BiComponent)},
-=======
-      
->>>>>>> 3eed08238efba4c9a2ddd889fa14f61b17db048d
       {
         path: 'auditoria',
         canActivate: [permissionGuard],

@@ -108,6 +108,7 @@ builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaDatos>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaMotor>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaProceso>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaService>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaCompras>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaDatosAdministrados>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaMotorAdministrado>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Ia.IaAdministrador>();
