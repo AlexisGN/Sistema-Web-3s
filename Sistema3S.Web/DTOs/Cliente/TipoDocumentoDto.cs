@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Cliente
+﻿namespace Sistema3S.Web.DTOs.Cliente
 {
     public class TipoDocumentoDto
     {

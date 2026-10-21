@@ -1,4 +1,4 @@
-<s3s-ia-avisos [procedencia]="procedencia" (revisar)="cambiarVista('inventario')" />
+﻿<s3s-ia-avisos [procedencia]="procedencia" (revisar)="cambiarVista('inventario')" />
 <header class="page-hero ia-hero"><div class="s3s-hero-content"><div class="s3s-hero-icon"><s3s-icon name="activity" /></div><div><span class="eyebrow">PLANIFICACIÓN COMERCIAL</span><h1>Inteligencia Artificial</h1><p>Ventas previstas, stock disponible y decisiones de compra.</p></div></div><button type="button" (click)="cargar()" [disabled]="cargando()">Actualizar consulta</button></header>
 <nav class="tabs" aria-label="Análisis inteligente">@for(s of seccionesVisibles;track s.id){<button type="button" [class.activa]="seccionActiva(s.id)" [attr.aria-current]="seccionActiva(s.id)?'page':null" (click)="abrirSeccion(s.id)"><span>{{s.nombre}}</span><small>{{s.detalle}}</small></button>}</nav>
 <section class="card filtros-ia" [class.con-proyeccion]="vista==='proyeccion'" aria-label="Filtros del análisis">

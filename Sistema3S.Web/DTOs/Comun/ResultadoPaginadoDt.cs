@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Comun
+﻿namespace Sistema3S.Web.DTOs.Comun
 {
     public class ResultadoPaginadoDto<T>
     {

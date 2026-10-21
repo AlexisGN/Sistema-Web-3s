@@ -1,4 +1,4 @@
-using Sistema3S.Web.DTOs.Comun;
+﻿using Sistema3S.Web.DTOs.Comun;
 using Sistema3S.Web.DTOs.Inventario;
 
 namespace Sistema3S.Web.Services.Interfaces

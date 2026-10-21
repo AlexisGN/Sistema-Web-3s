@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Producto
+﻿namespace Sistema3S.Web.DTOs.Producto
 {
     public class ProductoActualizarDto
     {

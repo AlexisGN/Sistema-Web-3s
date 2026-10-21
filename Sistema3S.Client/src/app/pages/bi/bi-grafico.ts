@@ -1,4 +1,4 @@
-import { AfterViewInit,ChangeDetectionStrategy,Component,ElementRef,Input,OnChanges,OnDestroy,Output,EventEmitter,ViewChild } from '@angular/core';
+﻿import { AfterViewInit,ChangeDetectionStrategy,Component,ElementRef,Input,OnChanges,OnDestroy,Output,EventEmitter,ViewChild } from '@angular/core';
 import { EChartsCoreOption,EChartsType,init,use } from 'echarts/core';
 import { BarChart,LineChart,PieChart } from 'echarts/charts';
 import { GridComponent,LegendComponent,TooltipComponent,AriaComponent,DataZoomComponent } from 'echarts/components';

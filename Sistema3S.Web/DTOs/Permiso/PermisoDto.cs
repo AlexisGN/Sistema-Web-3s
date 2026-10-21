@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Permiso
+﻿namespace Sistema3S.Web.DTOs.Permiso
 {
     public class PermisoDto
     {

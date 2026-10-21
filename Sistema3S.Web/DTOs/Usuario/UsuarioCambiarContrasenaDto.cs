@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Usuario
+﻿namespace Sistema3S.Web.DTOs.Usuario
 {
     public class UsuarioCambiarContrasenaDto
     {

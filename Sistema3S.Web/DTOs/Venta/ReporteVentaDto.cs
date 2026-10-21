@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Venta
+﻿namespace Sistema3S.Web.DTOs.Venta
 {
     public class ReporteVentaDto
     {

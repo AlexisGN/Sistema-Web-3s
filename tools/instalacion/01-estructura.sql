@@ -6944,4 +6944,4 @@ BEGIN
  FROM inserted i FULL OUTER JOIN deleted d ON i.[IdVenta]=d.[IdVenta];
 END;
 
-GOGO
+GO

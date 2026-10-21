@@ -144,9 +144,13 @@ export const routes: Routes = [
     loadComponent: () => import('./shared/admin-layout/admin-layout').then(m => m.AdminLayoutComponent),
     canActivate: [authGuard],
     children: [
-      
-      {path:'ia',canActivate:[permissionGuard],data:{permisos:['IA_VER']},loadComponent:()=>import('./pages/ia/ia').then(m=>m.IaComponent)},
-      {path:'bi',canActivate:[permissionGuard],data:{permisos:['BI_VER']},loadComponent:()=>import('./pages/bi/bi').then(m=>m.BiComponent)},
+      {path:'inteligencia',canActivate:[permissionGuard],data:{permisos:['BI_VER','IA_VER']},loadComponent:()=>import('./pages/inteligencia/inteligencia').then(m=>m.InteligenciaComponent)},
+      {
+        path: 'ia', redirectTo:({queryParams})=>inject(Router).createUrlTree(['/admin/inteligencia'],{queryParams:{...queryParams,area:'predictivo',legacy:'ia'}})
+      },
+      {
+        path: 'bi', redirectTo:({queryParams})=>inject(Router).createUrlTree(['/admin/inteligencia'],{queryParams:{...queryParams,area:'ventas',detalle:'ventas',legacy:'bi'}})
+      },
       {
         path: 'auditoria',
         canActivate: [permissionGuard],

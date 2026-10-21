@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Compra
+﻿namespace Sistema3S.Web.DTOs.Compra
 {
     public class GuiaRemisionCompraCrearDto
     {

@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 
 namespace Sistema3S.Web.Services.Seguridad
 {

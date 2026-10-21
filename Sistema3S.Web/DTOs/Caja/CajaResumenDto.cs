@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Caja
+﻿namespace Sistema3S.Web.DTOs.Caja
 {
     public class CajaResumenDto
     {

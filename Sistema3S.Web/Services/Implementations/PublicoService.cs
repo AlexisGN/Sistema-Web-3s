@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Sistema3S.Web.Data;
 using Sistema3S.Web.DTOs.Publico;
 using Sistema3S.Web.Models;

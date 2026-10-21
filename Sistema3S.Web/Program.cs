@@ -101,6 +101,9 @@ builder.Services.AddScoped<PasswordHashService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiConexion>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Comercial.ComercialService>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Comercial.ComercialExportacion>();
+builder.Services.AddScoped<Sistema3S.Web.Services.Comercial.ComercialPredictivo>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Bi.IBiService, Sistema3S.Web.Services.Bi.BiService>();
 builder.Services.AddScoped<Sistema3S.Web.Services.Bi.BiExportacion>();
 

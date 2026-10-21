@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Auth
+﻿namespace Sistema3S.Web.DTOs.Auth
 {
     public class PermisoSesionDto
     {

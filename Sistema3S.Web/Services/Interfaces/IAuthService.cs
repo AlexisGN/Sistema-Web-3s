@@ -1,4 +1,4 @@
-using Sistema3S.Web.DTOs.Auth;
+﻿using Sistema3S.Web.DTOs.Auth;
 
 namespace Sistema3S.Web.Services.Interfaces
 {

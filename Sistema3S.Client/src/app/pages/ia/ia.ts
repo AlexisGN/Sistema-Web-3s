@@ -1,4 +1,4 @@
-import {IaRestockComponent} from './ia-restock';
+﻿import {IaRestockComponent} from './ia-restock';
 import {IaDialogoComponent} from './ia-dialogo';
 import {IaRankingComponent} from './ia-ranking';
 import {IaComparacionComponent} from './ia-comparacion';

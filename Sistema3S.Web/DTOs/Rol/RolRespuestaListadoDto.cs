@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Rol
+﻿namespace Sistema3S.Web.DTOs.Rol
 {
     public class RolRespuestaListadoDto
     {

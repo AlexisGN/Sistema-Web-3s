@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.Services.Interfaces
+﻿namespace Sistema3S.Web.Services.Interfaces
 {
     public interface IPdfVentaService
     {

@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Catalogo
+﻿namespace Sistema3S.Web.DTOs.Catalogo
 {
     public class CatalogoItemDto
     {

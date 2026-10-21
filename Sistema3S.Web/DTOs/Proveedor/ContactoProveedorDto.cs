@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Proveedor
+﻿namespace Sistema3S.Web.DTOs.Proveedor
 {
     public class ContactoProveedorDto
     {

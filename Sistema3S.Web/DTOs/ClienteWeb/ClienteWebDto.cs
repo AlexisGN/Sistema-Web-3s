@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.ClienteWeb
+﻿namespace Sistema3S.Web.DTOs.ClienteWeb
 {
     public class ClienteWebRegistroDto
     {

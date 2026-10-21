@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Inventario
+﻿namespace Sistema3S.Web.DTOs.Inventario
 {
     public class ActualizarStockMinimoDto
     {

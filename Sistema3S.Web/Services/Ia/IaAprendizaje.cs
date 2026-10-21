@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.Services.Ia;
+﻿namespace Sistema3S.Web.Services.Ia;
 
 /// <summary>Decisión pura; la agenda, bloqueo y ejecución continúan en IaAdministrador.</summary>
 public static class IaAprendizaje

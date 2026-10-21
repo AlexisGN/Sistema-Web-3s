@@ -1,0 +1,28 @@
+IF EXISTS(SELECT 1 FROM dbo.Usuario) THROW 73001,'La prueba requiere una base de pruebas vacía.',1;
+INSERT Rol(Nombre) VALUES(N'Administrador'),(N'Compras / almacen'),(N'Cliente');
+INSERT Usuario(IdRol,Correo,ContrasenaHash) VALUES(1,N'admin@example.test',N'secreto-simulado'),(2,N'compras@example.test',N'secreto-simulado'),(3,N'cliente@example.test',N'secreto-simulado');
+INSERT EstadoCaja(Nombre) VALUES(N'Abierta'),(N'Cerrada');
+INSERT TipoMovimientoCaja(Nombre) VALUES(N'Ingreso por venta'),(N'Egreso por compra'),(N'Ingreso manual'),(N'Egreso manual'),(N'Ajuste ingreso'),(N'Ajuste egreso');
+INSERT EstadoCompra(Nombre) VALUES(N'Registrada'),(N'Anulada');
+INSERT EstadoCotizacion(Nombre) VALUES(N'Pendiente'),(N'Respondida'),(N'Aprobada'),(N'Cancelada'),(N'Convertida en venta');
+INSERT TipoMovimientoStock(Nombre) VALUES(N'Entrada'),(N'Salida'),(N'Ajuste');
+INSERT TipoElemento(Nombre) VALUES(N'Producto'),(N'Servicio');
+INSERT Categoria(Nombre) VALUES(N'Pruebas');
+INSERT UnidadMedida(Nombre,Abreviatura) VALUES(N'Unidad',N'UN');
+INSERT Proveedor(Ruc,RazonSocial) VALUES(N'20000000001',N'Proveedor de prueba');
+INSERT ElementoCatalogo(IdTipoElemento,Nombre,Descripcion,PrecioReferencial) VALUES(1,N'Producto de prueba',N'Prueba aislada',100);
+INSERT Producto(IdElementoCatalogo,IdCategoria,IdUnidadMedida,CodigoProducto) VALUES(1,1,1,N'PRUEBA');
+INSERT Inventario(IdProducto,StockActual,StockMinimo) VALUES(1,0,5);
+
+INSERT TipoCliente(Nombre) VALUES(N'Persona Natural'),(N'Empresa');
+INSERT TipoDocumento(Nombre,Longitud) VALUES(N'DNI',8),(N'RUC',11);
+INSERT Cliente(IdTipoCliente,IdTipoDocumento,NumeroDocumento,Correo,Telefono,Direccion) VALUES(1,1,N'00000001',N'cliente@example.test',N'+51999999999',N'Direccion QA');
+INSERT ClientePersonaNatural(IdCliente,Nombres,ApellidoPaterno,ApellidoMaterno) VALUES(1,N'Cliente',N'QA',N'Prueba');
+INSERT EstadoVenta(Nombre) VALUES(N'Confirmada'),(N'Anulada');
+INSERT TipoComprobante(Nombre) VALUES(N'Boleta'),(N'Factura'),(N'Nota de venta');
+INSERT EstadoComprobante(Nombre) VALUES(N'Emitido'),(N'Anulado');
+INSERT EstadoCotizacion(Nombre) VALUES(N'Convertida a venta');
+INSERT EstadoAlertaStock(Nombre) VALUES(N'Pendiente'),(N'Atendida');
+INSERT Permiso(Nombre,Descripcion) VALUES(N'ventas.ver',N'Ver ventas QA'),(N'compras.ver',N'Ver compras QA');
+INSERT RolPermiso(IdRol,IdPermiso) VALUES(2,2);
+INSERT TipoServicioExterno(Nombre) VALUES(N'RENIEC'),(N'SUNAT');

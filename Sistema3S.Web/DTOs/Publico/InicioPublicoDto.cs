@@ -1,4 +1,4 @@
-namespace Sistema3S.Web.DTOs.Publico
+﻿namespace Sistema3S.Web.DTOs.Publico
 {
     public class InicioPublicoDto
     {

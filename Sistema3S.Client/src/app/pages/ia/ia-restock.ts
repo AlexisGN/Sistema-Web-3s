@@ -1,4 +1,4 @@
-import {Component,EventEmitter,Input,Output} from '@angular/core';
+﻿import {Component,EventEmitter,Input,Output} from '@angular/core';
 import {UiIconComponent} from '../../shared/ui-icon/ui-icon';
 import {IaProducto} from './ia.service';
 import {cantidadVisible,unidadEntera} from './ia-cantidades';
