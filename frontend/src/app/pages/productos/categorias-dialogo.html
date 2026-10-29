@@ -1,0 +1,57 @@
+<dialog #dialogo class="categorias-dialogo" aria-labelledby="categorias-titulo" aria-describedby="categorias-descripcion" (cancel)="solicitarCierre($event)">
+  <header class="categorias-cabecera">
+    <div class="categorias-titulo"><span class="categorias-icono"><s3s-icon name="layers" /></span><div>
+      <span class="categorias-etiqueta">CATÁLOGO DE PRODUCTOS</span>
+      <h2 id="categorias-titulo">Categorías</h2>
+    </div></div>
+    <button type="button" class="categorias-cerrar" aria-label="Cerrar categorías" (click)="solicitarCierre()" [disabled]="guardando"><s3s-icon name="close" /></button>
+  </header>
+  <p id="categorias-descripcion" class="categorias-intro">Organiza tus productos. Las categorías activas también aparecen en la web pública.</p>
+  <p *ngIf="error" class="categorias-error" role="alert">{{ error }}</p>
+  <p *ngIf="mensaje" class="categorias-exito" role="status">{{ mensaje }}</p>
+
+  <section *ngIf="confirmacion as confirm" class="categorias-confirmacion" role="alertdialog" aria-labelledby="categoria-confirmar">
+    <h3 id="categoria-confirmar">{{ confirm.titulo }}</h3><p>{{ confirm.detalle }}</p>
+    <div class="categorias-botones"><button type="button" class="categorias-secundario" (click)="confirmacion = null">Cancelar</button>
+      <button type="button" class="categorias-primario" (click)="aceptarConfirmacion()">{{ confirm.aceptar }}</button></div>
+  </section>
+
+  <div class="categorias-contenido" [attr.inert]="confirmacion ? '' : null" [hidden]="!!confirmacion">
+    <section class="categorias-lista" aria-label="Categorías registradas">
+      <div class="categorias-filtros">
+        <label>Buscar categoría<input type="search" [(ngModel)]="buscar" placeholder="Nombre o descripción" /></label>
+        <label>Mostrar<select [(ngModel)]="filtro"><option value="todas">Todas</option><option value="activas">Activas</option><option value="inactivas">Inactivas</option></select></label>
+      </div>
+      <div class="categorias-lista-cabecera"><span>{{ filtradas.length }} de {{ categorias.length }} categorías</span>
+        <button type="button" class="categorias-texto" [disabled]="cargando || guardando" (click)="cargar()">Actualizar</button></div>
+      <p *ngIf="cargando" role="status" class="categorias-vacio">Cargando categorías…</p>
+      <div *ngIf="!cargando" class="categorias-registros">
+        <article *ngFor="let categoria of filtradas" class="categoria-fila" [class.categoria-fila-inactiva]="!categoria.estado">
+          <div class="categoria-info"><div class="categoria-nombre"><h3>{{ categoria.nombre }}</h3><span class="categoria-estado" [class.inactiva]="!categoria.estado">{{ categoria.estado ? 'Activa' : 'Inactiva' }}</span></div>
+            <p *ngIf="categoria.descripcion">{{ categoria.descripcion }}</p>
+            <small>{{ categoria.productosAsignados }} {{ categoria.productosAsignados === 1 ? 'producto asignado' : 'productos asignados' }} · {{ categoria.productosActivos }} {{ categoria.productosActivos === 1 ? 'activo' : 'activos' }}</small>
+          </div>
+          <div class="categoria-acciones">
+            <button type="button" class="categorias-secundario" [disabled]="guardando" (click)="editar(categoria)" [attr.aria-label]="'Editar ' + categoria.nombre">Editar</button>
+            <button type="button" class="categorias-texto" [disabled]="guardando || (categoria.estado && categoria.productosActivos > 0)" [title]="categoria.estado && categoria.productosActivos > 0 ? 'Primero reasigna o desactiva sus productos activos' : ''" (click)="cambiarEstado(categoria)">{{ categoria.estado ? 'Desactivar' : 'Activar' }}</button>
+            <button *ngIf="categoria.productosAsignados === 0" type="button" class="categorias-eliminar" [disabled]="guardando" (click)="eliminar(categoria)" [attr.aria-label]="'Eliminar ' + categoria.nombre"><s3s-icon name="trash" /></button>
+          </div>
+        </article>
+        <p *ngIf="filtradas.length === 0" class="categorias-vacio">{{ categorias.length ? 'No hay categorías que coincidan con tu búsqueda.' : 'Aún no hay categorías. Crea la primera para clasificar tus productos.' }}</p>
+      </div>
+    </section>
+
+    <form class="categorias-formulario" (ngSubmit)="guardar()">
+      <h3>{{ editando === null ? 'Nueva categoría' : 'Editar categoría' }}</h3>
+      <p>{{ editando === null ? 'Elige un nombre que tus clientes puedan reconocer.' : 'El cambio se reflejará en los productos asociados.' }}</p>
+      <label for="categoria-nombre">Nombre <span aria-hidden="true">*</span></label>
+      <input #nombreInput id="categoria-nombre" name="categoriaNombre" [(ngModel)]="formulario.nombre" maxlength="100" required [disabled]="guardando" autocomplete="off" />
+      <label for="categoria-descripcion">Descripción <small>(opcional)</small></label>
+      <textarea id="categoria-descripcion" name="categoriaDescripcion" [(ngModel)]="formulario.descripcion" maxlength="300" rows="3" [disabled]="guardando" placeholder="Qué productos incluye esta categoría"></textarea>
+      <small class="categorias-contador">{{ formulario.descripcion?.length || 0 }}/300</small>
+      <button class="categorias-primario" type="submit" [disabled]="guardando || cargando || !formulario.nombre.trim()">{{ guardando ? 'Guardando…' : editando === null ? 'Crear categoría' : 'Guardar cambios' }}</button>
+      <button *ngIf="editando !== null" class="categorias-texto" type="button" (click)="nuevo()" [disabled]="guardando">Cancelar edición</button>
+      <p class="categorias-ayuda"><s3s-icon name="info" />Sólo puedes desactivar una categoría sin productos activos. Los productos inactivos y sus movimientos se conservan.</p>
+    </form>
+  </div>
+</dialog>

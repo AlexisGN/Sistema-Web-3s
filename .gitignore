@@ -484,19 +484,17 @@ $RECYCLE.BIN/
 # IA: modelos de referencia compartidos en IA/modelos; entorno y configuración locales.
 **/.ia-data/
 **/ia.local.json*
-tools/ia/.venv/
-tools/ia/runtime/
 **/__pycache__/
 **/.pytest_cache/
 
-IA/.venv/
-IA/.runtime/
-IA/.privado/
-IA/evidencia/
-IA/modelos/operativo/
+backend/IA/.venv/
+backend/IA/.runtime/
+backend/IA/.privado/
+backend/IA/evidencia/
+backend/IA/modelos/operativo/
 
 # Caché regenerada; conservar intacto el modelo de referencia compartido.
-IA/modelos/referencia-local/
+backend/IA/modelos/referencia-local/
 
 # Artefactos privados candidatos, publicados y estados del motor administrado.
-IA/modelos/administrado/
+backend/IA/modelos/administrado/

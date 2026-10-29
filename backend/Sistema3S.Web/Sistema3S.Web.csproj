@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>07297762-dad9-4c6c-a481-2705e428b5e9</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="QuestPDF" Version="2026.6.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="10.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Database/*.sql" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!-- La publicación estándar entrega la API y la IA juntas; no necesita un publicador propio. -->
+  <ItemGroup>
+    <Content Update="appsettings.json;appsettings.Development.json;ia.local.json*" CopyToPublishDirectory="Never" />
+    <Content Update="appsettings.Publicacion.json" Link="appsettings.json" TargetPath="appsettings.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Always" />
+    <Content Include="../IA/motor/**/*.py" Link="IA/motor/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../IA/compatibilidad/*.py" Link="IA/compatibilidad/%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../IA/modelos/**/*" Exclude="../IA/modelos/**/__pycache__/**;../IA/modelos/**/diagnostico/**;../IA/modelos/**/*.log" Link="IA/modelos/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../IA/requirements*.txt" Link="IA/%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

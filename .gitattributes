@@ -1,2 +1,2 @@
 # El artefacto Keras es binario; conservar sus bytes al descargar y subir a Git.
-IA/modelos/**/*.keras binary
+backend/IA/modelos/**/*.keras binary

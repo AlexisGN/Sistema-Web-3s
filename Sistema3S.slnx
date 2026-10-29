@@ -1,4 +1,3 @@
 <Solution>
-  <Project Path="Sistema3S.Web/Sistema3S.Web.csproj" />
-  <Project Path="Sistema3S.Tests/Sistema3S.Tests.csproj" />
+  <Project Path="backend/Sistema3S.Web/Sistema3S.Web.csproj" />
 </Solution>
